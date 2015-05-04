@@ -51,9 +51,26 @@ import functools
 import random
 import time
 import sys
+import statsd
 
 from concurrent.futures import (ThreadPoolExecutor, as_completed,
                                 ProcessPoolExecutor)
+
+import requests as _requests
+
+
+_statsd = statsd.StatsClient('localhost', 8125)
+
+class Session(_requests.Session):
+    def request(self, method, url, **kw):
+        resp = _requests.Session.request(self, method, url, **kw)
+        stats_key = 'loads.%s.%s' % (method, url)
+        _statsd.timing(stats_key, resp.elapsed.total_seconds())
+        _statsd.incr('loads.request')
+        return resp
+
+
+requests = Session()
 
 
 _SCENARIO = []

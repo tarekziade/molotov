@@ -1,5 +1,4 @@
-from ailoads.fmwk import scenario, runner
-import requests
+from ailoads.fmwk import scenario, runner, requests
 
 
 @scenario(5)
@@ -17,7 +16,7 @@ def _scenario_two():
 
 
 if __name__ == '__main__':
-    res = runner(10, 10)
+    res = runner(1, 10)
     tok, tfailed = 0, 0
 
     for ok, failed in res:
