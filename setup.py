@@ -2,11 +2,7 @@ from setuptools import setup, find_packages
 from ailoads import __version__
 import sys
 
-install_requires = ['requests']
-
-if sys.version_info < (2, 7):
-    install_requires += ['argparse']
-
+install_requires = ['requests', 'statsd']
 description = ''
 
 for file_ in ('README', ):
