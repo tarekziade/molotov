@@ -22,6 +22,7 @@ class Session(_requests.Session):
 
 requests = Session()
 _SCENARIO = []
+_STOP = False
 
 
 def scenario(weight):
@@ -33,20 +34,6 @@ def scenario(weight):
             return func(*args, **kw)
         return __scenario
     return _scenario
-
-
-@scenario(5)
-def _scenario_one():
-    """Calls Google.
-    """
-    return requests.get('http://localhost:8000')
-
-
-@scenario(30)
-def _scenario_two():
-    """Calls Yahoo.
-    """
-    return requests.get('http://localhost:8000')
 
 
 def _pick_scenario():
@@ -75,7 +62,7 @@ def worker(**options):
 
     start = _now()
 
-    while _now() - start < duration:
+    while _now() - start < duration and not _STOP:
         func, args, kw = _pick_scenario()
         try:
             func(*args, **kw)
@@ -92,6 +79,7 @@ def worker(**options):
 
 
 def runner(users=1, duration=100):
+    global _STOP
     print('Creating workers')
     executor = ThreadPoolExecutor(max_workers=users)
     future_to_resp = []
@@ -104,10 +92,19 @@ def runner(users=1, duration=100):
     print("Let's go")
     results = []
 
-    for future in as_completed(future_to_resp):
-        try:
-            results.append(future.result())
-        except Exception as exc:
-            results.append(exc)
+    def _grab_results():
+        for future in as_completed(future_to_resp):
+            try:
+                results.append(future.result())
+            except Exception as exc:
+                results.append(exc)
+
+    try:
+        _grab_results()
+    except KeyboardInterrupt:
+        _STOP = True
+        executor.shutdown()
+        _grab_results()
+        print('Bye')
 
     return results
