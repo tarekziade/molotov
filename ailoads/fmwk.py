@@ -1,65 +1,15 @@
-import socket
-from requests.packages.urllib3.util import connection as urllib3_conn
-import functools
-
-_GLOBAL_DEFAULT_TIMEOUT = object()
-_cached = {}
-
-
-def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
-                      source_address=None, socket_options=None):
-    host, port = address
-    err = None
-    if address in _cached:
-        addrinfo = [_cached[address]]
-    else:
-        addrinfo = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
-
-    for res in addrinfo:
-        af, socktype, proto, canonname, sa = res
-        sock = None
-        try:
-            sock = socket.socket(af, socktype, proto)
-            if socket_options:
-                urllib3_conn._set_socket_options(sock, socket_options)
-
-            if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
-                sock.settimeout(timeout)
-            if source_address:
-                sock.bind(source_address)
-            sock.connect(sa)
-            # success, let's use this next time
-            _cached[address] = res
-            return sock
-        except socket.error as _:
-            err = _
-            if sock is not None:
-                sock.close()
-
-    if err is not None:
-        raise err
-    else:
-        raise socket.error("getaddrinfo returns an empty list")
-
-
-socket.create_connection = create_connection
-urllib3_conn.create_connection = create_connection
-
-import asyncio
-import requests
 import functools
 import random
 import time
 import sys
 import statsd
-
-from concurrent.futures import (ThreadPoolExecutor, as_completed,
-                                ProcessPoolExecutor)
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests as _requests
 
 
 _statsd = statsd.StatsClient('localhost', 8125)
+
 
 class Session(_requests.Session):
     def request(self, method, url, **kw):
@@ -71,14 +21,13 @@ class Session(_requests.Session):
 
 
 requests = Session()
-
-
 _SCENARIO = []
 
 
 def scenario(weight):
     def _scenario(func, *args, **kw):
         _SCENARIO.append((weight, func, args, kw))
+
         @functools.wraps
         def __scenario():
             return func(*args, **kw)
@@ -118,7 +67,8 @@ def _now():
 
 
 def worker(**options):
-    print('worker started')
+    sys.stdout.write('*')
+    sys.stdout.flush()
     duration = options.get('duration', 60)
     count = 1
     ok = failed = 0
@@ -128,10 +78,10 @@ def worker(**options):
     while _now() - start < duration:
         func, args, kw = _pick_scenario()
         try:
-            res = func(*args, **kw)
+            func(*args, **kw)
             sys.stdout.write('.')
             ok += 1
-        except Exception as exc:
+        except Exception:
             sys.stdout.write('-')
             failed += 1
         sys.stdout.flush()
@@ -142,19 +92,16 @@ def worker(**options):
 
 
 def runner(users=1, duration=100):
-    print('Creating pool')
+    print('Creating workers')
     executor = ThreadPoolExecutor(max_workers=users)
-    print('Pool ready, adding tasks')
-
     future_to_resp = []
-
-    start = time.time()
 
     for i in range(users):
         future = executor.submit(worker, duration=duration)
         future_to_resp.append(future)
 
-    print('Lets go')
+    print('')
+    print("Let's go")
     results = []
 
     for future in as_completed(future_to_resp):

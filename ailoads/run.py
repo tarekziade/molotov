@@ -16,7 +16,7 @@ def _scenario_two():
 
 
 if __name__ == '__main__':
-    res = runner(1, 10)
+    res = runner(10, 60)
     tok, tfailed = 0, 0
 
     for ok, failed in res:
@@ -24,4 +24,4 @@ if __name__ == '__main__':
         tfailed += failed
 
     print('')
-    print('%d OK, %d failed' % (tok, tfailed))
+    print('%d OK, %d Failed' % (tok, tfailed))
