@@ -29,10 +29,11 @@ def scenario(weight):
     def _scenario(func, *args, **kw):
         _SCENARIO.append((weight, func, args, kw))
 
-        @functools.wraps
+        @functools.wraps(func)
         def __scenario():
             return func(*args, **kw)
         return __scenario
+
     return _scenario
 
 
@@ -57,6 +58,7 @@ def worker(**options):
     sys.stdout.write('*')
     sys.stdout.flush()
     duration = options.get('duration', 60)
+    verbose = options.get('verbose', True)
     count = 1
     ok = failed = 0
 
@@ -68,8 +70,11 @@ def worker(**options):
             func(*args, **kw)
             sys.stdout.write('.')
             ok += 1
-        except Exception:
-            sys.stdout.write('-')
+        except Exception as exc:
+            if verbose:
+                print(exc)
+            else:
+                sys.stdout.write('-')
             failed += 1
         sys.stdout.flush()
         count += 1
