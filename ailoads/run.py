@@ -1,7 +1,9 @@
 import os
 import sys
+import argparse
 
 from ailoads.fmwk import runner
+from ailoads import __version__
 
 
 def resolve_name(name):
@@ -40,15 +42,36 @@ def resolve_name(name):
 
 
 def main():
-    if os.path.exists('loadtest.py'):
-        scenarii_file = 'loadtest'
-    else:
-        scenarii_file = 'ailoads.example'
+    parser = argparse.ArgumentParser(description='Load test.')
 
-    print('Scenarii file is %r' % scenarii_file)
-    resolve_name(scenarii_file)
+    parser.add_argument('--version', action='store_true', default=False,
+                        help='Displays version and exits.')
 
-    res = runner(10, 60)
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help='Verbose')
+
+    parser.add_argument('-s', '--scenarii', help='Module with scenarii',
+                        type=str, default='loadtest')
+
+    parser.add_argument('-u', '--users', help='Number of users',
+                        type=int, default=1)
+
+    parser.add_argument('-d', '--duration', help='Duration in seconds',
+                        type=int, default=10)
+
+    args = parser.parse_args()
+
+    if args.version:
+        print(__version__)
+        sys.exit(0)
+
+    try:
+        resolve_name(args.scenarii)
+    except ImportError:
+        print('Cannot import %r' % args.scenarii)
+        sys.exit(1)
+
+    res = runner(args)
     tok, tfailed = 0, 0
 
     for ok, failed in res:

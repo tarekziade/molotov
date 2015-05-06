@@ -54,11 +54,13 @@ def _now():
     return int(time.time())
 
 
-def worker(**options):
-    sys.stdout.write('*')
-    sys.stdout.flush()
-    duration = options.get('duration', 60)
-    verbose = options.get('verbose', True)
+def worker(args):
+    if args.verbose:
+        sys.stdout.write('[w]')
+        sys.stdout.flush()
+
+    duration = args.duration
+    verbose = args.verbose
     count = 1
     ok = failed = 0
 
@@ -83,18 +85,23 @@ def worker(**options):
     return ok, failed
 
 
-def runner(users=1, duration=100):
+def runner(args):
+    verbose = args.verbose
     global _STOP
-    print('Creating workers')
-    executor = ThreadPoolExecutor(max_workers=users)
+    if verbose:
+        print('Creating workers')
+
+    executor = ThreadPoolExecutor(max_workers=args.users)
     future_to_resp = []
 
-    for i in range(users):
-        future = executor.submit(worker, duration=duration)
+    for i in range(args.users):
+        future = executor.submit(worker, args)
         future_to_resp.append(future)
 
-    print('')
-    print("Let's go")
+    if verbose:
+        print('')
+        print("Let's go")
+
     results = []
 
     def _grab_results():
