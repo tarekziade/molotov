@@ -47,6 +47,10 @@ def main():
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
 
+    parser.add_argument('-p', '--processes', action='store_true',
+                        default=False,
+                        help='Uses processes instead of threads.')
+
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Verbose')
 

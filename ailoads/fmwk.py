@@ -3,7 +3,8 @@ import random
 import time
 import sys
 import statsd
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import (ThreadPoolExecutor, as_completed,
+                                ProcessPoolExecutor)
 
 import requests as _requests
 
@@ -55,21 +56,24 @@ def _now():
 
 
 def worker(args):
-    if args.verbose:
-        sys.stdout.write('[w]')
-        sys.stdout.flush()
-
     duration = args.duration
     verbose = args.verbose
+
+    if verbose:
+        if args.processes:
+            sys.stdout.write('[p]')
+        else:
+            sys.stdout.write('[th]')
+        sys.stdout.flush()
+
     count = 1
     ok = failed = 0
-
     start = _now()
 
     while _now() - start < duration and not _STOP:
-        func, args, kw = _pick_scenario()
+        func, args_, kw = _pick_scenario()
         try:
-            func(*args, **kw)
+            func(*args_, **kw)
             sys.stdout.write('.')
             ok += 1
         except Exception as exc:
@@ -82,25 +86,29 @@ def worker(args):
         count += 1
 
     # worker is done
+    if verbose:
+        if args.processes:
+            sys.stdout.write('[-p]')
+        else:
+            sys.stdout.write('[-th]')
+        sys.stdout.flush()
+
     return ok, failed
 
 
 def runner(args):
     verbose = args.verbose
     global _STOP
-    if verbose:
-        print('Creating workers')
+    if args.processes:
+        executor = ProcessPoolExecutor(max_workers=args.users)
+    else:
+        executor = ThreadPoolExecutor(max_workers=args.users)
 
-    executor = ThreadPoolExecutor(max_workers=args.users)
     future_to_resp = []
 
     for i in range(args.users):
         future = executor.submit(worker, args)
         future_to_resp.append(future)
-
-    if verbose:
-        print('')
-        print("Let's go")
 
     results = []
 
