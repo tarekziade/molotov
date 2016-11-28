@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 
-from ailoads.fmwk import runner
+from ailoads.fmwk import runner, requests
 from ailoads import __version__
 
 
@@ -74,6 +74,7 @@ def main():
         print('Cannot import %r' % args.scenarii)
         sys.exit(1)
 
+    requests.verbose = args.verbose
     res = runner(args)
     tok, tfailed = 0, 0
 

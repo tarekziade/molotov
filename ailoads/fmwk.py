@@ -13,12 +13,51 @@ _statsd = statsd.StatsClient('localhost', 8125)
 
 
 class Session(_requests.Session):
+    verbose = False
+    _stream = sys.stdout
+
     def request(self, method, url, **kw):
-        resp = _requests.Session.request(self, method, url, **kw)
+        reqkws = {}
+        for field in ('headers', 'files', 'data', 'json', 'params', 'auth',
+                      'cookies', 'hooks'):
+            if field in kw:
+                reqkws[field] = kw.pop(field)
+
+        req = _requests.Request(method, url, **reqkws).prepare()
+
+        if self.verbose:
+            self.print_request(req, self._stream)
+            self._stream.write('\n>>>\n')
+
+        resp = self.send(req, **kw)
+        if self.verbose:
+            self.print_response(resp, self._stream)
+            self._stream.write('\n<<<\n')
+
         stats_key = 'loads.%s.%s' % (method, url)
         _statsd.timing(stats_key, resp.elapsed.total_seconds())
         _statsd.incr('loads.request')
         return resp
+
+    def print_request(self, req, stream=sys.stdout):
+        raw = '\n' + req.method + ' ' + req.url
+        if len(req.headers) > 0:
+            headers = '\n'.join('%s: %s' % (k, v) for k, v in
+                                req.headers.items())
+            raw += '\n' + headers
+        if req.body:
+            raw += '\n\n' + req.body + '\n'
+        stream.write(raw)
+
+    def print_response(self, resp, stream=sys.stdout):
+        raw = 'HTTP/1.1 %s %s\n' % (resp.status_code, resp.reason)
+        items = resp.headers.items()
+        headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
+        raw += headers
+
+        if resp.content:
+            raw += '\n\n' + resp.content.decode()
+        stream.write(raw)
 
 
 requests = Session()

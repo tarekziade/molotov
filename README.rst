@@ -30,7 +30,7 @@ Here's a full working example ::
     def _scenario_two():
         somedata = json.dumps({'OK': 1})
         res = requests.post('http://myapp/api', data=somedata)
-        assert res.status_int == 200
+        assert res.status_code == 200
 
 the **scenario** decorator takes one paramater which is the
 weight of the test.
