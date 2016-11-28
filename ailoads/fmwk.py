@@ -97,7 +97,6 @@ def worker(args):
 
 
 def runner(args):
-    verbose = args.verbose
     global _STOP
     if args.processes:
         executor = ProcessPoolExecutor(max_workers=args.users)

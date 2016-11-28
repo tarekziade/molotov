@@ -40,7 +40,6 @@ def resolve_name(name):
     return ret
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='Load test.')
 
