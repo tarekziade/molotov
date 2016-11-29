@@ -30,4 +30,5 @@ setup(name='ailoads',
       entry_points="""
       [console_scripts]
       ailoads = ailoads.run:main
+      aislave = ailoads.slave:main
       """)

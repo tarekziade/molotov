@@ -68,6 +68,10 @@ def main():
         print(__version__)
         sys.exit(0)
 
+    return run(args)
+
+
+def run(args):
     try:
         resolve_name(args.scenarii)
     except ImportError:
