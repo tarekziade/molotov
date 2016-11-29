@@ -63,3 +63,40 @@ the scenario module with the -s option::
                             Number of users
     -d DURATION, --duration DURATION
                             Duration in seconds
+
+
+Running from a git repo
+=======================
+
+To run **ailoads** directly from a github repo, add a **loads.json**
+at the top of that repo alongside your ailoads tests.
+
+**loads.json** is a configuration file that contains a list of tests to run.
+Each test is defined by a name and the options that will be passed in
+the command line to **ailoads**.
+
+In the following example, two tests are defined, **test** and **test-heavy**::
+
+  {
+    "ailoads": {
+      "requirements": "requirements.txt",
+      "tests": {
+        "test": {"duration": 30,
+                 "verbose": true
+        },
+        "test-heavy": {"duration": 300,
+                       "users": 30
+        }
+      }
+    }
+  }
+
+
+Once you have that file on the top of you repository you can directly run
+it using **ailoads**, with the **aislave** command.
+
+Example::
+
+    $ aislave https://github.com/tarekziade/shavar-loadtests test
+
+This will simply run **ailoads** with the options from the json file.
