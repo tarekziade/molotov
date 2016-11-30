@@ -79,7 +79,6 @@ In the following example, two tests are defined, **test** and **test-heavy**::
 
   {
     "ailoads": {
-      "requirements": "requirements.txt",
       "tests": {
         "test": {"duration": 30,
                  "verbose": true
@@ -100,3 +99,22 @@ Example::
     $ aislave https://github.com/tarekziade/shavar-loadtests test
 
 This will simply run **ailoads** with the options from the json file.
+
+There are also two global options you can use to run the test:
+
+- **requirements**: points a Pip requirements file that will be installed prior
+  to the test
+- **env**: mapping containing environment variables that will be
+  set prior to the test
+
+Example::
+
+    {"ailoads": {
+       "requirements": "requirements.txt",
+       "env": {"SERVER_URL": "http://aserver.net"},
+       "tests": {
+         "test": {"duration": 30},
+         "test-heavy": {"duration": 300, "users": 10}
+       }
+     }
+    }
