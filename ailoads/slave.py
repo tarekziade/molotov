@@ -79,6 +79,11 @@ def main():
         if 'requirements' in config['ailoads']:
             install_reqs(config['ailoads']['requirements'])
 
+        # environment
+        if 'env' in config['ailoads']:
+            for key, value in config['ailoads']['env'].items():
+                os.environ[key] = value
+
         run_test(**config['ailoads']['tests'][args.run])
     except Exception:
         os.chdir(curdir)
