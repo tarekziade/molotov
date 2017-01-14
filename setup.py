@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from ailoads import __version__
+from molotov import __version__
 import sys
 
 install_requires = ['requests', 'statsd']
@@ -15,9 +15,9 @@ classifiers = ["Programming Language :: Python",
                "Development Status :: 1 - Planning"]
 
 
-setup(name='ailoads',
+setup(name='molotov',
       version=__version__,
-      url='https://github.com/tarekziade/ailoads',
+      url='https://github.com/tarekziade/molotov',
       packages=find_packages(),
       long_description=description,
       description=("AsyncIO Loads client"),
@@ -29,6 +29,6 @@ setup(name='ailoads',
       install_requires=install_requires,
       entry_points="""
       [console_scripts]
-      ailoads = ailoads.run:main
-      aislave = ailoads.slave:main
+      molotov = molotov.run:main
+      moloslave = molotov.slave:main
       """)

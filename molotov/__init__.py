@@ -1,5 +1,5 @@
 try:
-    from ailoads import patch   # NOQA
+    from molotov import patch   # NOQA
 except ImportError:
     pass   # first import
 

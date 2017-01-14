@@ -21,5 +21,5 @@ clean:
 
 test: build
 	$(BIN)/pip install flake8 tox
-	$(BIN)/flake8 ailoads
+	$(BIN)/flake8 molotov
 	$(BIN)/tox

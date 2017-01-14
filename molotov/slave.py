@@ -7,8 +7,8 @@ import tempfile
 import shutil
 from collections import namedtuple
 
-from ailoads import __version__
-from ailoads.run import run
+from molotov import __version__
+from molotov.run import run
 
 
 def clone_repo(github):
@@ -76,15 +76,15 @@ def main():
         create_virtualenv(args.virtualenv, args.python)
 
         # install deps
-        if 'requirements' in config['ailoads']:
-            install_reqs(config['ailoads']['requirements'])
+        if 'requirements' in config['molotov']:
+            install_reqs(config['molotov']['requirements'])
 
         # environment
-        if 'env' in config['ailoads']:
-            for key, value in config['ailoads']['env'].items():
+        if 'env' in config['molotov']:
+            for key, value in config['molotov']['env'].items():
                 os.environ[key] = value
 
-        run_test(**config['ailoads']['tests'][args.run])
+        run_test(**config['molotov']['tests'][args.run])
     except Exception:
         os.chdir(curdir)
         shutil.rmtree(tempdir, ignore_errors=True)

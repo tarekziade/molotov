@@ -2,8 +2,8 @@ import os
 import sys
 import argparse
 
-from ailoads.fmwk import runner, requests
-from ailoads import __version__
+from molotov.fmwk import runner, requests
+from molotov import __version__
 
 
 def resolve_name(name):
