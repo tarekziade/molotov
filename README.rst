@@ -1,10 +1,10 @@
 =======
-ailoads
+molotov
 =======
 
 Simple asyncio-based tool to write load tests.
 
-**ailoads** provides:
+**molotov** provides:
 
 - a `scenario` decorator that can be used
   to turn a function into a load test.
@@ -19,7 +19,7 @@ your functions and decorate them.
 Here's a full working example ::
 
     import json
-    from ailoads.fmwk import scenario, requests
+    from molotov.fmwk import scenario, requests
 
     @scenario(5)
     def _scenario_one():
@@ -35,7 +35,7 @@ Here's a full working example ::
 the **scenario** decorator takes one paramater which is the
 weight of the test.
 
-When ailoads runs, it creates some workers and each worker
+When molotov runs, it creates some workers and each worker
 runs a sequence of functions. To determine which function
 should be run for each step, the worker randomly picks one
 given their weights.
@@ -43,11 +43,11 @@ given their weights.
 Runner
 ======
 
-To run a test, use the **ailoads** runner and point it to
+To run a test, use the **molotov** runner and point it to
 the scenario module with the -s option::
 
-    $ bin/ailoads --help
-    usage: ailoads [-h] [--version] [-p] [-v] [-s SCENARII] [-u USERS]
+    $ bin/molotov --help
+    usage: molotov [-h] [--version] [-p] [-v] [-s SCENARII] [-u USERS]
                 [-d DURATION]
 
     Load test.
@@ -68,17 +68,17 @@ the scenario module with the -s option::
 Running from a git repo
 =======================
 
-To run **ailoads** directly from a github repo, add a **loads.json**
-at the top of that repo alongside your ailoads tests.
+To run **molotov** directly from a github repo, add a **loads.json**
+at the top of that repo alongside your molotov tests.
 
 **loads.json** is a configuration file that contains a list of tests to run.
 Each test is defined by a name and the options that will be passed in
-the command line to **ailoads**.
+the command line to **molotov**.
 
 In the following example, two tests are defined, **test** and **test-heavy**::
 
   {
-    "ailoads": {
+    "molotov": {
       "tests": {
         "test": {"duration": 30,
                  "verbose": true
@@ -92,13 +92,13 @@ In the following example, two tests are defined, **test** and **test-heavy**::
 
 
 Once you have that file on the top of you repository you can directly run
-it using **ailoads**, with the **aislave** command.
+it using **molotov**, with the **aislave** command.
 
 Example::
 
     $ aislave https://github.com/tarekziade/shavar-loadtests test
 
-This will simply run **ailoads** with the options from the json file.
+This will simply run **molotov** with the options from the json file.
 
 There are also two global options you can use to run the test:
 
@@ -109,7 +109,7 @@ There are also two global options you can use to run the test:
 
 Example::
 
-    {"ailoads": {
+    {"molotov": {
        "requirements": "requirements.txt",
        "env": {"SERVER_URL": "http://aserver.net"},
        "tests": {
