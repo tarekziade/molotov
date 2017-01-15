@@ -1,4 +1,4 @@
-from molotov.fmwk import scenario, requests
+from molotov import scenario, requests
 
 
 @scenario(5)

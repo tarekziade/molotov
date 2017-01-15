@@ -1,5 +1,6 @@
 try:
     from molotov import patch   # NOQA
+    from molotov.fmwk import scenario, requests
 except ImportError:
     pass   # first import
 

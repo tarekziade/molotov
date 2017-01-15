@@ -19,18 +19,19 @@ your functions and decorate them.
 Here's a full working example ::
 
     import json
-    from molotov.fmwk import scenario, requests
+    from molotov import scenario, requests
 
     @scenario(5)
-    def _scenario_one():
+    def scenario_one():
         res = requests.get('https://myapp/api').json()
         assert res['result'] == 'OK'
 
     @scenario(30)
-    def _scenario_two():
+    def scenario_two():
         somedata = json.dumps({'OK': 1})
         res = requests.post('http://myapp/api', data=somedata)
         assert res.status_code == 200
+
 
 the **scenario** decorator takes one paramater which is the
 weight of the test.
