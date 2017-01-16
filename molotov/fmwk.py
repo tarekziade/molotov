@@ -53,7 +53,12 @@ class Session(_requests.Session):
                                 req.headers.items())
             raw += '\n' + headers
         if req.body:
-            raw += '\n\n' + str(req.body, 'utf8') + '\n'
+            if isinstance(req.body, bytes):
+                body = str(req.body, 'utf8')
+            else:
+                body = req.body
+
+            raw += '\n\n' + body + '\n'
         stream.write(raw)
 
     def print_response(self, resp, stream=sys.stdout):
