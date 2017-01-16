@@ -7,15 +7,19 @@ from concurrent.futures import (ThreadPoolExecutor, as_completed,
                                 ProcessPoolExecutor)
 
 import requests as _requests
-import statsd
-
-
-_statsd = statsd.StatsClient('localhost', 8125)
+import statsd as _statsd
 
 
 class Session(_requests.Session):
-    verbose = False
-    _stream = sys.stdout
+
+    def __init__(self, verbose=False, stream=sys.stdout, statsd=None):
+        super(Session, self).__init__()
+        self.verbose = verbose
+        self._stream = stream
+        if statsd is not None:
+            self._stats = _statsd.StatsClient(*statsd)
+        else:
+            self._stats = None
 
     def request(self, method, url, **kw):
         reqkws = {}
@@ -35,21 +39,12 @@ class Session(_requests.Session):
             self.print_response(resp, self._stream)
             self._stream.write('\n<<<\n')
 
-        stats_key = 'loads.%s.%s' % (method, url)
-        _statsd.timing(stats_key, resp.elapsed.total_seconds())
-        _statsd.incr('loads.request')
-        return resp
+        if self._stats is not None:
+            stats_key = 'molotov.%s.%s' % (method, url)
+            self._stats.timing(stats_key, resp.elapsed.total_seconds())
+            self._stats.incr('motolov.request')
 
-    def post_json(self, url, data=None, json=None, **kwargs):
-        if data is not None:
-            data = json.dumps(data)
-        if 'headers' in kwargs:
-            headers = kwargs['headers']
-        else:
-            headers = {}
-        headers['Content-Type'] = 'application/json'
-        kwargs['headers'] = headers
-        return self.post(url, data=None, json=None, **kwargs)
+        return resp
 
     def print_request(self, req, stream=sys.stdout):
         raw = '\n' + req.method + ' ' + req.url
@@ -58,7 +53,7 @@ class Session(_requests.Session):
                                 req.headers.items())
             raw += '\n' + headers
         if req.body:
-            raw += '\n\n' + req.body + '\n'
+            raw += '\n\n' + str(req.body, 'utf8') + '\n'
         stream.write(raw)
 
     def print_response(self, resp, stream=sys.stdout):
@@ -72,7 +67,6 @@ class Session(_requests.Session):
         stream.write(raw)
 
 
-requests = Session()
 _SCENARIO = []
 _STOP = False
 
@@ -87,7 +81,7 @@ def scenario(weight):
 
         @functools.wraps(func)
         def __scenario():
-            return func(requests, *args, **kw)
+            return func(*args, **kw)
         return __scenario
 
     return _scenario
@@ -110,7 +104,7 @@ def _now():
     return int(time.time())
 
 
-def worker(args):
+def worker(session, args):
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -128,8 +122,10 @@ def worker(args):
 
     while _now() - start < duration and not _STOP:
         func, args_, kw = _pick_scenario()
+        if session._stats is not None:
+            kw['statsd'] = session._stats
         try:
-            func(requests, *args_, **kw)
+            func(session, *args_, **kw)
             if not quiet:
                 sys.stdout.write('.')
             ok += 1
@@ -162,6 +158,14 @@ def worker(args):
 
 
 def runner(args):
+
+    if args.statsd:
+        stats = args.statsd_host, args.statsd_port
+    else:
+        stats = None
+
+    session = Session(verbose=args.verbose, statsd=stats)
+
     global _STOP
     if args.processes:
         executor = ProcessPoolExecutor(max_workers=args.users)
@@ -171,7 +175,7 @@ def runner(args):
     future_to_resp = []
 
     for i in range(args.users):
-        future = executor.submit(worker, args)
+        future = executor.submit(worker, session, args)
         future_to_resp.append(future)
 
     results = []

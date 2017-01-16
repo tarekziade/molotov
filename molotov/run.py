@@ -4,7 +4,7 @@ import argparse
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner, requests, get_scenarios
+from molotov.fmwk import runner, get_scenarios
 from molotov import __version__
 
 
@@ -13,6 +13,15 @@ def main():
 
     parser.add_argument('scenario', default="loadtest",
                         help="path or module name that contains scenarii")
+
+    parser.add_argument('--statsd', action='store_true', default=False,
+                        help='Sends metrics to Statsd.')
+
+    parser.add_argument('--statsd-host', default='localhost',
+                        help='Statsd host.')
+
+    parser.add_argument('--statsd-port', default=8125, type=int,
+                        help='Statsd port.')
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
@@ -66,7 +75,6 @@ def run(args):
         print("You can't use -q and -v at the same time")
         sys.exit(1)
 
-    requests.verbose = args.verbose
     res = runner(args)
     tok, tfailed = 0, 0
 

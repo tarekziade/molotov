@@ -29,7 +29,7 @@ Here's a full working example ::
     @scenario(30)
     def scenario_two(session):
         somedata = {'OK': 1}
-        res = session.post_json('http://myapp/api', data=somedata)
+        res = session.post('http://myapp/api', json=somedata)
         assert res.status_code == 200
 
 
@@ -42,8 +42,8 @@ should be run for each step, the worker randomly picks one
 given their weights.
 
 The function receives a **session** object which is
-a custom Requests Session instance that provide an
-extra **post_json** method.
+a custom Requests Session instance that's tooled for
+sending statsd metrics and display info.
 
 
 
@@ -53,8 +53,10 @@ Runner
 To run a test, use the **molotov** runner and point it to
 the scenario module or path::
 
-    $ bin/molotov --help
-    usage: molotov [-h] [--version] [-p] [-v] [-u USERS] [-d DURATION] [-q] [-x]
+    $ molotov --help
+    usage: molotov [-h] [--statsd] [--statsd-host STATSD_HOST]
+                [--statsd-port STATSD_PORT] [--version] [-p] [-v] [-u USERS]
+                [-d DURATION] [-q] [-x]
                 scenario
 
     Load test.
@@ -64,6 +66,11 @@ the scenario module or path::
 
     optional arguments:
     -h, --help            show this help message and exit
+    --statsd              Sends metrics to Statsd.
+    --statsd-host STATSD_HOST
+                            Statsd host.
+    --statsd-port STATSD_PORT
+                            Statsd port.
     --version             Displays version and exits.
     -p, --processes       Uses processes instead of threads.
     -v, --verbose         Verbose
@@ -74,6 +81,24 @@ the scenario module or path::
     -q, --quiet           Quiet
     -x, --exception       Stop on first failure.
 
+
+When the runner is launched with **--statsd**, some requests metrics are sent
+through statsd:
+
+- a timer: molotov.{method}.{url}
+- a increment: motolov.request
+
+The statsd client in this case is also passed to the scenario as a keyword
+so you can add custom statsd calls.
+
+Example::
+
+    @scenario(30)
+    def scenario_two(session, statsd=None):
+        somedata = {'OK': 1}
+        res = session.post('http://myapp/api', json=somedata)
+        if statsd is not None:
+            stats.incr(res.status_code)
 
 
 Running from a git repo
