@@ -9,8 +9,9 @@ Simple asyncio-based tool to write load tests.
 - a `scenario` decorator that can be used
   to turn a function into a load test.
 - a **Requests** session wrapper to interact with the
-  HTTP application that's been tested
-- a simple command-line runner to run the load test
+  HTTP application that's been tested. The session
+  is passed to your functions.
+- a simple command-line runner to run the load test.
 
 
 To create a load test you simply have to write
@@ -19,17 +20,17 @@ your functions and decorate them.
 Here's a full working example ::
 
     import json
-    from molotov import scenario, requests
+    from molotov import scenario
 
     @scenario(5)
-    def scenario_one():
-        res = requests.get('https://myapp/api').json()
+    def scenario_one(session):
+        res = session.get('https://myapp/api').json()
         assert res['result'] == 'OK'
 
     @scenario(30)
     def scenario_two():
         somedata = json.dumps({'OK': 1})
-        res = requests.post('http://myapp/api', data=somedata)
+        res = session.post('http://myapp/api', data=somedata)
         assert res.status_code == 200
 
 
@@ -41,29 +42,34 @@ runs a sequence of functions. To determine which function
 should be run for each step, the worker randomly picks one
 given their weights.
 
+The function receives a **session** object which is
+a custom Requests Session instance.
+
+
+
 Runner
 ======
 
 To run a test, use the **molotov** runner and point it to
-the scenario module with the -s option::
+the scenario module or path::
 
-    $ bin/molotov --help
-    usage: molotov [-h] [--version] [-p] [-v] [-s SCENARII] [-u USERS]
-                [-d DURATION]
+        $ molotov --help
+        usage: molotov [-h] [--version] [-p] [-v] [-u USERS] [-d DURATION] scenario
 
-    Load test.
+        Load test.
 
-    optional arguments:
-    -h, --help            show this help message and exit
-    --version             Displays version and exits.
-    -p, --processes       Uses processes instead of threads.
-    -v, --verbose         Verbose
-    -s SCENARII, --scenarii SCENARII
-                            Module with scenarii
-    -u USERS, --users USERS
-                            Number of users
-    -d DURATION, --duration DURATION
-                            Duration in seconds
+        positional arguments:
+        scenario              path or module name that contains scenarii
+
+        optional arguments:
+        -h, --help            show this help message and exit
+        --version             Displays version and exits.
+        -p, --processes       Uses processes instead of threads.
+        -v, --verbose         Verbose
+        -u USERS, --users USERS
+                                Number of users
+        -d DURATION, --duration DURATION
+                                Duration in seconds
 
 
 Running from a git repo

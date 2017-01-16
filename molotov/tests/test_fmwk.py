@@ -7,11 +7,11 @@ class TestFmwk(unittest.TestCase):
     def test_weights(self):
 
         @scenario(0)
-        def test_one():
+        def test_one(session):
             pass
 
         @scenario(100)
-        def test_two():
+        def test_two(session):
             pass
 
         for i in range(10):

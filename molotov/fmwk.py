@@ -65,13 +65,17 @@ _SCENARIO = []
 _STOP = False
 
 
+def get_scenarios():
+    return _SCENARIO
+
+
 def scenario(weight):
     def _scenario(func, *args, **kw):
         _SCENARIO.append((weight, func, args, kw))
 
         @functools.wraps(func)
         def __scenario():
-            return func(*args, **kw)
+            return func(requests, *args, **kw)
         return __scenario
 
     return _scenario

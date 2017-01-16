@@ -1,47 +1,18 @@
 import os
 import sys
 import argparse
+from importlib import import_module
+from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner, requests
+from molotov.fmwk import runner, requests, get_scenarios
 from molotov import __version__
-
-
-def resolve_name(name):
-    if len(sys.path) < 1 or sys.path[0] not in ('', os.getcwd()):
-        sys.path.insert(0, '')
-
-    if '.' not in name:
-        # shortcut
-        __import__(name)
-        return sys.modules[name]
-
-    parts = name.split('.')
-    cursor = len(parts)
-    module_name = parts[:cursor]
-    ret = ''
-
-    while cursor > 0:
-        try:
-            ret = __import__('.'.join(module_name))
-            break
-        except ImportError:
-            cursor -= 1
-            module_name = parts[:cursor]
-
-    if ret == '':
-        raise ImportError(parts[0])
-
-    for part in parts[1:]:
-        try:
-            ret = getattr(ret, part)
-        except AttributeError as exc:
-            raise ImportError(exc)
-
-    return ret
 
 
 def main():
     parser = argparse.ArgumentParser(description='Load test.')
+
+    parser.add_argument('scenario', default="loadtest",
+                        help="path or module name that contains scenarii")
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
@@ -52,9 +23,6 @@ def main():
 
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Verbose')
-
-    parser.add_argument('-s', '--scenarii', help='Module with scenarii',
-                        type=str, default='loadtest')
 
     parser.add_argument('-u', '--users', help='Number of users',
                         type=int, default=1)
@@ -72,10 +40,19 @@ def main():
 
 
 def run(args):
-    try:
-        resolve_name(args.scenarii)
-    except ImportError:
-        print('Cannot import %r' % args.scenarii)
+    if os.path.exists(args.scenario):
+        spec = spec_from_file_location("loadtest", args.scenario)
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+    else:
+        try:
+            import_module(args.scenario)
+        except ImportError:
+            print('Cannot import %r' % args.scenario)
+            sys.exit(1)
+
+    if len(get_scenarios()) == 0:
+        print('You need at least one scenario. No scenario was found.')
         sys.exit(1)
 
     requests.verbose = args.verbose
