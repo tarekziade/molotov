@@ -18,21 +18,22 @@ Quickstart
 To create a load test, you need to create a Python module with some functions
 decorated with the **scenario** decorator.
 
-The function receives a **session** object and an optional **statsd** one.
-If **statsd** is not activated its value will be None.
+The function receives a **session** object inherited from Requests, and that
+has a few extra methods like **statsd_timer** and **statsd_incr** that can
+be used to send metrics to StatsD.
 
 Here's a full example ::
 
     from molotov import scenario
 
     @scenario(40)
-    async def scenario_one(session, statsd):
+    async def scenario_one(session):
         res = await session.get('https://myapp/api').json()
         assert res['result'] == 'OK'
-        statsd.incr(res.status_code)
+        await session.statsd_incr(res.status_code)
 
     @scenario(60)
-    async def scenario_two(session, statsd):
+    async def scenario_two(session):
         somedata = {'OK': 1}
         res = await session.post('http://myapp/api', json=somedata)
         assert res.status_code == 200
@@ -99,11 +100,10 @@ so you can add custom statsd calls.
 Example::
 
     @scenario(30)
-    async def scenario_two(session, statsd=None):
+    async def scenario_two(session):
         somedata = {'OK': 1}
         res = await session.post('http://myapp/api', json=somedata)
-        if statsd is not None:
-            stats.incr(res.status_code)
+        await session.statsd_incr(res.status_code)
 
 
 Running from a git repo

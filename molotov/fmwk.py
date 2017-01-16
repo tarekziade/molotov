@@ -19,12 +19,29 @@ class Session(_requests.Session):
         self.loop = loop
         self.verbose = verbose
         self._stream = stream
+        # XXX maybe we could use aiostatsd
         if statsd is not None:
             self._stats = _statsd.StatsClient(*statsd)
         else:
             self._stats = None
         self.executor = executor
         self.timeout = timeout
+
+    async def statsd_incr(self, counter):
+        if self._stats is None:
+            return
+        func = partial(self._stats.incr, counter)
+        future = self.loop.run_in_executor(self.executor, func)
+        result = await asyncio.wait_for(future, self.timeout, loop=self.loop)
+        return result
+
+    async def statsd_timing(self, name, value):
+        if self._stats is None:
+            return
+        func = partial(self._stats.timing, name, value)
+        future = self.loop.run_in_executor(self.executor, func)
+        result = await asyncio.wait_for(future, self.timeout, loop=self.loop)
+        return result
 
     async def request(self, method, url, **kw):
         func = partial(self._async_request, method, url, **kw)
@@ -134,7 +151,6 @@ async def worker(session, results, args):
 
     while _now() - start < duration and not _STOP:
         func, args_, kw = _pick_scenario()
-        kw['statsd'] = session._stats
         try:
             await func(session, *args_, **kw)
             if not quiet:
