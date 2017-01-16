@@ -53,23 +53,26 @@ Runner
 To run a test, use the **molotov** runner and point it to
 the scenario module or path::
 
-        $ molotov --help
-        usage: molotov [-h] [--version] [-p] [-v] [-u USERS] [-d DURATION] scenario
+    $ bin/molotov --help
+    usage: molotov [-h] [--version] [-p] [-v] [-u USERS] [-d DURATION] [-q] [-x]
+                scenario
 
-        Load test.
+    Load test.
 
-        positional arguments:
-        scenario              path or module name that contains scenarii
+    positional arguments:
+    scenario              path or module name that contains scenarii
 
-        optional arguments:
-        -h, --help            show this help message and exit
-        --version             Displays version and exits.
-        -p, --processes       Uses processes instead of threads.
-        -v, --verbose         Verbose
-        -u USERS, --users USERS
-                                Number of users
-        -d DURATION, --duration DURATION
-                                Duration in seconds
+    optional arguments:
+    -h, --help            show this help message and exit
+    --version             Displays version and exits.
+    -p, --processes       Uses processes instead of threads.
+    -v, --verbose         Verbose
+    -u USERS, --users USERS
+                            Number of users
+    -d DURATION, --duration DURATION
+                            Duration in seconds
+    -q, --quiet           Quiet
+    -x, --exception       Stop on first failure.
 
 
 Running from a git repo

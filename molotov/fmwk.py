@@ -2,11 +2,12 @@ import functools
 import random
 import time
 import sys
-import statsd
+import traceback
 from concurrent.futures import (ThreadPoolExecutor, as_completed,
                                 ProcessPoolExecutor)
 
 import requests as _requests
+import statsd
 
 
 _statsd = statsd.StatsClient('localhost', 8125)
@@ -38,6 +39,17 @@ class Session(_requests.Session):
         _statsd.timing(stats_key, resp.elapsed.total_seconds())
         _statsd.incr('loads.request')
         return resp
+
+    def post_json(self, url, data=None, json=None, **kwargs):
+        if data is not None:
+            data = json.dumps(data)
+        if 'headers' in kwargs:
+            headers = kwargs['headers']
+        else:
+            headers = {}
+        headers['Content-Type'] = 'application/json'
+        kwargs['headers'] = headers
+        return self.post(url, data=None, json=None, **kwargs)
 
     def print_request(self, req, stream=sys.stdout):
         raw = '\n' + req.method + ' ' + req.url
@@ -99,6 +111,7 @@ def _now():
 
 
 def worker(args):
+    quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
 
@@ -116,16 +129,25 @@ def worker(args):
     while _now() - start < duration and not _STOP:
         func, args_, kw = _pick_scenario()
         try:
-            func(*args_, **kw)
-            sys.stdout.write('.')
+            func(requests, *args_, **kw)
+            if not quiet:
+                sys.stdout.write('.')
             ok += 1
         except Exception as exc:
             if verbose:
-                print(exc)
-            else:
+                print(repr(exc))
+                traceback.print_tb(sys.exc_info()[2])
+            elif not quiet:
                 sys.stdout.write('-')
             failed += 1
-        sys.stdout.flush()
+            if args.exception:
+                if not verbose:
+                    print(repr(exc))
+                    traceback.print_tb(sys.exc_info()[2])
+                break
+
+        if not quiet:
+            sys.stdout.flush()
         count += 1
 
     # worker is done

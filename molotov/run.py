@@ -30,6 +30,13 @@ def main():
     parser.add_argument('-d', '--duration', help='Duration in seconds',
                         type=int, default=10)
 
+    parser.add_argument('-q', '--quiet', action='store_true', default=False,
+                        help='Quiet')
+
+    parser.add_argument('-x', '--exception', action='store_true',
+                        default=False,
+                        help='Stop on first failure.')
+
     args = parser.parse_args()
 
     if args.version:
@@ -53,6 +60,10 @@ def run(args):
 
     if len(get_scenarios()) == 0:
         print('You need at least one scenario. No scenario was found.')
+        sys.exit(1)
+
+    if args.verbose and args.quiet:
+        print("You can't use -q and -v at the same time")
         sys.exit(1)
 
     requests.verbose = args.verbose
