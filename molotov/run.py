@@ -11,7 +11,7 @@ from molotov import __version__
 def main():
     parser = argparse.ArgumentParser(description='Load test.')
 
-    parser.add_argument('scenario', default="loadtest",
+    parser.add_argument('scenario', default="loadtest.py",
                         help="path or module name that contains scenarii")
 
     parser.add_argument('--statsd', action='store_true', default=False,
