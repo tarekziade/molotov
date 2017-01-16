@@ -15,7 +15,7 @@ Simple asyncio-based tool to write load tests.
 Quickstart
 ==========
 
-To create a load test,  you need to create a Python module with some functions
+To create a load test, you need to create a Python module with some functions
 decorated with the **scenario** decorator.
 
 The function receives a **session** object and an optional **statsd** one.
@@ -26,15 +26,15 @@ Here's a full example ::
     from molotov import scenario
 
     @scenario(40)
-    def scenario_one(session, statsd):
-        res = session.get('https://myapp/api').json()
+    async def scenario_one(session, statsd):
+        res = await session.get('https://myapp/api').json()
         assert res['result'] == 'OK'
         statsd.incr(res.status_code)
 
     @scenario(60)
-    def scenario_two(session, statsd):
+    async def scenario_two(session, statsd):
         somedata = {'OK': 1}
-        res = session.post('http://myapp/api', json=somedata)
+        res = await session.post('http://myapp/api', json=somedata)
         assert res.status_code == 200
 
 
@@ -99,9 +99,9 @@ so you can add custom statsd calls.
 Example::
 
     @scenario(30)
-    def scenario_two(session, statsd=None):
+    async def scenario_two(session, statsd=None):
         somedata = {'OK': 1}
-        res = session.post('http://myapp/api', json=somedata)
+        res = await session.post('http://myapp/api', json=somedata)
         if statsd is not None:
             stats.incr(res.status_code)
 

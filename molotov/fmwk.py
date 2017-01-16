@@ -4,23 +4,35 @@ import random
 import time
 import sys
 import traceback
+from functools import partial
 from concurrent.futures import ThreadPoolExecutor
+
 import requests as _requests
 import statsd as _statsd
 
 
 class Session(_requests.Session):
 
-    def __init__(self, verbose=False, stream=sys.stdout, statsd=None):
+    def __init__(self, verbose=False, stream=sys.stdout, statsd=None,
+                 executor=None, loop=None, timeout=5.):
         super(Session, self).__init__()
+        self.loop = loop
         self.verbose = verbose
         self._stream = stream
         if statsd is not None:
             self._stats = _statsd.StatsClient(*statsd)
         else:
             self._stats = None
+        self.executor = executor
+        self.timeout = timeout
 
-    def request(self, method, url, **kw):
+    async def request(self, method, url, **kw):
+        func = partial(self._async_request, method, url, **kw)
+        future = self.loop.run_in_executor(self.executor, func)
+        result = await asyncio.wait_for(future, self.timeout, loop=self.loop)
+        return result
+
+    def _async_request(self, method, url, **kw):
         reqkws = {}
         for field in ('headers', 'files', 'data', 'json', 'params', 'auth',
                       'cookies', 'hooks'):
@@ -108,7 +120,7 @@ def _now():
     return int(time.time())
 
 
-def worker(session, results, args):
+async def worker(session, results, args):
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -124,10 +136,12 @@ def worker(session, results, args):
         func, args_, kw = _pick_scenario()
         kw['statsd'] = session._stats
         try:
-            func(session, *args_, **kw)
+            await func(session, *args_, **kw)
             if not quiet:
                 sys.stdout.write('.')
             results['OK'] += 1
+        except asyncio.CancelledError:
+            pass
         except Exception as exc:
             if verbose:
                 print(repr(exc))
@@ -159,15 +173,15 @@ def _runner(loop, executor, args, results):
     else:
         stats = None
 
-    session = Session(verbose=args.verbose, statsd=stats)
+    session = Session(verbose=args.verbose, statsd=stats, executor=executor,
+                      loop=loop)
     tasks = []
 
     for i in range(args.users):
-        future = loop.run_in_executor(executor, worker, session, results,
-                                      args)
+        future = asyncio.ensure_future(worker(session, results, args))
         tasks.append(future)
 
-    return asyncio.gather(*tasks)
+    return asyncio.gather(*tasks, loop=loop, return_exceptions=True)
 
 
 def runner(args):
@@ -181,9 +195,8 @@ def runner(args):
     except KeyboardInterrupt:
         _STOP = True
         tasks.cancel()
-        executor.shutdown()
         loop.run_forever()
-        tasks.exception()
+        executor.shutdown()
     finally:
         loop.close()
 
