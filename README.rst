@@ -19,7 +19,6 @@ your functions and decorate them.
 
 Here's a full working example ::
 
-    import json
     from molotov import scenario
 
     @scenario(5)
@@ -28,13 +27,13 @@ Here's a full working example ::
         assert res['result'] == 'OK'
 
     @scenario(30)
-    def scenario_two():
-        somedata = json.dumps({'OK': 1})
-        res = session.post('http://myapp/api', data=somedata)
+    def scenario_two(session):
+        somedata = {'OK': 1}
+        res = session.post_json('http://myapp/api', data=somedata)
         assert res.status_code == 200
 
 
-the **scenario** decorator takes one paramater which is the
+the **scenario** decorator takes one agument which is the
 weight of the test.
 
 When molotov runs, it creates some workers and each worker
@@ -43,7 +42,8 @@ should be run for each step, the worker randomly picks one
 given their weights.
 
 The function receives a **session** object which is
-a custom Requests Session instance.
+a custom Requests Session instance that provide an
+extra **post_json** method.
 
 
 
@@ -73,6 +73,7 @@ the scenario module or path::
                             Duration in seconds
     -q, --quiet           Quiet
     -x, --exception       Stop on first failure.
+
 
 
 Running from a git repo
