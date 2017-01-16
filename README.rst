@@ -110,10 +110,10 @@ Example::
 Running from a git repo
 =======================
 
-To run **molotov** directly from a github repo, add a **loads.json**
+To run **molotov** directly from a github repo, add a **molotov.json**
 at the top of that repo alongside your molotov tests.
 
-**loads.json** is a configuration file that contains a list of tests to run.
+**molotov.json** is a configuration file that contains a list of tests to run.
 Each test is defined by a name and the options that will be passed in
 the command line to **molotov**.
 
@@ -134,11 +134,11 @@ In the following example, two tests are defined, **test** and **test-heavy**::
 
 
 Once you have that file on the top of you repository you can directly run
-it using **molotov**, with the **aislave** command.
+it using **molotov**, with the **moloslave** command.
 
 Example::
 
-    $ aislave https://github.com/tarekziade/shavar-loadtests test
+    $ moloslave https://github.com/tarekziade/shavar-loadtests test
 
 This will simply run **molotov** with the options from the json file.
 

@@ -27,7 +27,7 @@ def install_reqs(reqfile):
                           shell=True)
 
 
-_DEFAULTS = {'processes': False, 'verbose': False, 'scenarii': 'loadtest',
+_DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest',
              'users': 1, 'duration': 10}
 
 
@@ -52,6 +52,9 @@ def main():
     parser.add_argument('--python', type=str, default=sys.executable,
                         help='Python executable.')
 
+    parser.add_argument('--config', type=str, default='molotov.json',
+                        help='Path of the configuration file.')
+
     parser.add_argument('repo', help='Github repo', type=str)
     parser.add_argument('run', help='Test to run')
 
@@ -67,7 +70,7 @@ def main():
     print('Working directory is %s' % tempdir)
     try:
         clone_repo(args.repo)
-        config_file = os.path.join(tempdir, 'loads.json')
+        config_file = os.path.join(tempdir, args.config)
 
         with open(config_file) as f:
             config = json.loads(f.read())
