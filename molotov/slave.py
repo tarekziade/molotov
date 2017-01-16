@@ -27,7 +27,7 @@ def install_reqs(reqfile):
                           shell=True)
 
 
-_DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest',
+_DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest.py',
              'users': 1, 'duration': 10}
 
 
