@@ -37,6 +37,7 @@ def run_test(**options):
             options[option] = value
 
     args = namedtuple('Arguments', options.keys())(**options)
+    print('Running molotov with %s' % str(args))
     return run(args)
 
 
