@@ -6,44 +6,50 @@ Simple asyncio-based tool to write load tests.
 
 **molotov** provides:
 
-- a `scenario` decorator that can be used
-  to turn a function into a load test.
-- a **Requests** session wrapper to interact with the
-  HTTP application that's been tested. The session
-  is passed to your functions.
-- a simple command-line runner to run the load test.
+- a `scenario` decorator that can be used to turn a function into a load test.
+- a **Requests** session to interact with the HTTP application.
+- StatsD support
+- a command line to run the load test.
 
 
-To create a load test you simply have to write
-your functions and decorate them.
+Quickstart
+==========
 
-Here's a full working example ::
+To create a load test,  you need to create a Python module with some functions
+decorated with the **scenario** decorator.
+
+The function receives a **session** object and an optional **statsd** one.
+If **statsd** is not activated its value will be None.
+
+Here's a full example ::
 
     from molotov import scenario
 
-    @scenario(5)
-    def scenario_one(session):
+    @scenario(40)
+    def scenario_one(session, statsd):
         res = session.get('https://myapp/api').json()
         assert res['result'] == 'OK'
+        statsd.incr(res.status_code)
 
-    @scenario(30)
-    def scenario_two(session):
+    @scenario(60)
+    def scenario_two(session, statsd):
         somedata = {'OK': 1}
         res = session.post('http://myapp/api', json=somedata)
         assert res.status_code == 200
 
 
-the **scenario** decorator takes one agument which is the
-weight of the test.
+When molotov runs, it creates some workers and each worker runs a sequence
+of functions. To determine which function should be run for each step, the
+worker randomly picks one given their weights.
 
-When molotov runs, it creates some workers and each worker
-runs a sequence of functions. To determine which function
-should be run for each step, the worker randomly picks one
-given their weights.
+In our example, **scenario_two** is picked 60% of the time.
 
-The function receives a **session** object which is
-a custom Requests Session instance that's tooled for
-sending statsd metrics and display info.
+To run the script you can use the module name or its path.
+
+In the example below, the script is executed in quiet mode with 50
+concurrent users for 60 seconds, and stops on the first failure::
+
+    $ molotov molotov/tests/example.py --statsd -u 50 -d 60 -qx
 
 
 

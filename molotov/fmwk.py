@@ -122,8 +122,7 @@ def worker(session, args):
 
     while _now() - start < duration and not _STOP:
         func, args_, kw = _pick_scenario()
-        if session._stats is not None:
-            kw['statsd'] = session._stats
+        kw['statsd'] = session._stats
         try:
             func(session, *args_, **kw)
             if not quiet:
