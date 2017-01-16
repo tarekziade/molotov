@@ -20,6 +20,5 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install flake8 tox
-	$(BIN)/flake8 molotov
+	$(BIN)/pip install tox
 	$(BIN)/tox
