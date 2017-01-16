@@ -26,10 +26,6 @@ def main():
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
 
-    parser.add_argument('-p', '--processes', action='store_true',
-                        default=False,
-                        help='Uses processes instead of threads.')
-
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Verbose')
 
@@ -76,14 +72,8 @@ def run(args):
         sys.exit(1)
 
     res = runner(args)
-    tok, tfailed = 0, 0
-
-    for ok, failed in res:
-        tok += ok
-        tfailed += failed
-
     print('')
-    print('%d OK, %d Failed' % (tok, tfailed))
+    print('%(OK)d OK, %(FAILED)d Failed' % res)
 
 
 if __name__ == '__main__':

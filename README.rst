@@ -61,7 +61,7 @@ the scenario module or path::
 
     $ molotov --help
     usage: molotov [-h] [--statsd] [--statsd-host STATSD_HOST]
-                [--statsd-port STATSD_PORT] [--version] [-p] [-v] [-u USERS]
+                [--statsd-port STATSD_PORT] [--version] [-v] [-u USERS]
                 [-d DURATION] [-q] [-x]
                 scenario
 
@@ -78,7 +78,6 @@ the scenario module or path::
     --statsd-port STATSD_PORT
                             Statsd port.
     --version             Displays version and exits.
-    -p, --processes       Uses processes instead of threads.
     -v, --verbose         Verbose
     -u USERS, --users USERS
                             Number of users

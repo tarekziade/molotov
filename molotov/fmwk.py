@@ -1,11 +1,10 @@
+import asyncio
 import functools
 import random
 import time
 import sys
 import traceback
-from concurrent.futures import (ThreadPoolExecutor, as_completed,
-                                ProcessPoolExecutor)
-
+from concurrent.futures import ThreadPoolExecutor
 import requests as _requests
 import statsd as _statsd
 
@@ -109,20 +108,16 @@ def _now():
     return int(time.time())
 
 
-def worker(session, args):
+def worker(session, results, args):
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
 
     if verbose:
-        if args.processes:
-            sys.stdout.write('[p]')
-        else:
-            sys.stdout.write('[th]')
+        sys.stdout.write('[th]')
         sys.stdout.flush()
 
     count = 1
-    ok = failed = 0
     start = _now()
 
     while _now() - start < duration and not _STOP:
@@ -132,14 +127,16 @@ def worker(session, args):
             func(session, *args_, **kw)
             if not quiet:
                 sys.stdout.write('.')
-            ok += 1
+            results['OK'] += 1
         except Exception as exc:
             if verbose:
                 print(repr(exc))
                 traceback.print_tb(sys.exc_info()[2])
             elif not quiet:
                 sys.stdout.write('-')
-            failed += 1
+
+            results['FAILED'] += 1
+
             if args.exception:
                 if not verbose:
                     print(repr(exc))
@@ -152,51 +149,42 @@ def worker(session, args):
 
     # worker is done
     if verbose:
-        if args.processes:
-            sys.stdout.write('[-p]')
-        else:
-            sys.stdout.write('[-th]')
+        sys.stdout.write('[-th]')
         sys.stdout.flush()
 
-    return ok, failed
 
-
-def runner(args):
-
+def _runner(loop, executor, args, results):
     if args.statsd:
         stats = args.statsd_host, args.statsd_port
     else:
         stats = None
 
     session = Session(verbose=args.verbose, statsd=stats)
-
-    global _STOP
-    if args.processes:
-        executor = ProcessPoolExecutor(max_workers=args.users)
-    else:
-        executor = ThreadPoolExecutor(max_workers=args.users)
-
-    future_to_resp = []
+    tasks = []
 
     for i in range(args.users):
-        future = executor.submit(worker, session, args)
-        future_to_resp.append(future)
+        future = loop.run_in_executor(executor, worker, session, results,
+                                      args)
+        tasks.append(future)
 
-    results = []
+    return asyncio.gather(*tasks)
 
-    def _grab_results():
-        for future in as_completed(future_to_resp):
-            try:
-                results.append(future.result())
-            except Exception as exc:
-                results.append(exc)
 
+def runner(args):
+    global _STOP
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=args.users)
+    results = {'OK': 0, 'FAILED': 0}
+    tasks = _runner(loop, executor, args, results)
     try:
-        _grab_results()
+        loop.run_until_complete(tasks)
     except KeyboardInterrupt:
         _STOP = True
+        tasks.cancel()
         executor.shutdown()
-        _grab_results()
-        print('Bye')
+        loop.run_forever()
+        tasks.exception()
+    finally:
+        loop.close()
 
     return results
