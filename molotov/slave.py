@@ -7,8 +7,8 @@ import tempfile
 import shutil
 from collections import namedtuple
 
-from ailoads import __version__
-from ailoads.run import run
+from molotov import __version__
+from molotov.run import run
 
 
 def clone_repo(github):
@@ -27,8 +27,9 @@ def install_reqs(reqfile):
                           shell=True)
 
 
-_DEFAULTS = {'processes': False, 'verbose': False, 'scenarii': 'loadtest',
-             'users': 1, 'duration': 10}
+_DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest.py',
+             'users': 1, 'duration': 10, 'quiet': False,
+             'statsd': False}
 
 
 def run_test(**options):
@@ -37,6 +38,7 @@ def run_test(**options):
             options[option] = value
 
     args = namedtuple('Arguments', options.keys())(**options)
+    print('Running molotov with %s' % str(args))
     return run(args)
 
 
@@ -51,6 +53,9 @@ def main():
 
     parser.add_argument('--python', type=str, default=sys.executable,
                         help='Python executable.')
+
+    parser.add_argument('--config', type=str, default='molotov.json',
+                        help='Path of the configuration file.')
 
     parser.add_argument('repo', help='Github repo', type=str)
     parser.add_argument('run', help='Test to run')
@@ -67,7 +72,7 @@ def main():
     print('Working directory is %s' % tempdir)
     try:
         clone_repo(args.repo)
-        config_file = os.path.join(tempdir, 'loads.json')
+        config_file = os.path.join(tempdir, args.config)
 
         with open(config_file) as f:
             config = json.loads(f.read())
@@ -76,15 +81,15 @@ def main():
         create_virtualenv(args.virtualenv, args.python)
 
         # install deps
-        if 'requirements' in config['ailoads']:
-            install_reqs(config['ailoads']['requirements'])
+        if 'requirements' in config['molotov']:
+            install_reqs(config['molotov']['requirements'])
 
         # environment
-        if 'env' in config['ailoads']:
-            for key, value in config['ailoads']['env'].items():
+        if 'env' in config['molotov']:
+            for key, value in config['molotov']['env'].items():
                 os.environ[key] = value
 
-        run_test(**config['ailoads']['tests'][args.run])
+        run_test(**config['molotov']['tests'][args.run])
     except Exception:
         os.chdir(curdir)
         shutil.rmtree(tempdir, ignore_errors=True)
