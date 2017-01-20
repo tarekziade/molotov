@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from molotov import __version__
 import sys
 
-install_requires = ['requests', 'statsd']
+install_requires = ['aiohttp', 'statsd']
 description = ''
 
 for file_ in ('README', ):

@@ -29,7 +29,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Verbose')
 
-    parser.add_argument('-u', '--users', help='Number of users',
+    parser.add_argument('-w', '--workers', help='Number of workers',
                         type=int, default=1)
 
     parser.add_argument('-d', '--duration', help='Duration in seconds',

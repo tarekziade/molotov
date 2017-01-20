@@ -1,16 +1,16 @@
+import json
 from molotov import scenario
 
 
 @scenario(5)
 async def scenario_one(session):
-    res = await session.get('http://localhost:5000/api')
-    res = res.json()
-    assert res['result'] == 'OK', res
+    async with session.get('http://127.0.0.1:5000/api') as res:
+        data = await res.json()
+        assert data['result'] == 'OK', data
 
 
 @scenario(30)
 async def scenario_two(session):
-    somedata = {'OK': 1}
-    res = await session.post('http://localhost:5000/api', json=somedata)
-    assert res.status_code == 200
-    await session.statsd_incr('200')
+    somedata = json.dumps({'OK': 1})
+    async with session.post('http://127.0.0.1:5000/api', data=somedata) as res:
+        assert res.status == 200
