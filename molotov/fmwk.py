@@ -5,34 +5,62 @@ import time
 import sys
 import traceback
 
-from aiohttp.client import ClientSession
+from aiohttp.client import ClientSession, ClientRequest
 
 
-def print_request(self, req, stream=sys.stdout):
-    raw = '\n' + req.method + ' ' + req.url
-    if len(req.headers) > 0:
-        headers = '\n'.join('%s: %s' % (k, v) for k, v in
-                            req.headers.items())
-        raw += '\n' + headers
-    if req.body:
-        if isinstance(req.body, bytes):
-            body = str(req.body, 'utf8')
-        else:
-            body = req.body
+class LoggedClientRequest(ClientRequest):
+    session = None
 
-        raw += '\n\n' + body + '\n'
-    stream.write(raw)
+    def send(self, writer, reader):
+        if self.session:
+            info = self.session.print_request(self)
+            asyncio.ensure_future(info)
+        return super(LoggedClientRequest, self).send(writer, reader)
 
 
-def print_response(self, resp, stream=sys.stdout):
-    raw = 'HTTP/1.1 %s %s\n' % (resp.status_code, resp.reason)
-    items = resp.headers.items()
-    headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
-    raw += headers
+class LoggedClientSession(ClientSession):
 
-    if resp.content:
-        raw += '\n\n' + resp.content.decode()
-    stream.write(raw)
+    def __init__(self, loop, stream, verbose=False):
+        super(LoggedClientSession,
+              self).__init__(loop=loop, request_class=LoggedClientRequest)
+        self.stream = stream
+        self.request_class = LoggedClientRequest
+        self.verbose = verbose
+        self.request_class.session = self
+
+    async def _request(self, *args, **kw):
+        resp = await super(LoggedClientSession, self)._request(*args, **kw)
+        if self.verbose:
+            await self.print_response(resp)
+        return resp
+
+    async def print_request(self, req):
+        await self.stream.put('>' * 45)
+        raw = '\n' + req.method + ' ' + str(req.url)
+        if len(req.headers) > 0:
+            headers = '\n'.join('%s: %s' % (k, v) for k, v in
+                                req.headers.items())
+            raw += '\n' + headers
+        if req.body:
+            if isinstance(req.body, bytes):
+                body = str(req.body, 'utf8')
+            else:
+                body = req.body
+
+            raw += '\n\n' + body + '\n'
+        await self.stream.put(raw)
+
+    async def print_response(self, resp):
+        await self.stream.put('\n' + '=' * 45 + '\n')
+        raw = 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
+        items = resp.headers.items()
+        headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
+        raw += headers
+        if resp.content:
+            content = await resp.content.read()
+            raw += '\n\n' + content.decode()
+        await self.stream.put(raw)
+        await self.stream.put('\n' + '<' * 45 + '\n')
 
 
 _SCENARIO = []
@@ -95,7 +123,7 @@ async def step(session, quiet, verbose, exception, stream):
     func, args_, kw = _pick_scenario()
     try:
         await func(session, *args_, **kw)
-        if not quiet:
+        if not quiet and not verbose:
             await stream.put('.')
         return 1
     except asyncio.CancelledError:
@@ -106,7 +134,7 @@ async def step(session, quiet, verbose, exception, stream):
         if verbose:
             await stream.put(repr(exc))
             await stream.put(sys.exc_info()[2])
-        elif not quiet:
+        elif not quiet and not verbose:
             await stream.put('-')
         if exception:
             _STOP = True
@@ -115,7 +143,7 @@ async def step(session, quiet, verbose, exception, stream):
     return -1
 
 
-async def worker(results, args, stream):
+async def worker(loop, results, args, stream):
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -123,7 +151,7 @@ async def worker(results, args, stream):
     count = 1
     start = _now()
 
-    async with ClientSession() as session:
+    async with LoggedClientSession(loop, stream, verbose) as session:
         while _now() - start < duration and not _STOP:
             result = await step(session, quiet, verbose, exception, stream)
             if result == 1:
@@ -143,7 +171,7 @@ def _runner(loop, args, results, stream):
     sys.stdout.write('Preparing %d workers...' % args.workers)
     sys.stdout.flush()
     for i in range(args.workers):
-        future = asyncio.ensure_future(worker(results, args, stream))
+        future = asyncio.ensure_future(worker(loop, results, args, stream))
         tasks.append(future)
     print('OK')
     return tasks
