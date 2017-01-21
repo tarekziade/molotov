@@ -3,6 +3,7 @@ import sys
 import argparse
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
+from concurrent.futures import ProcessPoolExecutor
 
 from molotov.fmwk import runner, get_scenarios
 from molotov import __version__
@@ -33,6 +34,9 @@ def main():
                         help='Verbose')
 
     parser.add_argument('-w', '--workers', help='Number of workers',
+                        type=int, default=1)
+
+    parser.add_argument('-p', '--processes', help='Number of processes',
                         type=int, default=1)
 
     parser.add_argument('-d', '--duration', help='Duration in seconds',
@@ -74,7 +78,19 @@ def run(args):
         print("You can't use -q and -v at the same time")
         sys.exit(1)
 
-    res = runner(args)
+    if args.processes == 1:
+        res = runner(args)
+    else:
+        futures = []
+        with ProcessPoolExecutor(max_workers=args.processes) as executor:
+            for i in range(args.processes):
+                futures.append(executor.submit(runner, args))
+        res = {'FAILED': 0, 'OK': 0}
+        for future in futures:
+            proc_result = future.result()
+            res['FAILED'] += proc_result['FAILED']
+            res['OK'] += proc_result['OK']
+
     print('')
     print('%(OK)d OK, %(FAILED)d Failed' % res)
 

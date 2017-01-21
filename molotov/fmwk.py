@@ -3,6 +3,7 @@ import functools
 import random
 import time
 import sys
+import os
 
 from aiohttp.client import ClientSession, ClientRequest
 
@@ -103,6 +104,10 @@ def _now():
     return int(time.time())
 
 
+def log(msg):
+    print('[%d] %s' % (os.getpid(), msg))
+
+
 async def consume(queue, numworkers):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
@@ -172,12 +177,11 @@ async def worker(loop, results, args, stream):
 
 def _runner(loop, args, results, stream):
     tasks = []
-    sys.stdout.write('Preparing %d workers...' % args.workers)
-    sys.stdout.flush()
+    log('Preparing %d workers...' % args.workers)
     for i in range(args.workers):
         future = asyncio.ensure_future(worker(loop, results, args, stream))
         tasks.append(future)
-    print('OK')
+    log('OK')
     return tasks
 
 
@@ -186,7 +190,7 @@ def runner(args):
     results = {'OK': 0, 'FAILED': 0}
     loop = asyncio.get_event_loop()
     if args.debug:
-        print('**** RUNNING IN DEBUG MODE == SLOW ****')
+        log('**** RUNNING IN DEBUG MODE == SLOW ****')
         loop.set_debug(True)
     stream = asyncio.Queue()
     consumer = asyncio.ensure_future(consume(stream, args.workers))
