@@ -26,6 +26,9 @@ def main():
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
 
+    parser.add_argument('--debug', action='store_true', default=False,
+                        help='Run the event loop in debug mode.')
+
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Verbose')
 

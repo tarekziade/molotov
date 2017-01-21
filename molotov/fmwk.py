@@ -3,7 +3,6 @@ import functools
 import random
 import time
 import sys
-import traceback
 
 from aiohttp.client import ClientSession, ClientRequest
 
@@ -12,7 +11,7 @@ class LoggedClientRequest(ClientRequest):
     session = None
 
     def send(self, writer, reader):
-        if self.session:
+        if self.session and self.verbose:
             info = self.session.print_request(self)
             asyncio.ensure_future(info)
         return super(LoggedClientRequest, self).send(writer, reader)
@@ -25,16 +24,18 @@ class LoggedClientSession(ClientSession):
               self).__init__(loop=loop, request_class=LoggedClientRequest)
         self.stream = stream
         self.request_class = LoggedClientRequest
+        self.request_class.verbose = verbose
         self.verbose = verbose
         self.request_class.session = self
 
     async def _request(self, *args, **kw):
         resp = await super(LoggedClientSession, self)._request(*args, **kw)
-        if self.verbose:
-            await self.print_response(resp)
+        await self.print_response(resp)
         return resp
 
     async def print_request(self, req):
+        if not self.verbose:
+            return
         await self.stream.put('>' * 45)
         raw = '\n' + req.method + ' ' + str(req.url)
         if len(req.headers) > 0:
@@ -51,6 +52,8 @@ class LoggedClientSession(ClientSession):
         await self.stream.put(raw)
 
     async def print_response(self, resp):
+        if not self.verbose:
+            return
         await self.stream.put('\n' + '=' * 45 + '\n')
         raw = 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
         items = resp.headers.items()
@@ -114,6 +117,7 @@ async def consume(queue, numworkers):
         elif isinstance(item, str):
             sys.stdout.write(item)
         else:
+            import traceback
             traceback.print_tb(item, file=sys.stdout)
         sys.stdout.flush()
 
@@ -181,7 +185,9 @@ def runner(args):
     global _STOP
     results = {'OK': 0, 'FAILED': 0}
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    if args.debug:
+        print('**** RUNNING IN DEBUG MODE == SLOW ****')
+        loop.set_debug(True)
     stream = asyncio.Queue()
     consumer = asyncio.ensure_future(consume(stream, args.workers))
     tasks = _runner(loop, args, results, stream)
