@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 from molotov import __version__
 import sys
 
-install_requires = ['aiohttp', 'statsd']
+install_requires = ['aiohttp', 'statsd', 'urwid', 'humanize',
+                    'redis']
 description = ''
 
 for file_ in ('README', ):

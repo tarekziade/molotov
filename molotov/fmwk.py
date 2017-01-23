@@ -1,10 +1,18 @@
+try:
+    import redis
+except ImportError:
+    redis = None
+
+import multiprocessing
 import asyncio
 import functools
 import random
 import time
 import sys
 import os
+from io import StringIO
 
+from molotov.util import log, stream_log
 from aiohttp.client import ClientSession, ClientRequest
 
 
@@ -104,11 +112,70 @@ def _now():
     return int(time.time())
 
 
-def log(msg):
-    print('[%d] %s' % (os.getpid(), msg))
+class LiveResults:
+    def __init__(self, pid=os.getpid()):
+        self.pid = pid
+        self.OK = 0
+        self.FAILED = 0
+        self.last_tb = StringIO()
+        self.stream = StringIO()
+        self.start = _now()
+        if redis is not None:
+            self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        else:
+            self.r = None
+
+    def get_successes(self):
+        if self.pid == os.getpid() or self.r is None:
+            return self.OK
+        res = self.r.get('motolov:%d:OK' % self.pid)
+        if res is None:
+            return 0
+        return int(res)
+
+    def get_failures(self):
+        if self.pid == os.getpid() or self.r is None:
+            return self.FAILED
+        res = self.r.get('motolov:%d:FAILED' % self.pid)
+        if res is None:
+            return 0
+        return int(res)
+
+    def incr_success(self):
+        self.OK += 1
+        self.r.incr('motolov:%d:OK' % os.getpid())
+
+    def incr_failure(self):
+        self.FAILED += 1
+        self.r.incr('motolov:%d:FAILED' % os.getpid())
+
+    def howlong(self):
+        return _now() - self.start
+
+    def __str__(self):
+        # XXX display TB or Stream
+        stream = self.stream.read()
+        if stream != '':
+            return stream
+
+        last_tb = self.last_tb.read()
+        if last_tb != '':
+            return last_tb
+
+        return 'SUCCESSES: %s | FAILURES: %s' % (self.get_successes(),
+                                                 self.get_failures())
 
 
-async def consume(queue, numworkers):
+_GLOBAL = {}
+
+
+def get_live_results(pid=os.getpid()):
+    if pid not in _GLOBAL:
+        _GLOBAL[pid] = LiveResults(pid)
+    return _GLOBAL[pid]
+
+
+async def consume(queue, numworkers, console=False):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
         try:
@@ -119,12 +186,33 @@ async def consume(queue, numworkers):
             worker_stopped += 1
         elif item == 'STOP':
             break
+
         elif isinstance(item, str):
-            sys.stdout.write(item)
+            if not console:
+                results = get_live_results()
+                if item == '.':
+                    results.incr_success()
+                elif item == '-':
+                    results.incr_failure()
+                else:
+                    results.stream.write(item)
+            else:
+                sys.stdout.write(item)
         else:
+            if not console:
+                file = results.last_tb
+            else:
+                file = sys.stdout
+
             import traceback
-            traceback.print_tb(item, file=sys.stdout)
-        sys.stdout.flush()
+            traceback.print_tb(item, file=file)
+
+        if console:
+            sys.stdout.flush()
+
+
+def ui_updater(procid, *args):
+    return get_live_results(procid)
 
 
 async def step(session, quiet, verbose, exception, stream):
@@ -152,6 +240,9 @@ async def step(session, quiet, verbose, exception, stream):
     return -1
 
 
+_HOWLONG = 0
+
+
 async def worker(loop, results, args, stream):
     quiet = args.quiet
     duration = args.duration
@@ -159,9 +250,11 @@ async def worker(loop, results, args, stream):
     exception = args.exception
     count = 1
     start = _now()
+    howlong = 0
 
     async with LoggedClientSession(loop, stream, verbose) as session:
-        while _now() - start < duration and not _STOP:
+        while howlong < duration and not _STOP:
+            howlong = _now() - start
             result = await step(session, quiet, verbose, exception, stream)
             if result == 1:
                 results['OK'] += 1
@@ -177,26 +270,33 @@ async def worker(loop, results, args, stream):
 
 def _runner(loop, args, results, stream):
     tasks = []
-    log('Preparing %d workers...' % args.workers)
-    for i in range(args.workers):
-        future = asyncio.ensure_future(worker(loop, results, args, stream))
-        tasks.append(future)
-    log('OK')
+    with stream_log('Preparing %d workers' % args.workers):
+        for i in range(args.workers):
+            future = asyncio.ensure_future(worker(loop, results, args, stream))
+            tasks.append(future)
+
     return tasks
 
 
-def runner(args):
+def _process(args):
     global _STOP
-    results = {'OK': 0, 'FAILED': 0}
-    loop = asyncio.get_event_loop()
+
+    if args.processes > 1:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    else:
+        loop = asyncio.get_event_loop()
+
     if args.debug:
         log('**** RUNNING IN DEBUG MODE == SLOW ****')
         loop.set_debug(True)
+
+    results = {'OK': 0, 'FAILED': 0}
     stream = asyncio.Queue()
-    consumer = asyncio.ensure_future(consume(stream, args.workers))
+    consumer = asyncio.ensure_future(consume(stream, args.workers,
+                                     args.console))
     tasks = _runner(loop, args, results, stream)
     tasks = asyncio.gather(*tasks, loop=loop, return_exceptions=True)
-
     try:
         loop.run_until_complete(tasks)
         loop.run_until_complete(consumer)
@@ -207,5 +307,75 @@ def runner(args):
         loop.run_until_complete(tasks)
     finally:
         loop.close()
+    return results
 
+
+_PIDTOINT = {}
+_INTTOPID = {}
+
+
+def _launch_processes(args, screen):
+    if args.processes > 1:
+        log('Forking %d processes' % args.processes, pid=False)
+        result_queue = multiprocessing.Queue()
+        ui = None
+
+        def _pprocess(result_queue):
+            result_queue.put(_process(args))
+
+        try:
+            jobs = []
+            for i in range(args.processes):
+                p = multiprocessing.Process(target=_pprocess,
+                                            args=(result_queue,))
+                jobs.append(p)
+                p.start()
+                _PIDTOINT[p.pid] = i
+                _INTTOPID[i] = p.pid
+
+            if screen is not None and not args.console:
+                if args.processes == 1:
+                    pids = [os.getpid()]
+                else:
+                    pids = [job.pid for job in jobs]
+                ui = screen(pids, ui_updater)
+                ui.run()
+            for job in jobs:
+                job.join()
+        except KeyboardInterrupt:
+            pass
+
+        results = {'FAILED': 0, 'OK': 0}
+
+        if ui is not None:
+            ui.stop()
+
+        for job in jobs:
+            proc_result = result_queue.get()
+            results['FAILED'] += proc_result['FAILED']
+            results['OK'] += proc_result['OK']
+    else:
+        if screen is not None and not args.console:
+            loop = asyncio.get_event_loop()
+            ui = screen([os.getpid()], ui_updater, loop)
+            ui.start()
+
+        else:
+            ui = None
+        try:
+            results = _process(args)
+        except KeyboardInterrupt:
+            pass
+
+        if ui is not None:
+            ui.stop()
+
+    return results
+
+
+def runner(args, screen=None):
+    global _STOP
+    global _GLOBAL
+    args.mainpid = os.getpid()
+    results = _launch_processes(args, screen)
     return results
