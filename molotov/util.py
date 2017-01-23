@@ -59,6 +59,6 @@ def resolve(url):
         host += ':%d' % port
         original += ':%d' % port
 
-    new = urlunparse(parts.scheme, netloc, parts.path or '', '',
-                     parts.query or '', parts.fragment or '')
+    new = urlunparse((parts.scheme, netloc, parts.path or '', '',
+                      parts.query or '', parts.fragment or ''))
     return new, original, host
