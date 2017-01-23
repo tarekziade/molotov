@@ -11,8 +11,9 @@ import time
 import sys
 import os
 from io import StringIO
+from socket import gaierror
 
-from molotov.util import log, stream_log
+from molotov.util import log, stream_log, resolve
 from aiohttp.client import ClientSession, ClientRequest
 
 
@@ -37,7 +38,17 @@ class LoggedClientSession(ClientSession):
         self.verbose = verbose
         self.request_class.session = self
 
+    def _dns_lookup(self, url):
+        try:
+            url, original, resolved = resolve(url)
+        except gaierror as e:
+            pass
+        return url
+
     async def _request(self, *args, **kw):
+        args = list(args)
+        args[1] = self._dns_lookup(args[1])
+        args = tuple(args)
         resp = await super(LoggedClientSession, self)._request(*args, **kw)
         await self.print_response(resp)
         return resp
@@ -170,6 +181,8 @@ _GLOBAL = {}
 
 
 def get_live_results(pid=os.getpid()):
+    if _STOP:
+        raise OSError('Stopped')
     if pid not in _GLOBAL:
         _GLOBAL[pid] = LiveResults(pid)
     return _GLOBAL[pid]
@@ -315,6 +328,8 @@ _INTTOPID = {}
 
 
 def _launch_processes(args, screen):
+    results = {'FAILED': 0, 'OK': 0}
+
     if args.processes > 1:
         log('Forking %d processes' % args.processes, pid=False)
         result_queue = multiprocessing.Queue()
@@ -340,12 +355,11 @@ def _launch_processes(args, screen):
                     pids = [job.pid for job in jobs]
                 ui = screen(pids, ui_updater)
                 ui.run()
+
             for job in jobs:
                 job.join()
         except KeyboardInterrupt:
             pass
-
-        results = {'FAILED': 0, 'OK': 0}
 
         if ui is not None:
             ui.stop()
@@ -362,6 +376,7 @@ def _launch_processes(args, screen):
 
         else:
             ui = None
+
         try:
             results = _process(args)
         except KeyboardInterrupt:

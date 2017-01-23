@@ -10,7 +10,7 @@ def unhandled(key):
 
 palette = [
     ('header', 'white', 'dark gray'),
-    ('body', 'black', 'light gray'),
+    ('body', 'black', 'white'),
     ('footer', 'white', 'dark gray')]
 
 
@@ -20,19 +20,23 @@ def process_box(procid, refresh=None, loop=None):
         try:
             results = refresh(procid)
         except Exception:
+            loop.stop()
             return
+
         body.set_text(str(results))
         duration = 'Started %s.' % naturaltime(results.howlong())
-        footer.set_text(duration)
+        footer.base_widget.set_text(duration)
         updater = partial(update_box, body, footer, refresh)
         loop.set_alarm_in(1, updater)
 
-    header = urwid.Text('Process [%d]' % procid)
+    header = urwid.Padding(urwid.Text('Process [%d]' % procid), left=1)
     header = urwid.AttrWrap(header, 'header')
-    body = urwid.AttrWrap(urwid.Text(''), 'body')
-    footer = urwid.Text('')
+    body = urwid.AttrWrap(urwid.Text('', align='center'), 'body')
+    footer = urwid.Padding(urwid.Text(''), left=1)
     footer = urwid.AttrWrap(footer, 'footer')
-    frame = urwid.Pile([('pack', header), body, ('pack', footer)])
+    divider = urwid.Divider()
+    frame = urwid.Pile([('pack', header), divider, body, divider,
+                        ('pack', footer)])
 
     updater = partial(update_box, body, footer, refresh)
     return frame, updater
@@ -48,7 +52,7 @@ def init_screen(procs, updater, loop=None):
         widgets.append(widget)
         updaters.append(updating)
 
-    main_widget = urwid.GridFlow(cells=widgets, cell_width=30, h_sep=1,
+    main_widget = urwid.GridFlow(cells=widgets, cell_width=35, h_sep=1,
                                  v_sep=1, align='left')
     main_widget = urwid.Filler(main_widget, 'top')
 
