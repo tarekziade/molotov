@@ -2,14 +2,31 @@
 molotov
 =======
 
-Simple asyncio-based tool to write load tests.
+Simple Python 3.5+ based tool to write load tests.
+
+Uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
+and `aiohttp.client <http://aiohttp.readthedocs.io/en/stable/client.html>`_
 
 **molotov** provides:
 
-- a `scenario` decorator that can be used to turn a function into a load test.
-- a **Requests** session to interact with the HTTP application.
-- StatsD support
+- a **scenario** decorator that can be used to turn a function into a load test.
+- a **aiohttp.client** session to interact with the HTTP application.
 - a command line to run the load test.
+- an optional curses interface
+
+**motolov** runs each scenario inside a coroutine (==a worker). You can
+spawn as many routines as you want to increase concurrency. If your scenarios
+just contains network calls, you can spin up a few hundreds workers to
+generate some pretty good load.
+
+If you reach a peak and you want more load, **motolov** can also run several
+processes, each one running its coroutines separately. For instance if you
+run 10 processes and 100 coroutines, that will generate a load of 1000
+coroutines spread across 10 separate processes.
+
+Of course, unlike coroutines running in the same process, each forked process
+will have its own memory space. If your scenario share some state, you need
+to take this into account in your design.
 
 
 Quickstart
@@ -18,25 +35,24 @@ Quickstart
 To create a load test, you need to create a Python module with some functions
 decorated with the **scenario** decorator.
 
-The function receives a **session** object inherited from Requests, and that
-has a few extra methods like **statsd_timer** and **statsd_incr** that can
-be used to send metrics to StatsD.
+The function receives a **session** object inherited from **aiohttp.ClientSession**.
 
 Here's a full example ::
 
+    import json
     from molotov import scenario
 
     @scenario(40)
     async def scenario_one(session):
-        res = await session.get('https://myapp/api').json()
-        assert res['result'] == 'OK'
-        await session.statsd_incr(res.status_code)
+        with await session.get('https://myapp/api') as resp:
+            res = await resp.json()
+            assert res['result'] == 'OK'
 
     @scenario(60)
     async def scenario_two(session):
-        somedata = {'OK': 1}
-        res = await session.post('http://myapp/api', json=somedata)
-        assert res.status_code == 200
+        somedata = json.dumps({'OK': 1})
+        with await session.post('http://myapp/api', data=somedata) as resp:
+            assert resp.status_code == 200
 
 
 When molotov runs, it creates some workers and each worker runs a sequence
@@ -50,7 +66,7 @@ To run the script you can use the module name or its path.
 In the example below, the script is executed in quiet mode with 50
 concurrent users for 60 seconds, and stops on the first failure::
 
-    $ molotov molotov/tests/example.py --statsd -u 50 -d 60 -qx
+    $ molotov molotov/tests/example.py --statsd -w 50 -d 60 -qx
 
 
 
@@ -60,10 +76,11 @@ Runner
 To run a test, use the **molotov** runner and point it to
 the scenario module or path::
 
-    $ molotov --help
+
+    $ bin/molotov --help
     usage: molotov [-h] [--statsd] [--statsd-host STATSD_HOST]
-                [--statsd-port STATSD_PORT] [--version] [-v] [-u USERS]
-                [-d DURATION] [-q] [-x]
+                [--statsd-port STATSD_PORT] [--version] [--debug] [-v]
+                [-w WORKERS] [-p PROCESSES] [-d DURATION] [-q] [-x] [-c]
                 scenario
 
     Load test.
@@ -79,31 +96,17 @@ the scenario module or path::
     --statsd-port STATSD_PORT
                             Statsd port.
     --version             Displays version and exits.
+    --debug               Run the event loop in debug mode.
     -v, --verbose         Verbose
-    -u USERS, --users USERS
-                            Number of users
+    -w WORKERS, --workers WORKERS
+                            Number of workers
+    -p PROCESSES, --processes PROCESSES
+                            Number of processes
     -d DURATION, --duration DURATION
                             Duration in seconds
     -q, --quiet           Quiet
     -x, --exception       Stop on first failure.
-
-
-When the runner is launched with **--statsd**, some requests metrics are sent
-through statsd:
-
-- a timer: molotov.{method}.{url}
-- a increment: motolov.request
-
-The statsd client in this case is also passed to the scenario as a keyword
-so you can add custom statsd calls.
-
-Example::
-
-    @scenario(30)
-    async def scenario_two(session):
-        somedata = {'OK': 1}
-        res = await session.post('http://myapp/api', json=somedata)
-        await session.statsd_incr(res.status_code)
+    -c, --console         Use simple console for feedback
 
 
 Running from a git repo
@@ -155,7 +158,7 @@ Example::
        "env": {"SERVER_URL": "http://aserver.net"},
        "tests": {
          "test": {"duration": 30},
-         "test-heavy": {"duration": 300, "users": 10}
+         "test-heavy": {"duration": 300, "workers": 10}
        }
      }
     }
