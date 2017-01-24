@@ -1,3 +1,4 @@
+import signal
 try:
     import redis
 except ImportError:
@@ -14,6 +15,8 @@ from io import StringIO
 
 from molotov.util import log, stream_log, resolve
 from aiohttp.client import ClientSession, ClientRequest
+
+import urwid   # meh..
 
 
 class LoggedClientRequest(ClientRequest):
@@ -197,7 +200,10 @@ async def consume(queue, numworkers, console=False):
 
         elif isinstance(item, str):
             if not console:
-                results = get_live_results()
+                try:
+                    results = get_live_results()
+                except OSError:
+                    break
                 if item == '.':
                     results.incr_success()
                 elif item == '-':
@@ -288,8 +294,9 @@ def _runner(loop, args, results, stream):
 
 def _process(args):
     global _STOP
-
     if args.processes > 1:
+        signal.signal(signal.SIGINT, _shutdown)
+        signal.signal(signal.SIGTERM, _shutdown)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     else:
@@ -305,25 +312,48 @@ def _process(args):
                                      args.console))
     tasks = _runner(loop, args, results, stream)
     tasks = asyncio.gather(*tasks, loop=loop, return_exceptions=True)
+
+    _TASKS.append(tasks)
+    _TASKS.append(consumer)
     try:
         loop.run_until_complete(tasks)
         loop.run_until_complete(consumer)
-    except (KeyboardInterrupt, asyncio.CancelledError):
+    except asyncio.CancelledError:
         _STOP = True
         consumer.cancel()
         tasks.cancel()
         loop.run_until_complete(tasks)
     finally:
         loop.close()
+        _TASKS.remove(tasks)
+        _TASKS.remove(consumer)
+
     return results
 
 
 _PIDTOINT = {}
 _INTTOPID = {}
 
+_PROCESSES = []
+_TASKS = []
+
+
+def _shutdown(signal, frame):
+    global _STOP
+    _STOP = True
+
+    for task in _TASKS:
+        task.cancel()
+
+    # send sigterms
+    for proc in _PROCESSES:
+        proc.terminate()
+
 
 def _launch_processes(args, screen):
     results = {'FAILED': 0, 'OK': 0}
+    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGTERM, _shutdown)
 
     if args.processes > 1:
         log('Forking %d processes' % args.processes, pid=False)
@@ -333,31 +363,37 @@ def _launch_processes(args, screen):
         def _pprocess(result_queue):
             result_queue.put(_process(args))
 
-        try:
-            jobs = []
-            for i in range(args.processes):
-                p = multiprocessing.Process(target=_pprocess,
-                                            args=(result_queue,))
-                jobs.append(p)
-                p.start()
-                _PIDTOINT[p.pid] = i
-                _INTTOPID[i] = p.pid
+        jobs = []
+        for i in range(args.processes):
+            p = multiprocessing.Process(target=_pprocess,
+                                        args=(result_queue,))
+            jobs.append(p)
+            p.start()
+            _PIDTOINT[p.pid] = i
+            _INTTOPID[i] = p.pid
 
-            if screen is not None and not args.console:
-                if args.processes == 1:
-                    pids = [os.getpid()]
-                else:
-                    pids = [job.pid for job in jobs]
-                ui = screen(pids, ui_updater)
-                ui.run()
+        for job in jobs:
+            _PROCESSES.append(job)
 
-            for job in jobs:
-                job.join()
-        except KeyboardInterrupt:
-            pass
+        if screen is not None and not args.console:
+            if args.processes == 1:
+                pids = [os.getpid()]
+            else:
+                pids = [job.pid for job in jobs]
 
-        if ui is not None:
-            ui.stop()
+            ui = screen(pids, ui_updater)
+
+            def check_procs(*args):
+                dead = [not p.is_alive() for p in _PROCESSES]
+                if all(dead):
+                    raise urwid.ExitMainLoop()
+
+            ui.set_alarm_in(1, check_procs)
+            ui.run()
+
+        for job in jobs:
+            job.join()
+            _PROCESSES.remove(job)
 
         for job in jobs:
             proc_result = result_queue.get()
@@ -372,10 +408,7 @@ def _launch_processes(args, screen):
         else:
             ui = None
 
-        try:
-            results = _process(args)
-        except KeyboardInterrupt:
-            pass
+        results = _process(args)
 
         if ui is not None:
             ui.stop()

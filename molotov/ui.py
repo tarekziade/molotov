@@ -19,8 +19,11 @@ def process_box(procid, refresh=None, loop=None):
     def update_box(body, footer, refresh, loop, *args):
         try:
             results = refresh(procid)
-        except Exception:
-            loop.stop()
+        except OSError:
+            def _stop(*args):
+                raise urwid.ExitMainLoop()
+
+            loop.set_alarm_in(.1, _stop)
             return
 
         body.set_text(str(results))
