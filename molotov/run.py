@@ -65,6 +65,7 @@ def main():
 
 
 def run(args):
+    log('**** Molotov v%s. Happy breaking! ****' % __version__, pid=None)
     if os.path.exists(args.scenario):
         spec = spec_from_file_location("loadtest", args.scenario)
         module = module_from_spec(spec)

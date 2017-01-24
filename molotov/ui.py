@@ -1,5 +1,6 @@
 from functools import partial
 from humanize import naturaltime
+from molotov import __version__
 import urwid
 
 
@@ -55,15 +56,21 @@ def init_screen(procs, updater, loop=None):
         widgets.append(widget)
         updaters.append(updating)
 
+    main_header = urwid.Text('Molotov v%s - Happy Breaking !' % __version__)
+    main_footer = urwid.Text('Use Ctrl+C to quit')
+    divider = urwid.Divider()
+
     main_widget = urwid.GridFlow(cells=widgets, cell_width=35, h_sep=1,
                                  v_sep=1, align='left')
-    main_widget = urwid.Filler(main_widget, 'top')
+
+    screen = urwid.Pile([main_header, divider, main_widget, divider, main_footer])
+    screen = urwid.Filler(screen, 'top')
 
     if loop is not None:
         loop = urwid.AsyncioEventLoop(loop=loop)
 
     urwid_loop = urwid.MainLoop(
-            main_widget,
+            screen,
             palette,
             event_loop=loop,
             unhandled_input=unhandled,
