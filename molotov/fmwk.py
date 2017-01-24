@@ -11,7 +11,6 @@ import time
 import sys
 import os
 from io import StringIO
-from socket import gaierror
 
 from molotov.util import log, stream_log, resolve
 from aiohttp.client import ClientSession, ClientRequest
@@ -39,11 +38,7 @@ class LoggedClientSession(ClientSession):
         self.request_class.session = self
 
     def _dns_lookup(self, url):
-        try:
-            url, original, resolved = resolve(url)
-        except gaierror as e:
-            pass
-        return url
+        return resolve(url)[0]
 
     async def _request(self, *args, **kw):
         args = list(args)

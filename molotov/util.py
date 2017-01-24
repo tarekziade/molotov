@@ -1,3 +1,4 @@
+import socket
 import os
 import sys
 from contextlib import contextmanager
@@ -31,29 +32,49 @@ _DNS_CACHE = {}
 def resolve(url):
     parts = urlparse(url)
 
-    if ':' in parts.netloc:
-        host = parts.netloc.split(':')[0]
+    if '@' in parts.netloc:
+        username, password = parts.username, parts.password
+        netloc = parts.netloc.split('@', 1)[1]
     else:
-        host = parts.netloc
+        username, password = None, None
+        netloc = parts.netloc
 
+    if ':' in netloc:
+        host = netloc.split(':')[0]
+    else:
+        host = netloc
+
+    port_provided = False
     if not parts.port and parts.scheme == 'https':
         port = 443
     elif not parts.port and parts.scheme == 'http':
         port = 80
     else:
         port = parts.port
+        port_provided = True
 
     original = host
+    resolved = None
     if host in _DNS_CACHE:
         resolved = _DNS_CACHE[host]
     else:
-        resolved = gethostbyname(host)
-        _DNS_CACHE[host] = resolved
+        try:
+            resolved = gethostbyname(host)
+            _DNS_CACHE[host] = resolved
+        except socket.gaierror:
+            return url, original, host
 
     # Don't use a resolved hostname for SSL requests otherwise the
     # certificate will not match the IP address (resolved)
     host = resolved if parts.scheme != 'https' else host
-    netloc = '%s:%d' % (host, port) if port else host
+    netloc = host
+    if port_provided:
+        netloc += ':%d' % port
+    if username is not None:
+        if password is not None:
+            netloc = '%s:%s@%s' % (username, password, netloc)
+        else:
+            netloc = '%s@%s' % (username, netloc)
 
     if port not in (443, 80):
         host += ':%d' % port
