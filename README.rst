@@ -2,6 +2,8 @@
 molotov
 =======
 
+**PROTOTYPE, DO NOT USE**
+
 Simple Python 3.5+ based tool to write load tests.
 
 Uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
