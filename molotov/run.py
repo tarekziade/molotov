@@ -84,6 +84,10 @@ def run(args):
         print("You can't use -q and -v at the same time")
         sys.exit(1)
 
+    if args.verbose and not args.console:
+        print("You have to be in console mode (-c) to use -v")
+        sys.exit(1)
+
     res = runner(args, screen=ui.init_screen)
     log('', pid=False)
     log('%(OK)d OK, %(FAILED)d Failed' % res, pid=False)
