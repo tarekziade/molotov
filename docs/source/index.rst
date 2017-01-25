@@ -1,5 +1,5 @@
-Welcome to Molotov's documentation!
-===================================
+Molotov
+=======
 
 Simple Python 3.5+ based tool to write load tests.
 
