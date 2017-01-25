@@ -1,12 +1,10 @@
 import signal
 import multiprocessing
 import asyncio
-import functools
 import random
 import time
 import sys
 import os
-
 
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session

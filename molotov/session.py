@@ -17,7 +17,8 @@ class LoggedClientSession(ClientSession):
 
     def __init__(self, loop, stream, verbose=False, **kw):
         super(LoggedClientSession,
-              self).__init__(loop=loop, request_class=LoggedClientRequest, **kw)
+              self).__init__(loop=loop, request_class=LoggedClientRequest,
+                             **kw)
         self.stream = stream
         self.request_class = LoggedClientRequest
         self.request_class.verbose = verbose

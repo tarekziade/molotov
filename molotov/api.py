@@ -31,7 +31,7 @@ def get_setup():
 def setup():
     def _setup(func, *args, **kw):
         if len(_SETUP) > 0:
-             raise ValueError("You can't have two setup functions")
+            raise ValueError("You can't have two setup functions")
 
         _SETUP.append(func)
 
