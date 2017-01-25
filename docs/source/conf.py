@@ -84,12 +84,36 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
+highlight_language = 'python3'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'logo': 'logo.png',
+    'description': 'Load Testing Tool',
+    'github_user': 'loads',
+    'github_repo': 'molotov',
+    'github_button': True,
+    'github_type': 'star',
+    'github_banner': True,
+    'travis_button': True,
+    'pre_bg': '#FFF6E5',
+    'note_bg': '#E5ECD1',
+    'note_border': '#BFCF8C',
+    'body_text': '#482C0A',
+    'sidebar_text': '#49443E',
+    'sidebar_header': '#4B4032',
+}
+
+
+html_sidebars = {
+    '**': [
+        'about.html', 'navigation.html', 'searchbox.html',
+    ]
+}
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
