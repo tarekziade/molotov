@@ -63,7 +63,9 @@ In our example, **scenario_two** is picked 60% of the time.
 To run the script you can use the module name or its path.
 
 In the example below, the script is executed in quiet mode with 50
-concurrent users for 60 seconds, and stops on the first failure::
+concurrent users for 60 seconds, and stops on the first failure:
+
+.. code-block:: bash
 
     $ molotov molotov/tests/example.py --statsd -w 50 -d 60 -qx
 
@@ -73,10 +75,12 @@ Runner
 ======
 
 To run a test, use the **molotov** runner and point it to
-the scenario module or path::
+the scenario module or path:
 
 
-    $ bin/molotov --help
+.. code-block:: bash
+
+    $ molotov --help
     usage: molotov [-h] [--statsd] [--statsd-host STATSD_HOST]
                 [--statsd-port STATSD_PORT] [--version] [--debug] [-v]
                 [-w WORKERS] [-p PROCESSES] [-d DURATION] [-q] [-x] [-c]
@@ -137,7 +141,9 @@ In the following example, two tests are defined, **test** and **test-heavy**::
 Once you have that file on the top of you repository you can directly run
 it using **molotov**, with the **moloslave** command.
 
-Example::
+Example:
+
+.. code-block:: bash
 
     $ moloslave https://github.com/tarekziade/shavar-loadtests test
 
@@ -150,7 +156,9 @@ There are also two global options you can use to run the test:
 - **env**: mapping containing environment variables that will be
   set prior to the test
 
-Example::
+Example:
+
+.. code-block:: json
 
     {"molotov": {
        "requirements": "requirements.txt",
