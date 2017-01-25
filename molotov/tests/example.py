@@ -13,7 +13,7 @@ async def init_test(args):
 
 @scenario(40)
 async def scenario_one(session):
-    with await session.get(_API) as resp:
+    async with session.get(_API) as resp:
         res = await resp.json()
         assert res['result'] == 'OK'
 
@@ -21,5 +21,5 @@ async def scenario_one(session):
 @scenario(60)
 async def scenario_two(session):
     somedata = json.dumps({'OK': 1})
-    with await session.post(_API, data=somedata) as resp:
-        assert resp.status_code == 200
+    async with session.post(_API, data=somedata) as resp:
+        assert resp.status == 200
