@@ -1,5 +1,11 @@
 import json
-from molotov import scenario
+from molotov import scenario, setup
+
+
+@setup()
+async def _setup(args):
+    headers = {'SomeHeader': '2'}
+    return {'headers': headers}
 
 
 @scenario(5)

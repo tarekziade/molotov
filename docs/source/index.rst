@@ -26,14 +26,20 @@ Quickstart
 To create a load test, you need to create a Python module with some functions
 decorated with the **scenario** decorator.
 
-The function receives a **session** object inherited from **aiohttp.ClientSession**.
+When executed, the function receives a **session** object inherited
+from **aiohttp.ClientSession**.
 
 Here's a full example ::
 
     import json
-    from molotov import scenario
+    from molotov import scenario, setup
 
     _API = 'https://myapp/api'
+
+    @setup()
+    async def init_test(args):
+        headers = {'SomeHeader': '1'}
+        return {'headers': headers}
 
     @scenario(40)
     async def scenario_one(session):
@@ -47,6 +53,12 @@ Here's a full example ::
         with await session.post(_API, data=somedata) as resp:
             assert resp.status_code == 200
 
+
+When a function is decorated with the :func:`setup` decorator, it will be
+called with the command-line arguments and needs to send back a dict.
+This dict will be passed to the :class:`ClientSession` class when it's
+created. This is useful when you need to setup session-wide options
+like Authorization headers, or do whatever you need on startup.
 
 When molotov runs, it creates some workers (coroutines) that will
 run scenarii indefinitely until the test is done. A test is done

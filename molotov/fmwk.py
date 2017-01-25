@@ -9,36 +9,22 @@ import os
 
 
 from molotov.util import log, stream_log
-from molotov.session import LoggedClientSession
+from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults
+from molotov.api import get_scenarios, get_setup
+
 import urwid   # meh..
 
 
-_SCENARIO = []
 _STOP = False
 
 
-def get_scenarios():
-    return _SCENARIO
-
-
-def scenario(weight):
-    def _scenario(func, *args, **kw):
-        _SCENARIO.append((weight, func, args, kw))
-
-        @functools.wraps(func)
-        def __scenario():
-            return func(*args, **kw)
-        return __scenario
-
-    return _scenario
-
-
 def _pick_scenario():
-    total = sum(item[0] for item in _SCENARIO)
+    scenarios = get_scenarios()
+    total = sum(item[0] for item in scenarios)
     selection = random.uniform(0, total)
     upto = 0
-    for item in _SCENARIO:
+    for item in scenarios:
         weight = item[0]
         if upto + item[0] > selection:
             func, args, kw = item[1:]
@@ -141,8 +127,23 @@ async def worker(loop, results, args, stream):
     count = 1
     start = _now()
     howlong = 0
+    setup = get_setup()
+    if setup is not None:
+        with stream_log("Setting up a worker"):
+            try:
+                options = await setup(args)
+            except Exception as e:
+                log(e)
+                await stream.put('WORKER_STOPPED')
+                return
+            if not isinstance(options, dict):
+                log('The setup function needs to return a dict')
+                await stream.put('WORKER_STOPPED')
+                return
+    else:
+        options = {}
 
-    async with LoggedClientSession(loop, stream, verbose) as session:
+    async with Session(loop, stream, verbose, **options) as session:
         while howlong < duration and not _STOP:
             howlong = _now() - start
             result = await step(session, quiet, verbose, exception, stream)

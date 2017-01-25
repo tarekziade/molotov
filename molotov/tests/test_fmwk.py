@@ -1,5 +1,7 @@
 import unittest
-from molotov.fmwk import scenario, _pick_scenario
+
+from molotov import scenario
+from molotov.fmwk import _pick_scenario
 
 
 class TestFmwk(unittest.TestCase):

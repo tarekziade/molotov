@@ -1,5 +1,5 @@
 try:
-    from molotov.fmwk import scenario               # NOQA
+    from molotov.api import scenario, setup      # NOQA
 except ImportError:
     pass   # first import
 
