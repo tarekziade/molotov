@@ -6,19 +6,22 @@ INSTALL = $(BIN)/pip install --no-deps
 BUILD_DIRS = bin build include lib lib64 man share
 
 
-.PHONY: all test build clean
+.PHONY: all test build clean docs
 
 all: build
 
 $(PYTHON):
-	virtualenv $(VTENV_OPTS) .
+	virtualenv-3.5 $(VTENV_OPTS) .
 
 build: $(PYTHON)
 	$(PYTHON) setup.py develop
+	$(BIN)/pip install tox
 
 clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install tox
-	$(BIN)/tox
+	$(BIN)/tox -e py35
+
+docs:  build
+	$(BIN)/tox -e docs
