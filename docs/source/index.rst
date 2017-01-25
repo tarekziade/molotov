@@ -29,30 +29,9 @@ decorated with the **scenario** decorator.
 When executed, the function receives a **session** object inherited
 from **aiohttp.ClientSession**.
 
-Here's a full example ::
+Here's a full example :
 
-    import json
-    from molotov import scenario, setup
-
-    _API = 'https://myapp/api'
-
-    @setup()
-    async def init_test(args):
-        headers = {'SomeHeader': '1'}
-        return {'headers': headers}
-
-    @scenario(40)
-    async def scenario_one(session):
-        with await session.get(_API) as resp:
-            res = await resp.json()
-            assert res['result'] == 'OK'
-
-    @scenario(60)
-    async def scenario_two(session):
-        somedata = json.dumps({'OK': 1})
-        with await session.post(_API, data=somedata) as resp:
-            assert resp.status_code == 200
-
+.. literalinclude:: ../../molotov/tests/example.py
 
 When a function is decorated with the :func:`setup` decorator, it will be
 called with the command-line arguments and needs to send back a dict.
