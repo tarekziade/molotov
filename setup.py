@@ -18,7 +18,7 @@ classifiers = ["Programming Language :: Python",
 
 setup(name='molotov',
       version=__version__,
-      url='https://github.com/tarekziade/molotov',
+      url='https://github.com/loads/molotov',
       packages=find_packages(),
       long_description=description,
       description=("AsyncIO Loads client"),

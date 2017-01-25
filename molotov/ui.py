@@ -63,7 +63,8 @@ def init_screen(procs, updater, loop=None):
     main_widget = urwid.GridFlow(cells=widgets, cell_width=35, h_sep=1,
                                  v_sep=1, align='left')
 
-    screen = urwid.Pile([main_header, divider, main_widget, divider, main_footer])
+    screen = urwid.Pile([main_header, divider, main_widget, divider,
+                         main_footer])
     screen = urwid.Filler(screen, 'top')
 
     if loop is not None:

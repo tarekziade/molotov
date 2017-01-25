@@ -1,9 +1,4 @@
 import signal
-try:
-    import redis
-except ImportError:
-    redis = None
-
 import multiprocessing
 import asyncio
 import functools
@@ -11,77 +6,12 @@ import random
 import time
 import sys
 import os
-from io import StringIO
 
-from molotov.util import log, stream_log, resolve
-from aiohttp.client import ClientSession, ClientRequest
 
+from molotov.util import log, stream_log
+from molotov.session import LoggedClientSession
+from molotov.result import LiveResults
 import urwid   # meh..
-
-
-class LoggedClientRequest(ClientRequest):
-    session = None
-
-    def send(self, writer, reader):
-        if self.session and self.verbose:
-            info = self.session.print_request(self)
-            asyncio.ensure_future(info)
-        return super(LoggedClientRequest, self).send(writer, reader)
-
-
-class LoggedClientSession(ClientSession):
-
-    def __init__(self, loop, stream, verbose=False):
-        super(LoggedClientSession,
-              self).__init__(loop=loop, request_class=LoggedClientRequest)
-        self.stream = stream
-        self.request_class = LoggedClientRequest
-        self.request_class.verbose = verbose
-        self.verbose = verbose
-        self.request_class.session = self
-
-    def _dns_lookup(self, url):
-        return resolve(url)[0]
-
-    async def _request(self, *args, **kw):
-        args = list(args)
-        args[1] = self._dns_lookup(args[1])
-        args = tuple(args)
-        resp = await super(LoggedClientSession, self)._request(*args, **kw)
-        await self.print_response(resp)
-        return resp
-
-    async def print_request(self, req):
-        if not self.verbose:
-            return
-        await self.stream.put('>' * 45)
-        raw = '\n' + req.method + ' ' + str(req.url)
-        if len(req.headers) > 0:
-            headers = '\n'.join('%s: %s' % (k, v) for k, v in
-                                req.headers.items())
-            raw += '\n' + headers
-        if req.body:
-            if isinstance(req.body, bytes):
-                body = str(req.body, 'utf8')
-            else:
-                body = req.body
-
-            raw += '\n\n' + body + '\n'
-        await self.stream.put(raw)
-
-    async def print_response(self, resp):
-        if not self.verbose:
-            return
-        await self.stream.put('\n' + '=' * 45 + '\n')
-        raw = 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
-        items = resp.headers.items()
-        headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
-        raw += headers
-        if resp.content:
-            content = await resp.content.read()
-            raw += '\n\n' + content.decode()
-        await self.stream.put(raw)
-        await self.stream.put('\n' + '<' * 45 + '\n')
 
 
 _SCENARIO = []
@@ -119,60 +49,6 @@ def _pick_scenario():
 
 def _now():
     return int(time.time())
-
-
-class LiveResults:
-    def __init__(self, pid=os.getpid()):
-        self.pid = pid
-        self.OK = 0
-        self.FAILED = 0
-        self.last_tb = StringIO()
-        self.stream = StringIO()
-        self.start = _now()
-        if redis is not None:
-            self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
-        else:
-            self.r = None
-
-    def get_successes(self):
-        if self.pid == os.getpid() or self.r is None:
-            return self.OK
-        res = self.r.get('motolov:%d:OK' % self.pid)
-        if res is None:
-            return 0
-        return int(res)
-
-    def get_failures(self):
-        if self.pid == os.getpid() or self.r is None:
-            return self.FAILED
-        res = self.r.get('motolov:%d:FAILED' % self.pid)
-        if res is None:
-            return 0
-        return int(res)
-
-    def incr_success(self):
-        self.OK += 1
-        self.r.incr('motolov:%d:OK' % os.getpid())
-
-    def incr_failure(self):
-        self.FAILED += 1
-        self.r.incr('motolov:%d:FAILED' % os.getpid())
-
-    def howlong(self):
-        return _now() - self.start
-
-    def __str__(self):
-        # XXX display TB or Stream
-        stream = self.stream.read()
-        if stream != '':
-            return stream
-
-        last_tb = self.last_tb.read()
-        if last_tb != '':
-            return last_tb
-
-        return 'SUCCESSES: %s | FAILURES: %s' % (self.get_successes(),
-                                                 self.get_failures())
 
 
 _GLOBAL = {}
@@ -333,7 +209,6 @@ def _process(args):
 
 _PIDTOINT = {}
 _INTTOPID = {}
-
 _PROCESSES = []
 _TASKS = []
 
