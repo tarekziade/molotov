@@ -127,17 +127,16 @@ async def worker(loop, results, args, stream):
     howlong = 0
     setup = get_setup()
     if setup is not None:
-        with stream_log("Setting up a worker"):
-            try:
-                options = await setup(args)
-            except Exception as e:
-                log(e)
-                await stream.put('WORKER_STOPPED')
-                return
-            if not isinstance(options, dict):
-                log('The setup function needs to return a dict')
-                await stream.put('WORKER_STOPPED')
-                return
+        try:
+            options = await setup(args)
+        except Exception as e:
+            log(e)
+            await stream.put('WORKER_STOPPED')
+            return
+        if not isinstance(options, dict):
+            log('The setup function needs to return a dict')
+            await stream.put('WORKER_STOPPED')
+            return
     else:
         options = {}
 
