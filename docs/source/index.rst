@@ -66,12 +66,13 @@ Once it's finished, it picks the next one and so on. In our example,
 
 
 To run the load script, you can provide its module name or its path.
-In the example below, the script is executed in quiet mode with 50
-concurrent users for 60 seconds, and stops on the first failure:
+In the example below, the script is executed in quiet mode with
+10 processes and 200 workers for 60 seconds. It stops on the first failure:
+
 
 .. code-block:: bash
 
-    $ molotov molotov/tests/example.py --statsd -w 50 -d 60 -qx
+    $ molotov molotov/tests/example.py -p 10 -w 200 -d 60 -qx
 
 
 Next steps
