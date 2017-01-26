@@ -1,7 +1,5 @@
 import unittest
 import asyncio
-from io import StringIO
-
 from aiohttp.client_reqrep import ClientResponse, URL
 from molotov.session import LoggedClientSession
 
