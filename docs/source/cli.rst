@@ -7,8 +7,7 @@ the scenario module or path:
 .. code-block:: bash
 
     $ molotov --help
-    usage: molotov [-h] [--statsd] [--statsd-host STATSD_HOST]
-                [--statsd-port STATSD_PORT] [--version] [--debug] [-v]
+    usage: molotov [-h] [--version] [--debug] [-v]
                 [-w WORKERS] [-p PROCESSES] [-d DURATION] [-q] [-x] [-c]
                 scenario
 
@@ -19,11 +18,6 @@ the scenario module or path:
 
     optional arguments:
     -h, --help            Show this help message and exit
-    --statsd              Sends metrics to StatsD
-    --statsd-host STATSD_HOST
-                          StatsD host
-    --statsd-port STATSD_PORT
-                          StatsD port
     --version             Displays version and exits
     --debug               Run the event loop in debug mode
     -v, --verbose         Verbose

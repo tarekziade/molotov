@@ -17,15 +17,6 @@ def main():
     parser.add_argument('scenario', default="loadtest.py",
                         help="path or module name that contains scenarii")
 
-    parser.add_argument('--statsd', action='store_true', default=False,
-                        help='Sends metrics to Statsd.')
-
-    parser.add_argument('--statsd-host', default='localhost',
-                        help='Statsd host.')
-
-    parser.add_argument('--statsd-port', default=8125, type=int,
-                        help='Statsd port.')
-
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
 
