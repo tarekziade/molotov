@@ -18,7 +18,9 @@ class LoggedClientRequest(ClientRequest):
 class LoggedClientSession(ClientSession):
 
     def __init__(self, loop, stream, verbose=False, **kw):
-        connector = TCPConnector(loop=loop, limit=None)
+        connector = kw.pop('connector', None)
+        if connector is None:
+            connector = TCPConnector(loop=loop, limit=None)
         super(LoggedClientSession,
               self).__init__(loop=loop, request_class=LoggedClientRequest,
                              connector=connector,  **kw)
@@ -42,6 +44,7 @@ class LoggedClientSession(ClientSession):
     async def print_request(self, req):
         if not self.verbose:
             return
+
         await self.stream.put('>' * 45)
         raw = '\n' + req.method + ' ' + str(req.url)
         if len(req.headers) > 0:
