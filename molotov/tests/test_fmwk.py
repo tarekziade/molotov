@@ -1,34 +1,25 @@
-import unittest
 import asyncio
-
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step
-from molotov.api import _SCENARIO, scenario
+from molotov.api import scenario
+from molotov.tests.support import TestLoop, async_test
 
 
-class TestFmwk(unittest.TestCase):
-    def setUp(self):
-        self.old = list(_SCENARIO)
+class TestFmwk(TestLoop):
 
-    def tearDown(self):
-        _SCENARIO[:] = self.old
-
-    def test_step(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.set_debug(True)
+    @async_test
+    async def test_step(self, loop):
+        res = []
 
         @scenario(0)
         def test_one(session):
-            pass
+            res.append('1')
 
         @scenario(100)
         def test_two(session):
-            pass
+            res.append('2')
 
-        async def _test_step():
-            stream = asyncio.Queue()
-            async with LoggedClientSession(loop, stream) as session:
-                await step(session, False, False, False, stream)
-
-        loop.run_until_complete(_test_step())
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream) as session:
+            await step(session, False, False, False, stream)
+            self.assertEqual(len(res), 1)

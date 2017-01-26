@@ -1,14 +1,8 @@
-import unittest
-from molotov.api import pick_scenario, scenario, _SCENARIO
+from molotov.api import pick_scenario, scenario
+from molotov.tests.support import TestLoop
 
 
-class TestUtil(unittest.TestCase):
-    def setUp(self):
-        self.old = list(_SCENARIO)
-
-    def tearDown(self):
-        _SCENARIO[:] = self.old
-
+class TestUtil(TestLoop):
     def test_pick_scenario(self):
 
         @scenario(10)

@@ -1,9 +1,13 @@
+import asyncio
+import unittest
 import multiprocessing
 import time
 from contextlib import contextmanager
+import functools
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
+from molotov.api import _SCENARIO
 
 
 def run_server(port=8888):
@@ -49,3 +53,26 @@ def Response(method='GET', status=200, body=b'***'):
     response._content = body
 
     return response
+
+
+class TestLoop(unittest.TestCase):
+    def setUp(self):
+        self.old = list(_SCENARIO)
+
+    def tearDown(self):
+        _SCENARIO[:] = self.old
+
+
+def async_test(func):
+    @functools.wraps(func)
+    def _async_test(*args, **kw):
+        cofunc = asyncio.coroutine(func)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.set_debug(True)
+        kw['loop'] = loop
+        try:
+            loop.run_until_complete(cofunc(*args, **kw))
+        finally:
+            loop.close()
+    return _async_test
