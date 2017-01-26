@@ -18,24 +18,21 @@ the scenario module or path:
     scenario              path or module name that contains scenarii
 
     optional arguments:
-    -h, --help            show this help message and exit
-    --statsd              Sends metrics to Statsd.
+    -h, --help            Show this help message and exit
+    --statsd              Sends metrics to StatsD
     --statsd-host STATSD_HOST
-                            Statsd host.
+                          StatsD host
     --statsd-port STATSD_PORT
-                            Statsd port.
-    --version             Displays version and exits.
-    --debug               Run the event loop in debug mode.
+                          StatsD port
+    --version             Displays version and exits
+    --debug               Run the event loop in debug mode
     -v, --verbose         Verbose
     -w WORKERS, --workers WORKERS
-                            Number of workers
+                          Number of workers
     -p PROCESSES, --processes PROCESSES
-                            Number of processes
+                          Number of processes
     -d DURATION, --duration DURATION
-                            Duration in seconds
+                          Duration in seconds
     -q, --quiet           Quiet
-    -x, --exception       Stop on first failure.
+    -x, --exception       Stop on first failure
     -c, --console         Use simple console for feedback
-
-
-

@@ -36,7 +36,7 @@ Here's a full example :
 When a function is decorated with the :func:`setup` decorator, it will be
 called with the command-line arguments and needs to send back a dict.
 This dict will be passed to the :class:`ClientSession` class when it's
-created. This is useful when you need to setup session-wide options
+created. This is useful when you need to set up session-wide options
 like Authorization headers, or do whatever you need on startup.
 
 When molotov runs, it creates some workers (coroutines) that will
@@ -44,7 +44,7 @@ run scenarii indefinitely until the test is done. A test is done
 when the time in seconds provided by **-d** is reached.
 
 Each worker randomly picks one scenario to execute, given their weights.
-Once it's finished, it picks the next one and so on. In our example,
+Once it's finished, it picks the next one, and so on. In our example,
 **scenario_two** is picked ~60% of the time.
 
 
@@ -69,7 +69,7 @@ In the example below, the script is executed in quiet mode with
 Next steps
 ==========
 
-Chek out the detailed documentation:
+Check out the detailed documentation:
 
 .. toctree::
    :maxdepth: 2
