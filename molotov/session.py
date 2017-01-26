@@ -1,5 +1,7 @@
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
+from aiohttp import TCPConnector
+
 from molotov.util import resolve
 
 
@@ -16,9 +18,10 @@ class LoggedClientRequest(ClientRequest):
 class LoggedClientSession(ClientSession):
 
     def __init__(self, loop, stream, verbose=False, **kw):
+        connector = TCPConnector(loop=loop, limit=None)
         super(LoggedClientSession,
               self).__init__(loop=loop, request_class=LoggedClientRequest,
-                             **kw)
+                             connector=connector,  **kw)
         self.stream = stream
         self.request_class = LoggedClientRequest
         self.request_class.verbose = verbose
@@ -64,6 +67,10 @@ class LoggedClientSession(ClientSession):
         raw += headers
         if resp.content:
             content = await resp.content.read()
-            raw += '\n\n' + content.decode()
+            try:
+                raw += '\n\n' + content.decode()
+            except UnicodeDecodeError:
+                raw += '\n\nCould not decode body'
+
         await self.stream.put(raw)
         await self.stream.put('\n' + '<' * 45 + '\n')
