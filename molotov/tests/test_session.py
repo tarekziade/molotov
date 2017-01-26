@@ -29,6 +29,7 @@ class TestLoggedClientSession(unittest.TestCase):
                 line = await stream.get()
                 res.append(line)
 
-            self.assertTrue('Could not decode body' in res[1])
+            wanted = "can't display this body"
+            self.assertTrue(wanted in res[1])
 
         loop.run_until_complete(_test_encoding())

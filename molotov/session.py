@@ -70,7 +70,7 @@ class LoggedClientSession(ClientSession):
             try:
                 raw += '\n\n' + content.decode()
             except UnicodeDecodeError:
-                raw += '\n\nCould not decode body'
+                raw += "\n\n***WARNING: Molotov can't display this body***"
 
         await self.stream.put(raw)
         await self.stream.put('\n' + '<' * 45 + '\n')
