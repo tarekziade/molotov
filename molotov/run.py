@@ -5,7 +5,8 @@ import argparse
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner, get_scenarios
+from molotov.fmwk import runner
+from molotov.api import get_scenarios
 from molotov import __version__
 from molotov.util import log
 from molotov import ui
