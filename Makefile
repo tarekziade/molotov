@@ -21,7 +21,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/tox -e py35
+	$(BIN)/tox
 
 docs:  build
 	$(BIN)/tox -e docs
