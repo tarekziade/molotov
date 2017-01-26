@@ -1,12 +1,22 @@
 import unittest
+import asyncio
 
-from molotov import scenario
-from molotov.fmwk import _pick_scenario
+from molotov.session import LoggedClientSession
+from molotov.fmwk import step
+from molotov.api import _SCENARIO, scenario
 
 
 class TestFmwk(unittest.TestCase):
+    def setUp(self):
+        self.old = list(_SCENARIO)
 
-    def test_weights(self):
+    def tearDown(self):
+        _SCENARIO[:] = self.old
+
+    def test_step(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.set_debug(True)
 
         @scenario(0)
         def test_one(session):
@@ -16,6 +26,9 @@ class TestFmwk(unittest.TestCase):
         def test_two(session):
             pass
 
-        for i in range(10):
-            func, args, kw = _pick_scenario()
-            self.assertTrue(func.__name__ is 'test_two', func)
+        async def _test_step():
+            stream = asyncio.Queue()
+            async with LoggedClientSession(loop, stream) as session:
+                await step(session, False, False, False, stream)
+
+        loop.run_until_complete(_test_step())

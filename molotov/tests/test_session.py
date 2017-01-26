@@ -6,8 +6,7 @@ from molotov.tests.support import coserver, Response
 
 class TestLoggedClientSession(unittest.TestCase):
 
-    def _test_encoding(self):
-
+    def test_encoding(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)

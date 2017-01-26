@@ -1,7 +1,6 @@
 import signal
 import multiprocessing
 import asyncio
-import random
 import time
 import sys
 import os
@@ -9,26 +8,12 @@ import os
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults
-from molotov.api import get_scenarios, get_setup
+from molotov.api import get_setup, pick_scenario
 
 import urwid   # meh..
 
 
 _STOP = False
-
-
-def _pick_scenario():
-    scenarios = get_scenarios()
-    total = sum(item[0] for item in scenarios)
-    selection = random.uniform(0, total)
-    upto = 0
-    for item in scenarios:
-        weight = item[0]
-        if upto + item[0] > selection:
-            func, args, kw = item[1:]
-            return func, args, kw
-        upto += weight
-    raise Exception('What')
 
 
 def _now():
@@ -91,7 +76,7 @@ def ui_updater(procid, *args):
 
 async def step(session, quiet, verbose, exception, stream):
     global _STOP
-    func, args_, kw = _pick_scenario()
+    func, args_, kw = pick_scenario()
     try:
         await func(session, *args_, **kw)
         if not quiet and not verbose:
