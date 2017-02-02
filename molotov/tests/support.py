@@ -71,7 +71,6 @@ _CO = {'clients': 0, 'server': None}
 
 @contextmanager
 def coserver(port=8888):
-    print(_CO)
     if _CO['clients'] == 0:
         _CO['server'] = run_server(port)
 
