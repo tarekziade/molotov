@@ -74,8 +74,12 @@ def ui_updater(procid, *args):
     return get_live_results(procid)
 
 
-async def step(session, quiet, verbose, exception, stream):
-    global _STOP
+async def step(session, quiet, verbose, stream):
+    """ single scenario call.
+
+    When it returns 1, it works. -1 the script failed,
+    0 the test is stopping or needs to stop.
+    """
     func, args_, kw = pick_scenario()
     try:
         await func(session, *args_, **kw)
@@ -85,17 +89,12 @@ async def step(session, quiet, verbose, exception, stream):
     except asyncio.CancelledError:
         return 0
     except Exception as exc:
-        if _STOP:
-            return 0
         if verbose:
             await stream.put(repr(exc))
             await stream.put(sys.exc_info()[2])
         elif not quiet and not verbose:
             await stream.put('-')
-        if exception:
-            _STOP = True
-            await stream.put('STOP')
-            return 0
+
     return -1
 
 
@@ -103,6 +102,7 @@ _HOWLONG = 0
 
 
 async def worker(loop, results, args, stream):
+    global _STOP
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -128,11 +128,14 @@ async def worker(loop, results, args, stream):
     async with Session(loop, stream, verbose, **options) as session:
         while howlong < duration and not _STOP:
             howlong = _now() - start
-            result = await step(session, quiet, verbose, exception, stream)
+            result = await step(session, quiet, verbose, stream)
             if result == 1:
                 results['OK'] += 1
             elif result == -1:
                 results['FAILED'] += 1
+                if exception:
+                    await stream.put('WORKER_STOPPED')
+                    _STOP = True
             elif result == 0:
                 break
             count += 1
@@ -147,7 +150,6 @@ def _runner(loop, args, results, stream):
         for i in range(args.workers):
             future = asyncio.ensure_future(worker(loop, results, args, stream))
             tasks.append(future)
-
     return tasks
 
 

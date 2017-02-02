@@ -5,10 +5,12 @@ import multiprocessing
 import time
 from contextlib import contextmanager
 import functools
+from collections import namedtuple
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO
+from molotov import fmwk
 
 
 def run_server(port=8888):
@@ -60,15 +62,25 @@ def Response(method='GET', status=200, body=b'***'):
 class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = list(_SCENARIO)
+        fmwk._STOP = False
 
     def tearDown(self):
         _SCENARIO[:] = self.old
+
+    def get_args(self):
+        args = namedtuple('args', 'verbose quiet duration exception')
+        args.verbose = True
+        args.quiet = False
+        args.duration = 1
+        args.exception = True
+        return args
 
 
 def async_test(func):
     @functools.wraps(func)
     def _async_test(*args, **kw):
         cofunc = asyncio.coroutine(func)
+        oldloop = asyncio.get_event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
@@ -76,5 +88,7 @@ def async_test(func):
         try:
             loop.run_until_complete(cofunc(*args, **kw))
         finally:
+            loop.stop()
             loop.close()
+            asyncio.set_event_loop(oldloop)
     return _async_test

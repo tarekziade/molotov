@@ -1,5 +1,4 @@
 import asyncio
-from collections import namedtuple
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker
@@ -23,13 +22,26 @@ class TestFmwk(TestLoop):
 
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream) as session:
-            await step(session, False, False, False, stream)
+            result = await step(session, False, False, stream)
+            self.assertTrue(result, 1)
             self.assertEqual(len(res), 1)
 
     @async_test
-    async def test_worker(self, loop):
+    async def test_failing_step(self, loop):
 
-        @scenario(0)
+        @scenario(100)
+        async def test_two(session):
+            raise ValueError()
+
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream) as session:
+            result = await step(session, False, False, stream)
+            self.assertTrue(result, -1)
+
+    @async_test
+    async def test_aworker(self, loop):
+
+        @scenario(50)
         async def test_one(session):
             pass
 
@@ -39,11 +51,25 @@ class TestFmwk(TestLoop):
 
         results = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
-        args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = True
-        args.quiet = False
-        args.duration = 1
-        args.exception = True
+        args = self.get_args()
 
         await worker(loop, results, args, stream)
+
         self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
+
+    @async_test
+    async def test_failure(self, loop):
+
+        @scenario(100)
+        async def test_failing(session):
+            raise ValueError()
+
+        results = {'OK': 0, 'FAILED': 0}
+        stream = asyncio.Queue()
+        args = self.get_args()
+
+        await worker(loop, results, args, stream)
+
+        self.assertEqual(results['OK'], 0)
+        self.assertTrue(results['FAILED'] > 0)

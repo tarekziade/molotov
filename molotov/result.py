@@ -21,6 +21,10 @@ class LiveResults:
         self.start = _now()
         if redis is not None:
             self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
+            try:
+                self.r.ping()
+            except redis.exceptions.ConnectionError:
+                self.r = None
         else:
             self.r = None
 
@@ -42,11 +46,13 @@ class LiveResults:
 
     def incr_success(self):
         self.OK += 1
-        self.r.incr('motolov:%d:OK' % os.getpid())
+        if self.r is not None:
+            self.r.incr('motolov:%d:OK' % os.getpid())
 
     def incr_failure(self):
         self.FAILED += 1
-        self.r.incr('motolov:%d:FAILED' % os.getpid())
+        if self.r is not None:
+            self.r.incr('motolov:%d:FAILED' % os.getpid())
 
     def howlong(self):
         return _now() - self.start
