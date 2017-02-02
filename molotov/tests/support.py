@@ -9,7 +9,7 @@ from collections import namedtuple
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
-from molotov.api import _SCENARIO
+from molotov.api import _SCENARIO, _SETUP
 from molotov import fmwk
 
 
@@ -62,10 +62,12 @@ def Response(method='GET', status=200, body=b'***'):
 class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = list(_SCENARIO)
+        self.oldsetup = list(_SETUP)
         fmwk._STOP = False
 
     def tearDown(self):
         _SCENARIO[:] = self.old
+        _SETUP[:] = self.oldsetup
 
     def get_args(self):
         args = namedtuple('args', 'verbose quiet duration exception')

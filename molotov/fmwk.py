@@ -118,7 +118,9 @@ async def worker(loop, results, args, stream):
             log(e)
             await stream.put('WORKER_STOPPED')
             return
-        if not isinstance(options, dict):
+        if options is None:
+            options = {}
+        elif not isinstance(options, dict):
             log('The setup function needs to return a dict')
             await stream.put('WORKER_STOPPED')
             return

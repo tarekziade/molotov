@@ -2,7 +2,7 @@ import asyncio
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker
-from molotov.api import scenario
+from molotov.api import scenario, setup
 from molotov.tests.support import TestLoop, async_test
 
 
@@ -41,6 +41,12 @@ class TestFmwk(TestLoop):
     @async_test
     async def test_aworker(self, loop):
 
+        res = []
+
+        @setup()
+        async def setuptest(args):
+            res.append('0')
+
         @scenario(50)
         async def test_one(session):
             pass
@@ -57,6 +63,62 @@ class TestFmwk(TestLoop):
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(len(res), 1)
+
+    @async_test
+    async def test_more_processes(self, loop):
+
+        res = []
+
+        @setup()
+        async def setuptest(args):
+            res.append('0')
+
+        @scenario(50)
+        async def test_one(session):
+            pass
+
+        @scenario(100)
+        async def test_two(session):
+            pass
+
+        results = {'OK': 0, 'FAILED': 0}
+        stream = asyncio.Queue()
+        args = self.get_args()
+        args.processes = 2
+
+        await worker(loop, results, args, stream)
+
+        self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
+
+    @async_test
+    async def test_aworker_noexc(self, loop):
+
+        res = []
+
+        @setup()
+        async def setuptest(args):
+            res.append('0')
+
+        @scenario(50)
+        async def test_one(session):
+            pass
+
+        @scenario(100)
+        async def test_two(session):
+            pass
+
+        results = {'OK': 0, 'FAILED': 0}
+        stream = asyncio.Queue()
+        args = self.get_args()
+        args.exception = False
+
+        await worker(loop, results, args, stream)
+
+        self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(len(res), 1)
 
     @async_test
     async def test_failure(self, loop):
