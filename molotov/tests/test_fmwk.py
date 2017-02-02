@@ -66,7 +66,6 @@ class TestFmwk(TestLoop):
         self.assertEqual(len(res), 1)
 
     def test_runner(self):
-
         res = []
 
         @setup()
@@ -82,6 +81,28 @@ class TestFmwk(TestLoop):
             pass
 
         args = self.get_args()
+        results = runner(args)
+        self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
+
+    def test_runner_multiprocess(self):
+        res = []
+
+        @setup()
+        async def setuptest(args):
+            res.append('0')
+
+        @scenario(50)
+        async def test_one(session):
+            pass
+
+        @scenario(100)
+        async def test_two(session):
+            pass
+
+        args = self.get_args()
+        args.processes = 2
+        args.workers = 5
         results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
