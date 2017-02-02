@@ -1,3 +1,4 @@
+import signal
 import os
 import asyncio
 import unittest
@@ -6,6 +7,7 @@ import time
 from contextlib import contextmanager
 import functools
 from collections import namedtuple
+from http.client import HTTPConnection
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -17,27 +19,71 @@ def run_server(port=8888):
     def _run():
         import http.server
         import socketserver
+        import signal
+        import sys
+
+        socketserver.TCPServer.allow_reuse_address = True
         Handler = http.server.SimpleHTTPRequestHandler
-        httpd = socketserver.TCPServer(("", port), Handler)
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        attempts = 0
+        httpd = None
+
+        while attempts < 3:
+            try:
+                httpd = socketserver.TCPServer(("", port), Handler)
+                break
+            except Exception:
+                attempts += 1
+                time.sleep(.1)
+
+        if httpd is None:
+            raise OSError("Could not start the coserver")
+
+        def _shutdown(*args, **kw):
+            httpd.server_close()
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, _shutdown)
+        signal.signal(signal.SIGINT, _shutdown)
+        httpd.serve_forever()
 
     p = multiprocessing.Process(target=_run)
     p.start()
-    time.sleep(1.)
+    start = time.time()
+    connected = False
+
+    while time.time() - start < 5 and not connected:
+        try:
+            conn = HTTPConnection('localhost', 8888)
+            conn.request("GET", "/")
+            conn.getresponse()
+            connected = True
+        except Exception:
+            time.sleep(.1)
+    if not connected:
+        os.kill(p.pid, signal.SIGTERM)
+        p.join(timeout=1.)
+        raise OSError('Could not connect to coserver')
     return p
+
+
+_CO = {'clients': 0, 'server': None}
 
 
 @contextmanager
 def coserver(port=8888):
-    p = run_server(port)
+    print(_CO)
+    if _CO['clients'] == 0:
+        _CO['server'] = run_server(port)
+
+    _CO['clients'] += 1
     try:
         yield
     finally:
-        os.kill(p.pid, 9)
-        p.join()
+        _CO['clients'] -= 1
+        if _CO['clients'] == 0:
+            os.kill(_CO['server'].pid, signal.SIGTERM)
+            _CO['server'].join(timeout=1.)
+            _CO['server'] = None
 
 
 def Response(method='GET', status=200, body=b'***'):
@@ -75,6 +121,10 @@ class TestLoop(unittest.TestCase):
         args.quiet = False
         args.duration = 1
         args.exception = True
+        args.processes = 1
+        args.debug = True
+        args.workers = 1
+        args.console = True
         return args
 
 

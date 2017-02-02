@@ -1,7 +1,7 @@
 import asyncio
 
 from molotov.session import LoggedClientSession
-from molotov.fmwk import step, worker
+from molotov.fmwk import step, worker, runner
 from molotov.api import scenario, setup
 from molotov.tests.support import TestLoop, async_test
 
@@ -65,8 +65,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
-    @async_test
-    async def test_more_processes(self, loop):
+    def test_runner(self):
 
         res = []
 
@@ -82,13 +81,8 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        results = {'OK': 0, 'FAILED': 0}
-        stream = asyncio.Queue()
         args = self.get_args()
-        args.processes = 2
-
-        await worker(loop, results, args, stream)
-
+        results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
 
