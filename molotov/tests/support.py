@@ -16,6 +16,8 @@ from molotov import fmwk
 
 
 def run_server(port=8888):
+    """Running in a subprocess to avoid any interference
+    """
     def _run():
         import http.server
         import socketserver
