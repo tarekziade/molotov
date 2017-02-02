@@ -1,3 +1,4 @@
+import os
 import asyncio
 import unittest
 import multiprocessing
@@ -33,7 +34,8 @@ def coserver(port=8888):
     try:
         yield
     finally:
-        p.terminate()
+        os.kill(p.pid, 9)
+        p.join()
 
 
 def Response(method='GET', status=200, body=b'***'):
