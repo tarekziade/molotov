@@ -1,10 +1,9 @@
 import os
 from io import StringIO
 import time
-try:
-    import redis
-except ImportError:
-    redis = None
+import asyncio
+from queue import Empty
+from multiprocessing import Queue
 
 
 def _now():
@@ -12,50 +11,60 @@ def _now():
 
 
 class LiveResults:
-    def __init__(self, pid=os.getpid()):
-        self.pid = pid
-        self.OK = 0
-        self.FAILED = 0
+    def __init__(self, loop=None):
+        self._data = {os.getpid(): {'OK': 0, 'FAILED': 0}}
         self.last_tb = StringIO()
         self.stream = StringIO()
         self.start = _now()
-        if redis is not None:
-            self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
-            try:
-                self.r.ping()
-            except redis.exceptions.ConnectionError:
-                self.r = None
+        if loop is None:
+            self.loop = asyncio.get_event_loop()
         else:
-            self.r = None
+            self.loop = loop
+        self.queue = Queue()
+        self.loop.call_soon(self._update)
+
+    def _update(self):
+        if not self.queue.empty():
+            while True:
+                try:
+                    data = self.queue.get_nowait()
+                except Empty:
+                    break
+                if data is not None:
+                    pid, res, count = data
+                    if pid not in self._data:
+                        self._data[pid] = {'OK': 0, 'FAILED': 0}
+                    if res == 'OK':
+                        self._data[pid]['OK'] += count
+                    if res == 'FAILED':
+                        self._data[pid]['FAILED'] += count
+
+        self.loop.call_later(.2, self._update)
 
     def get_successes(self):
-        if self.pid == os.getpid() or self.r is None:
-            return self.OK
-        res = self.r.get('motolov:%d:OK' % self.pid)
-        if res is None:
-            return 0
-        return int(res)
+        return self._count('OK')
 
     def get_failures(self):
-        if self.pid == os.getpid() or self.r is None:
-            return self.FAILED
-        res = self.r.get('motolov:%d:FAILED' % self.pid)
-        if res is None:
-            return 0
-        return int(res)
+        return self._count('FAILED')
 
-    def incr_success(self):
-        self.OK += 1
-        if self.r is not None:
-            self.r.incr('motolov:%d:OK' % os.getpid())
+    def _count(self, value):
+        count = 0
+        for pid, values in self._data.items():
+            count += values[value]
+        return count
 
-    def incr_failure(self):
-        self.FAILED += 1
-        if self.r is not None:
-            self.r.incr('motolov:%d:FAILED' % os.getpid())
+    def incr_success(self, count=1):
+        self.queue.put((os.getpid(), 'OK', count))
+
+    def incr_failure(self, count=1):
+        self.queue.put((os.getpid(), 'FAILED', count))
 
     def howlong(self):
         return _now() - self.start
+
+    def display(self, loop):
+        print(self.__str__(), end='\r')
+        loop.call_later(.3, self.display, loop)
 
     def __str__(self):
         # XXX display TB or Stream

@@ -2,4 +2,3 @@ aiohttp
 statsd
 urwid
 humanize
-redis

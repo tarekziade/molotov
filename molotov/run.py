@@ -57,7 +57,8 @@ def main():
 
 
 def run(args):
-    log('**** Molotov v%s. Happy breaking! ****' % __version__, pid=None)
+    if not args.quiet:
+        log('**** Molotov v%s. Happy breaking! ****' % __version__, pid=None)
     if os.path.exists(args.scenario):
         spec = spec_from_file_location("loadtest", args.scenario)
         module = module_from_spec(spec)
@@ -82,7 +83,8 @@ def run(args):
         sys.exit(1)
 
     res = runner(args, screen=ui.init_screen)
-    log('', pid=False)
+    if not args.quiet:
+        log('', pid=False)
     log('%(OK)d OK, %(FAILED)d Failed' % res, pid=False)
 
 

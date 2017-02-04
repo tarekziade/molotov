@@ -88,6 +88,9 @@ class TestFmwk(TestLoop):
     def test_runner_multiprocess(self):
         res = []
 
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
         @setup()
         async def setuptest(args):
             res.append('0')

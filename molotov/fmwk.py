@@ -20,15 +20,13 @@ def _now():
     return int(time.time())
 
 
-_GLOBAL = {}
+_results = LiveResults()
 
 
-def get_live_results(pid=os.getpid()):
+def get_live_results():
     if _STOP:
         raise OSError('Stopped')
-    if pid not in _GLOBAL:
-        _GLOBAL[pid] = LiveResults(pid)
-    return _GLOBAL[pid]
+    return _results
 
 
 async def consume(queue, numworkers, console=False):
@@ -44,34 +42,24 @@ async def consume(queue, numworkers, console=False):
             break
 
         elif isinstance(item, str):
-            if not console:
-                try:
-                    results = get_live_results()
-                except OSError:
-                    break
-                if item == '.':
-                    results.incr_success()
-                elif item == '-':
-                    results.incr_failure()
-                else:
-                    results.stream.write(item)
+            try:
+                results = get_live_results()
+            except OSError:
+                break
+            if item == '.':
+                results.incr_success()
+            elif item == '-':
+                results.incr_failure()
             else:
-                sys.stdout.write(item)
+                results.stream.write(item)
         else:
-            if not console:
-                file = results.last_tb
-            else:
-                file = sys.stdout
-
+            file = results.last_tb
             import traceback
             traceback.print_tb(item, file=file)
 
-        if console:
-            sys.stdout.flush()
-
 
 def ui_updater(procid, *args):
-    return get_live_results(procid)
+    return get_live_results()
 
 
 async def step(session, quiet, verbose, stream):
@@ -147,12 +135,19 @@ async def worker(loop, results, args, stream):
 
 
 def _runner(loop, args, results, stream):
-    tasks = []
-    with stream_log('Preparing %d workers' % args.workers):
+    def _prepare():
+        tasks = []
         for i in range(args.workers):
-            future = asyncio.ensure_future(worker(loop, results, args, stream))
+            future = asyncio.ensure_future(worker(loop, results, args,
+                                                  stream))
             tasks.append(future)
-    return tasks
+        return tasks
+
+    if args.quiet:
+        return _prepare()
+    else:
+        with stream_log('Preparing %d workers' % args.workers):
+            return _prepare()
 
 
 def _process(args):
@@ -218,9 +213,11 @@ def _launch_processes(args, screen):
     signal.signal(signal.SIGTERM, _shutdown)
 
     if args.processes > 1:
-        log('Forking %d processes' % args.processes, pid=False)
+        if not args.quiet:
+            log('Forking %d processes' % args.processes, pid=False)
         result_queue = multiprocessing.Queue()
         ui = None
+        loop = asyncio.get_event_loop()
 
         def _pprocess(result_queue):
             result_queue.put(_process(args))
@@ -253,22 +250,37 @@ def _launch_processes(args, screen):
             ui.set_alarm_in(1, check_procs)
             ui.run()
 
-        for job in jobs:
-            job.join()
-            _PROCESSES.remove(job)
+        async def run(loop, quiet, console):
+            while len(_PROCESSES) > 0:
+                if not quiet and console:
+                    try:
+                        print(get_live_results(), end='\r')
+                    except OSError:
+                        # finished
+                        return
+                for job in jobs:
+                    if job.exitcode is not None:
+                        _PROCESSES.remove(job)
+
+                await asyncio.sleep(.5)
+
+        loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet,
+                                                          args.console)))
 
         for job in jobs:
             proc_result = result_queue.get()
             results['FAILED'] += proc_result['FAILED']
             results['OK'] += proc_result['OK']
     else:
+        loop = asyncio.get_event_loop()
         if screen is not None and not args.console:
-            loop = asyncio.get_event_loop()
             ui = screen([os.getpid()], ui_updater, loop)
             ui.start()
-
         else:
             ui = None
+
+        if not args.quiet and args.console:
+            loop.call_soon(get_live_results().display, loop)
 
         results = _process(args)
 
@@ -279,8 +291,6 @@ def _launch_processes(args, screen):
 
 
 def runner(args, screen=None):
-    global _STOP
-    global _GLOBAL
     args.mainpid = os.getpid()
     results = _launch_processes(args, screen)
     return results
