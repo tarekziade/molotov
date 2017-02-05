@@ -1,5 +1,7 @@
 import random
 import functools
+import asyncio
+
 
 _SCENARIO = []
 
@@ -8,8 +10,14 @@ def get_scenarios():
     return _SCENARIO
 
 
+def _check_coroutine(func):
+    if not asyncio.iscoroutinefunction(func):
+        raise TypeError('%s needs to be a coroutine' % str(func))
+
+
 def scenario(weight):
     def _scenario(func, *args, **kw):
+        _check_coroutine(func)
         if weight > 0:
             _SCENARIO.append((weight, func, args, kw))
 
@@ -46,6 +54,7 @@ def get_setup():
 
 def setup():
     def _setup(func, *args, **kw):
+        _check_coroutine(func)
         if len(_SETUP) > 0:
             raise ValueError("You can't have two setup functions")
 

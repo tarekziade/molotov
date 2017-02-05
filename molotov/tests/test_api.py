@@ -1,4 +1,4 @@
-from molotov.api import pick_scenario, scenario, get_scenarios
+from molotov.api import pick_scenario, scenario, get_scenarios, setup
 from molotov.tests.support import TestLoop
 
 
@@ -6,11 +6,11 @@ class TestUtil(TestLoop):
     def test_pick_scenario(self):
 
         @scenario(10)
-        def _one(self):
+        async def _one(self):
             pass
 
         @scenario(90)
-        def _two(self):
+        async def _two(self):
             pass
 
         picked = [pick_scenario()[0].__name__ for i in range(100)]
@@ -19,11 +19,33 @@ class TestUtil(TestLoop):
 
     def test_no_scenario(self):
         @scenario(0)
-        def _one(self):
+        async def _one(self):
             pass
 
         @scenario(0)
-        def _two(self):
+        async def _two(self):
             pass
 
         self.assertEqual(get_scenarios(), [])
+
+    def test_scenario_not_coroutine(self):
+        try:
+            @scenario(1)
+            def _one(self):
+                pass
+        except TypeError:
+            return
+        raise AssertionError("Should raise")
+
+    def test_setup_not_coroutine(self):
+        try:
+            @setup()
+            def _setup(self):
+                pass
+
+            @scenario(90)
+            async def _two(self):
+                pass
+        except TypeError:
+            return
+        raise AssertionError("Should raise")
