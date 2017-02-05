@@ -10,7 +10,8 @@ def get_scenarios():
 
 def scenario(weight):
     def _scenario(func, *args, **kw):
-        _SCENARIO.append((weight, func, args, kw))
+        if weight > 0:
+            _SCENARIO.append((weight, func, args, kw))
 
         @functools.wraps(func)
         def __scenario():

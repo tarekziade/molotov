@@ -72,6 +72,7 @@ def run(args):
 
     if len(get_scenarios()) == 0:
         print('You need at least one scenario. No scenario was found.')
+        print('A scenario with a weight of 0 is ignored')
         sys.exit(1)
 
     if args.verbose and args.quiet:
