@@ -80,23 +80,20 @@ class LiveResults:
         except BrokenPipeError:
             pass
 
-    def incr_success(self, count=1):
+    def _incr(self, counter, count=1):
         if self.closed:
             raise ClosedError()
         if self._use_buffer:
-            self._buffer['OK'] += count
+            self._buffer[counter] += count
             self._unbuffer()
         else:
-            self.queue.put((os.getpid(), 'OK', count))
+            self.queue.put((os.getpid(), counter, count))
+
+    def incr_success(self, count=1):
+        self._incr('OK', count)
 
     def incr_failure(self, count=1):
-        if self.closed:
-            raise ClosedError()
-        if self._use_buffer:
-            self._buffer['FAILED'] += count
-            self._unbuffer()
-        else:
-            self.queue.put((os.getpid(), 'FAILED', count))
+        self._incr('FAILED', count)
 
     def howlong(self):
         return _now() - self.start

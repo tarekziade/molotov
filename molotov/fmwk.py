@@ -58,10 +58,6 @@ async def consume(queue, numworkers, console=False, verbose=False):
                 traceback.print_tb(item)
 
 
-def ui_updater():
-    return get_live_results()
-
-
 async def step(session, quiet, verbose, stream):
     """ single scenario call.
 
@@ -187,8 +183,6 @@ def _process(args):
     return results
 
 
-_PIDTOINT = {}
-_INTTOPID = {}
 _PROCESSES = []
 _TASKS = []
 
@@ -228,8 +222,6 @@ def _launch_processes(args, screen):
                                         args=(result_queue,))
             jobs.append(p)
             p.start()
-            _PIDTOINT[p.pid] = i
-            _INTTOPID[i] = p.pid
 
         for job in jobs:
             _PROCESSES.append(job)
@@ -240,7 +232,7 @@ def _launch_processes(args, screen):
             else:
                 pids = [job.pid for job in jobs]
 
-            ui = screen(pids, ui_updater)
+            ui = screen(pids, get_live_results)
 
             def check_procs(*args):
                 dead = [not p.is_alive() for p in _PROCESSES]
@@ -274,7 +266,7 @@ def _launch_processes(args, screen):
     else:
         loop = asyncio.get_event_loop()
         if screen is not None and not args.console:
-            ui = screen([os.getpid()], ui_updater, loop)
+            ui = screen([os.getpid()], get_live_results, loop)
             ui.start()
         else:
             ui = None
