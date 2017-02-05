@@ -70,6 +70,8 @@ class LoggedClientSession(ClientSession):
         raw += headers
         if resp.content:
             content = await resp.content.read()
+            # put back the data in the content
+            resp.content.unread_data(content)
             try:
                 raw += '\n\n' + content.decode()
             except UnicodeDecodeError:

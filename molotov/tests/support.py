@@ -100,6 +100,9 @@ def Response(method='GET', status=200, body=b'***'):
         async def read(self):
             return body
 
+        def unread_data(self, data):
+            pass
+
     response.content = Body()
     response._content = body
 
