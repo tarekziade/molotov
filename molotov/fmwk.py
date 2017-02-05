@@ -7,13 +7,14 @@ import os
 
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
-from molotov.result import LiveResults
+from molotov.result import LiveResults, ClosedError
 from molotov.api import get_setup, pick_scenario
 
 import urwid   # meh..
 
 
 _STOP = False
+_REFRESH = .3
 
 
 def _now():
@@ -24,12 +25,10 @@ _results = LiveResults()
 
 
 def get_live_results():
-    if _STOP:
-        raise OSError('Stopped')
     return _results
 
 
-async def consume(queue, numworkers, console=False):
+async def consume(queue, numworkers, console=False, verbose=False):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
         try:
@@ -42,23 +41,24 @@ async def consume(queue, numworkers, console=False):
             break
 
         elif isinstance(item, str):
+            results = get_live_results()
             try:
-                results = get_live_results()
-            except OSError:
+                if item == '.':
+                    results.incr_success()
+                elif item == '-':
+                    results.incr_failure()
+                else:
+                    if console and verbose:
+                        print(item)
+            except ClosedError:
                 break
-            if item == '.':
-                results.incr_success()
-            elif item == '-':
-                results.incr_failure()
-            else:
-                results.stream.write(item)
         else:
-            file = results.last_tb
-            import traceback
-            traceback.print_tb(item, file=file)
+            if console and verbose:
+                import traceback
+                traceback.print_tb(item)
 
 
-def ui_updater(procid, *args):
+def ui_updater():
     return get_live_results()
 
 
@@ -71,17 +71,15 @@ async def step(session, quiet, verbose, stream):
     func, args_, kw = pick_scenario()
     try:
         await func(session, *args_, **kw)
-        if not quiet and not verbose:
-            await stream.put('.')
+        await stream.put('.')
         return 1
     except asyncio.CancelledError:
         return 0
     except Exception as exc:
+        await stream.put('-')
         if verbose:
             await stream.put(repr(exc))
             await stream.put(sys.exc_info()[2])
-        elif not quiet and not verbose:
-            await stream.put('-')
 
     return -1
 
@@ -167,7 +165,7 @@ def _process(args):
     results = {'OK': 0, 'FAILED': 0}
     stream = asyncio.Queue()
     consumer = asyncio.ensure_future(consume(stream, args.workers,
-                                     args.console))
+                                     args.console, args.verbose))
     tasks = _runner(loop, args, results, stream)
     tasks = asyncio.gather(*tasks, loop=loop, return_exceptions=True)
 
@@ -198,6 +196,8 @@ _TASKS = []
 def _shutdown(signal, frame):
     global _STOP
     _STOP = True
+
+    get_live_results().close()
 
     for task in _TASKS:
         task.cancel()
@@ -255,11 +255,11 @@ def _launch_processes(args, screen):
                 if not quiet and console:
                     try:
                         print(get_live_results(), end='\r')
-                    except OSError:
+                    except ClosedError:
                         # finished
                         return
                 for job in jobs:
-                    if job.exitcode is not None:
+                    if job.exitcode is not None and job in _PROCESSES:
                         _PROCESSES.remove(job)
 
                 await asyncio.sleep(.5)
@@ -279,8 +279,15 @@ def _launch_processes(args, screen):
         else:
             ui = None
 
-        if not args.quiet and args.console:
-            loop.call_soon(get_live_results().display, loop)
+        if not args.quiet and args.console and not args.verbose:
+            def _display(loop):
+                try:
+                    print(get_live_results(), end='\r')
+                except ClosedError:
+                    return
+                loop.call_later(_REFRESH, _display, loop)
+
+            loop.call_soon(_display, loop)
 
         results = _process(args)
 

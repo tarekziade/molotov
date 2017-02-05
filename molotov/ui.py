@@ -1,12 +1,21 @@
 from functools import partial
 from humanize import naturaltime
 from molotov import __version__
+from molotov.result import ClosedError
+
 import urwid
+
+
+_REFRESH = .3
 
 
 def unhandled(key):
     if key == 'ctrl c':
         raise urwid.ExitMainLoop
+
+
+def quit(*args):
+    raise urwid.ExitMainLoop
 
 
 palette = [
@@ -19,19 +28,19 @@ def process_box(procid, refresh=None, loop=None):
 
     def update_box(body, footer, refresh, loop, *args):
         try:
-            results = refresh(procid)
-        except OSError:
-            def _stop(*args):
-                raise urwid.ExitMainLoop()
-
-            loop.set_alarm_in(.1, _stop)
+            results = refresh()
+            results.update()
+            oks = results.get_successes(procid)
+            fails = results.get_failures(procid)
+        except ClosedError:
+            loop.set_alarm_in(.1, quit)
             return
 
-        body.set_text(str(results))
+        body.set_text('SUCCESSES: %d | FAILURES: %d' % (oks, fails))
         duration = 'Started %s.' % naturaltime(results.howlong())
         footer.base_widget.set_text(duration)
         updater = partial(update_box, body, footer, refresh)
-        loop.set_alarm_in(1, updater)
+        loop.set_alarm_in(_REFRESH, updater)
 
     header = urwid.Padding(urwid.Text('Process [%d]' % procid), left=1)
     header = urwid.AttrWrap(header, 'header')
