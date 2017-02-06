@@ -16,7 +16,8 @@ def _parser():
     parser = argparse.ArgumentParser(description='Load test.')
 
     parser.add_argument('scenario', default="loadtest.py",
-                        help="path or module name that contains scenarii")
+                        help="path or module name that contains scenarii",
+                        nargs="?")
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
@@ -56,6 +57,11 @@ def main():
 
     if args.version:
         print(__version__)
+        sys.exit(0)
+
+    if args.scenario is None:
+        print('You need to provide a scenario file.')
+        parser.print_usage()
         sys.exit(0)
 
     return run(args)
