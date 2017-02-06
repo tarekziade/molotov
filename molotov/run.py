@@ -12,7 +12,7 @@ from molotov.util import log
 from molotov import ui
 
 
-def main():
+def _parser():
     parser = argparse.ArgumentParser(description='Load test.')
 
     parser.add_argument('scenario', default="loadtest.py",
@@ -47,6 +47,11 @@ def main():
                         default=False,
                         help='Use simple console for feedback')
 
+    return parser
+
+
+def main():
+    parser = _parser()
     args = parser.parse_args()
 
     if args.version:
