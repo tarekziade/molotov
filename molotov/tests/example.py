@@ -1,5 +1,4 @@
 import json
-import random
 from molotov import scenario, setup
 
 
@@ -21,8 +20,6 @@ async def scenario_one(session):
 
 @scenario(30)
 async def scenario_two(session):
-    if random.randint(1, 100) < 10:
-        raise ValueError()
     async with session.get(_API) as resp:
         assert resp.status == 200
 

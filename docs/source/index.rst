@@ -45,7 +45,7 @@ when the time in seconds provided by **-d** is reached.
 
 Each worker randomly picks one scenario to execute, given their weights.
 Once it's finished, it picks the next one, and so on. In our example,
-**scenario_two** is picked ~60% of the time.
+**scenario_two** is picked ~40% of the time.
 
 
 .. note::
