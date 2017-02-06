@@ -77,3 +77,4 @@ Check out the detailed documentation:
    cli
    slave
    design
+   tutorial
