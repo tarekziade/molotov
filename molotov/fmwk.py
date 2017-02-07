@@ -9,6 +9,7 @@ from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
 from molotov.api import get_setup, pick_scenario
+from molotov.stats import get_statsd_client
 
 import urwid   # meh..
 
@@ -83,7 +84,7 @@ async def step(session, quiet, verbose, stream):
 _HOWLONG = 0
 
 
-async def worker(loop, results, args, stream):
+async def worker(loop, results, args, stream, statsd):
     global _STOP
     quiet = args.quiet
     duration = args.duration
@@ -109,7 +110,7 @@ async def worker(loop, results, args, stream):
     else:
         options = {}
 
-    async with Session(loop, stream, verbose, **options) as session:
+    async with Session(loop, stream, verbose, statsd, **options) as session:
         while howlong < duration and not _STOP:
             howlong = _now() - start
             result = await step(session, quiet, verbose, stream)
@@ -128,15 +129,14 @@ async def worker(loop, results, args, stream):
         await stream.put('WORKER_STOPPED')
 
 
-def _runner(loop, args, results, stream):
+def _runner(loop, args, results, stream, statsd):
     def _prepare():
         tasks = []
         for i in range(args.workers):
             future = asyncio.ensure_future(worker(loop, results, args,
-                                                  stream))
+                                                  stream, statsd))
             tasks.append(future)
         return tasks
-
     if args.quiet:
         return _prepare()
     else:
@@ -159,38 +159,70 @@ def _process(args):
         loop.set_debug(True)
 
     results = {'OK': 0, 'FAILED': 0}
-    stream = asyncio.Queue()
+    stream = asyncio.Queue(loop=loop)
+
+    co_tasks = []
+
+    if args.statsd:
+        statsd = get_statsd_client(args.statsd_server, args.statsd_port)
+        stastd_task = asyncio.ensure_future(statsd.run())
+    else:
+        statsd = stastd_task = None
+
     consumer = asyncio.ensure_future(consume(stream, args.workers,
                                      args.console, args.verbose))
-    tasks = _runner(loop, args, results, stream)
-    tasks = asyncio.gather(*tasks, loop=loop, return_exceptions=True)
+    co_tasks.append(consumer)
+    _TASKS.extend(co_tasks)
 
-    _TASKS.append(tasks)
-    _TASKS.append(consumer)
+    co_tasks = asyncio.gather(*co_tasks, loop=loop, return_exceptions=True)
+
+    workers = _runner(loop, args, results, stream, statsd)
+    run_task = asyncio.gather(*workers, loop=loop, return_exceptions=True)
+
+    _TASKS.extend(workers)
+    _STATSD.append((statsd, stastd_task))
+
     try:
-        loop.run_until_complete(tasks)
-        loop.run_until_complete(consumer)
+        loop.run_until_complete(run_task)
     except asyncio.CancelledError:
         _STOP = True
-        consumer.cancel()
-        tasks.cancel()
-        loop.run_until_complete(tasks)
+        co_tasks.cancel()
+        loop.run_until_complete(co_tasks)
+        run_task.cancel()
+        loop.run_until_complete(run_task)
     finally:
+        _stop_statsd()
         loop.close()
-        _TASKS.remove(tasks)
-        _TASKS.remove(consumer)
 
     return results
 
 
+_STATSD = []
 _PROCESSES = []
 _TASKS = []
+
+
+def _stop_statsd():
+
+    if _STATSD != []:
+        loop = asyncio.get_event_loop()
+
+        async def stop():
+            statsd, stastd_task = _STATSD[0]
+            try:
+                await statsd.stop()
+                await stastd_task
+            except Exception:
+                pass
+
+        stop = asyncio.ensure_future(stop())
+        loop.run_until_complete(stop)
+        _STATSD[:] = []
 
 
 def _shutdown(signal, frame):
     global _STOP
     _STOP = True
-
     get_live_results().close()
 
     for task in _TASKS:
@@ -254,7 +286,7 @@ def _launch_processes(args, screen):
                     if job.exitcode is not None and job in _PROCESSES:
                         _PROCESSES.remove(job)
 
-                await asyncio.sleep(.5)
+                await asyncio.sleep(.2)
 
         loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet,
                                                           args.console)))

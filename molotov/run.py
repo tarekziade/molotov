@@ -48,6 +48,15 @@ def _parser():
                         default=False,
                         help='Use simple console for feedback')
 
+    parser.add_argument('--statsd', help='Activates statsd',
+                        action='store_true', default=False)
+
+    parser.add_argument('--statsd-server', help='Statsd Server',
+                        type=str, default="127.0.0.1")
+
+    parser.add_argument('--statsd-port', help='Statsd Port',
+                        type=int, default=8125)
+
     return parser
 
 
@@ -63,6 +72,13 @@ def main():
         print('You need to provide a scenario file.')
         parser.print_usage()
         sys.exit(0)
+
+    if args.statsd:
+        # early import to quit if no aiostatsd
+        from aiostatsd.client import StatsdClient
+        if StatsdClient is None:
+            print('You need to install aiostatsd when using --statds')
+            sys.exit(0)
 
     return run(args)
 

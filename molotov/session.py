@@ -1,7 +1,7 @@
+import codecs
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
 from aiohttp import TCPConnector
-
 from molotov.util import resolve
 
 
@@ -17,7 +17,7 @@ class LoggedClientRequest(ClientRequest):
 
 class LoggedClientSession(ClientSession):
 
-    def __init__(self, loop, stream, verbose=False, **kw):
+    def __init__(self, loop, stream, verbose=False, statsd=None, **kw):
         connector = kw.pop('connector', None)
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
@@ -29,6 +29,7 @@ class LoggedClientSession(ClientSession):
         self.request_class.verbose = verbose
         self.verbose = verbose
         self.request_class.session = self
+        self.statsd = statsd
 
     def _dns_lookup(self, url):
         return resolve(url)[0]
@@ -37,7 +38,23 @@ class LoggedClientSession(ClientSession):
         args = list(args)
         args[1] = self._dns_lookup(args[1])
         args = tuple(args)
-        resp = await super(LoggedClientSession, self)._request(*args, **kw)
+        req = super(LoggedClientSession, self)._request
+
+        if self.statsd:
+            meth, url = args[:2]
+            label = '%s:%s' % (meth, url)
+            label = codecs.encode(bytes(label, 'utf8'), 'base64').strip()
+            label = '%s' % label.decode('utf8')
+
+            @self.statsd.timer(label)
+            async def request():
+                resp = await req(*args, **kw)
+                return resp
+
+            resp = await request()
+        else:
+            resp = await req(*args, **kw)
+
         await self.print_response(resp)
         return resp
 

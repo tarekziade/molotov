@@ -58,8 +58,9 @@ class TestFmwk(TestLoop):
         results = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
+        statsd = None
 
-        await worker(loop, results, args, stream)
+        await worker(loop, results, args, stream, statsd)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -131,8 +132,9 @@ class TestFmwk(TestLoop):
         stream = asyncio.Queue()
         args = self.get_args()
         args.exception = False
+        statsd = None
 
-        await worker(loop, results, args, stream)
+        await worker(loop, results, args, stream, statsd)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -148,8 +150,9 @@ class TestFmwk(TestLoop):
         results = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
+        statsd = None
 
-        await worker(loop, results, args, stream)
+        await worker(loop, results, args, stream, statsd)
 
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)

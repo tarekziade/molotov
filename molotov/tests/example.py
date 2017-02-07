@@ -14,8 +14,11 @@ async def init_test(args):
 @scenario(40)
 async def scenario_one(session):
     async with session.get(_API) as resp:
+        if session.statsd:
+            session.statsd.incr('BLEH')
         res = await resp.json()
         assert res['result'] == 'OK'
+        assert resp.status == 200
 
 
 @scenario(30)

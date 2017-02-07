@@ -129,6 +129,7 @@ class TestLoop(unittest.TestCase):
         args.debug = True
         args.workers = 1
         args.console = True
+        args.statsd = False
         return args
 
 
