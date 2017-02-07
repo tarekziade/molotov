@@ -1,8 +1,12 @@
-import codecs
+import socket
+from urllib.parse import urlparse
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
 from aiohttp import TCPConnector
 from molotov.util import resolve
+
+
+_HOST = socket.gethostname()
 
 
 class LoggedClientRequest(ClientRequest):
@@ -41,10 +45,17 @@ class LoggedClientSession(ClientSession):
         req = super(LoggedClientSession, self)._request
 
         if self.statsd:
+            prefix = 'molotov.%(hostname)s.%(method)s.%(host)s.%(path)s'
             meth, url = args[:2]
-            label = '%s:%s' % (meth, url)
-            label = codecs.encode(bytes(label, 'utf8'), 'base64').strip()
-            label = '%s' % label.decode('utf8')
+            url = urlparse(url)
+            path = url.path != '' and url.path or '/'
+
+            data = {'method': meth,
+                    'hostname': _HOST,
+                    'host': url.netloc.split(":")[0],
+                    'path': path}
+
+            label = prefix % data
 
             @self.statsd.timer(label)
             async def request():
