@@ -1,5 +1,12 @@
 language: python
 python: 3.5
+compiler: gcc
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+        - g++-4.9
 env:
  - TOX_ENV=py35
  - TOX_ENV=docs
