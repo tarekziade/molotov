@@ -60,6 +60,7 @@ class LoggedClientSession(ClientSession):
             @self.statsd.timer(label)
             async def request():
                 resp = await req(*args, **kw)
+                self.statsd.incr(label + '.' + str(resp.status))
                 return resp
 
             resp = await request()
