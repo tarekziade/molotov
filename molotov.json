@@ -1,3 +1,4 @@
 {"molotov": {"tests": {
-  "test": {"duration": 1}
+  "test": {"duration": 1,
+           "scenario": "molotov/tests/example.py"}
 }}}
