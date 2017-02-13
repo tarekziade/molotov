@@ -1,2 +1,2 @@
 [run]
-omit = molotov/tests/*
+omit = molotov/tests/*,*tmp*/*

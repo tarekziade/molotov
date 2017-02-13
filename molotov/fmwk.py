@@ -322,6 +322,4 @@ def _launch_processes(args, screen):
 
 
 def runner(args, screen=None):
-    args.mainpid = os.getpid()
-    results = _launch_processes(args, screen)
-    return results
+    return _launch_processes(args, screen)
