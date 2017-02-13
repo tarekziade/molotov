@@ -19,27 +19,28 @@ Make sure you are using Python 3.5+ with Pip installed, then:
    $ pip install molotov
 
 
-If you want to use statsd, you need to install `aiostatsd <https://github.com/scivey/aiostatsd>`_.
+If you want to use statsd, you need to install `aiostatsd <https://github.com/scivey/aiostatsd>`_
+which requires a g++ complier and installing cystatsd.
+
+Under MacOS X Sierra:
 
 .. code-block:: bash
 
-   $ pip install cython aiostatsd
+    $ export MACOSX_DEPLOYMENT_TARGET=10.12
+    $ pip install cython
+    $ pip install git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
+    $ pip install aiostatsd
 
-If you have any trouble installing aiostatsd, try to install Tarek's cystatsd fork
-first with MACOSX_DEPLOYMENT_TARGET header.
-
-.. code-block:: bash
-
-    $ MACOSX_DEPLOYMENT_TARGET=10.10 pip install cython git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
-
-On linux, make usre you have g++ 4.8 and set up some compiler env:
+On Linux, make sure you have g++ 4.9, then:
 
 .. code-block:: bash
 
-    $ export CXXFLAGS="--std=c++0x"
-    $ export CXX="g++-4.9"
-    $ export CC="g++-4.9"
-    $ pip install cython git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
+    $ export CXXFLAGS=--std=c++0x
+    $ export CXX=g++-4.9
+    $ export CC=g++-4.9
+    $ pip install cython
+    $ pip install git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
+    $ pip install aiostatsd
 
 
 
