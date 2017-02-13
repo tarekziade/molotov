@@ -149,3 +149,16 @@ def async_test(func):
             loop.close()
             asyncio.set_event_loop(oldloop)
     return _async_test
+
+
+def dedicatedloop(func):
+    @functools.wraps(func)
+    def _loop(*args, **kw):
+        old_loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return func(*args, **kw)
+        finally:
+            asyncio.set_event_loop(old_loop)
+    return _loop

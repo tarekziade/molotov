@@ -1,13 +1,15 @@
+import sys
 import asyncio
 from collections import namedtuple
 from molotov.api import scenario
-from molotov.tests.support import TestLoop, coserver
+from molotov.tests.support import TestLoop, coserver, dedicatedloop
 from molotov.tests.statsd import UDPServer
-from molotov.run import run
+from molotov.run import run, main
 
 
 class TestRunner(TestLoop):
 
+    @dedicatedloop
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
         test_loop.set_debug(True)
@@ -60,5 +62,13 @@ class TestRunner(TestLoop):
 
         udp = server.flush()
         self.assertTrue(len(udp) > 0)
-
         test_loop._close()
+
+    @dedicatedloop
+    def test_main(self):
+        old = list(sys.argv)
+        sys.argv[:] = ['molotov', '-cq', '-d', '1', 'molotov/tests/example.py']
+        try:
+            main()
+        finally:
+            sys.argv[:] = old
