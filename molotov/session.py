@@ -7,6 +7,9 @@ from molotov.util import resolve
 
 
 _HOST = socket.gethostname()
+_UNREADABLE = "***WARNING: Molotov can't display this body***"
+_BINARY = "**** Binary content ****"
+_COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 
 class LoggedClientRequest(ClientRequest):
@@ -80,9 +83,15 @@ class LoggedClientSession(ClientSession):
             headers = '\n'.join('%s: %s' % (k, v) for k, v in
                                 req.headers.items())
             raw += '\n' + headers
-        if req.body:
+
+        if req.headers.get('Content-Encoding') in _COMPRESSED:
+            raw += '\n\n' + _BINARY + '\n'
+        elif req.body:
             if isinstance(req.body, bytes):
-                body = str(req.body, 'utf8')
+                try:
+                    body = str(req.body, 'utf8')
+                except UnicodeDecodeError:
+                    body = _UNREADABLE
             else:
                 body = req.body
 
@@ -97,14 +106,16 @@ class LoggedClientSession(ClientSession):
         items = resp.headers.items()
         headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
         raw += headers
-        if resp.content:
+        if resp.headers.get('Content-Encoding') in _COMPRESSED:
+            raw += '\n\n' + _BINARY
+        elif resp.content:
             content = await resp.content.read()
             # put back the data in the content
             resp.content.unread_data(content)
             try:
                 raw += '\n\n' + content.decode()
             except UnicodeDecodeError:
-                raw += "\n\n***WARNING: Molotov can't display this body***"
+                raw += '\n\n' + _UNREADABLE
 
         await self.stream.put(raw)
         await self.stream.put('\n' + '<' * 45 + '\n')
