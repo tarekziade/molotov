@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import json
 
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
@@ -18,6 +19,9 @@ def _parser():
     parser.add_argument('scenario', default="loadtest.py",
                         help="path or module name that contains scenarii",
                         nargs="?")
+
+    parser.add_argument('--config', default=None, type=str,
+                        help='Point to a JSON config file.')
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
@@ -60,6 +64,11 @@ def _parser():
     return parser
 
 
+def _expand_args(args, options):
+    for key, val in options.items():
+        setattr(args, key, val)
+
+
 def main():
     parser = _parser()
     args = parser.parse_args()
@@ -69,9 +78,31 @@ def main():
         sys.exit(0)
 
     if args.scenario is None:
-        print('You need to provide a scenario file.')
+        print('You need to provide a scenario name or file.')
         parser.print_usage()
         sys.exit(0)
+
+    if args.config:
+        if not os.path.exists(args.config):
+            print("Can't find %r" % args.config)
+            sys.exit(0)
+
+        with open(args.config) as f:
+            try:
+                config = json.loads(f.read())
+            except ValueError:
+                print("Can't parse %r" % args.config)
+                sys.exit(0)
+
+        if 'molotov' not in config:
+            print("Bad config -- no molotov key")
+            sys.exit(0)
+
+        if args.scenario not in config['molotov']:
+            print("Can't find %r in the config" % args.scenario)
+            sys.exit(0)
+
+        _expand_args(args, config['molotov'][args.scenario])
 
     if args.statsd:
         # early import to quit if no aiostatsd
