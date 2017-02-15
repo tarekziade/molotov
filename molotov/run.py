@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import json
 
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
@@ -9,7 +8,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 from molotov.fmwk import runner
 from molotov.api import get_scenarios
 from molotov import __version__
-from molotov.util import log
+from molotov.util import log, expand_options, OptionError
 from molotov import ui
 
 
@@ -64,11 +63,6 @@ def _parser():
     return parser
 
 
-def _expand_args(args, options):
-    for key, val in options.items():
-        setattr(args, key, val)
-
-
 def main():
     parser = _parser()
     args = parser.parse_args()
@@ -83,33 +77,14 @@ def main():
         sys.exit(0)
 
     if args.config:
-        if not os.path.exists(args.config):
-            print("Can't find %r" % args.config)
-            sys.exit(0)
-
-        with open(args.config) as f:
-            try:
-                config = json.loads(f.read())
-            except ValueError:
-                print("Can't parse %r" % args.config)
-                sys.exit(0)
-
-        if 'molotov' not in config:
-            print("Bad config -- no molotov key")
-            sys.exit(0)
-
-        if 'tests' not in config['molotov']:
-            print("Bad config -- no molotov/tests key")
-            sys.exit(0)
-
         if args.scenario == 'loadtest.py':
             args.scenario = 'test'
 
-        if args.scenario not in config['molotov']['tests']:
-            print("Can't find %r in the config" % args.scenario)
+        try:
+            expand_options(args.config, args.scenario, args)
+        except OptionError as e:
+            print(str(e))
             sys.exit(0)
-
-        _expand_args(args, config['molotov']['tests'][args.scenario])
 
     if args.statsd:
         # early import to quit if no aiostatsd

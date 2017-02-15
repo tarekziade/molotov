@@ -1,5 +1,9 @@
 import unittest
-from molotov.util import resolve
+import os
+from molotov.util import resolve, expand_options
+
+_HERE = os.path.dirname(__file__)
+config = os.path.join(_HERE, '..', '..', 'molotov.json')
 
 
 class TestUtil(unittest.TestCase):
@@ -18,3 +22,11 @@ class TestUtil(unittest.TestCase):
             changed, original, resolved = resolve(url)
             self.assertEqual(changed, wanted,
                              '%s vs %s' % (original, resolved))
+
+    def test_config(self):
+        class Args:
+            pass
+
+        args = Args()
+        expand_options(config, "test", args)
+        self.assertEqual(args.duration, 1)
