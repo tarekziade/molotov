@@ -14,11 +14,15 @@ class ValidationError(Exception):
     pass
 
 
+def _input(msg):
+    return input(msg)
+
+
 def _prompt(text, validator=None, default=None):
     while True:
         try:
             if default:
-                res = input(_PREFIX + '%s [%s]: ' % (text, default))
+                res = _input(_PREFIX + '%s [%s]: ' % (text, default))
             else:
                 res(_PREFIX + '%s: ' % text)
 

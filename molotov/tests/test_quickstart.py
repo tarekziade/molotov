@@ -14,13 +14,13 @@ class TestQuickStart(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def _prompt(self, text, validator=None, default=None):
-        if text.startswith('Target'):
+    def _input(self, text):
+        if 'Target directory' in text:
             return self.tempdir
-        return True
+        return 'y'
 
     def test_generate(self):
-        quickstart._prompt = self._prompt
+        quickstart._input = self._input
         old = list(sys.argv)
         sys.argv[:] = ['molostart']
         try:
