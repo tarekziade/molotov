@@ -8,7 +8,7 @@ realistic interaction with the service a client can have.
 Before you can do anything, make sure you have Python 3.5+ and
 virtualenv.
 
-Let's use **molostart** to get started::
+Let's use **molostart** to get started:
 
 .. code-block:: bash
 
