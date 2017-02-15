@@ -98,11 +98,18 @@ def main():
             print("Bad config -- no molotov key")
             sys.exit(0)
 
-        if args.scenario not in config['molotov']:
+        if 'tests' not in config['molotov']:
+            print("Bad config -- no molotov/tests key")
+            sys.exit(0)
+
+        if args.scenario == 'loadtest.py':
+            args.scenario = 'test'
+
+        if args.scenario not in config['molotov']['tests']:
             print("Can't find %r in the config" % args.scenario)
             sys.exit(0)
 
-        _expand_args(args, config['molotov'][args.scenario])
+        _expand_args(args, config['molotov']['tests'][args.scenario])
 
     if args.statsd:
         # early import to quit if no aiostatsd
