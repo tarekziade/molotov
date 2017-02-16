@@ -10,8 +10,7 @@ from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
 from molotov.api import get_setup, pick_scenario
 from molotov.stats import get_statsd_client
-
-import urwid   # meh..
+from molotov.ui import quit as quit_screen
 
 
 _STOP = False
@@ -269,7 +268,7 @@ def _launch_processes(args, screen):
             def check_procs(*args):
                 dead = [not p.is_alive() for p in _PROCESSES]
                 if all(dead):
-                    raise urwid.ExitMainLoop()
+                    quit_screen()
 
             ui.set_alarm_in(1, check_procs)
             ui.run()
