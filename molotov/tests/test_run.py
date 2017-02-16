@@ -97,7 +97,6 @@ class TestRunner(TestLoop):
         stdout, stderr = self._test_molotov()
         self.assertTrue('Cannot import' in stdout)
 
-
     @dedicatedloop
     def test_config_no_scenario(self):
         stdout, stderr = self._test_molotov('-c', '--config', _CONFIG,
