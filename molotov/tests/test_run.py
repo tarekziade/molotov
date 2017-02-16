@@ -88,9 +88,15 @@ class TestRunner(TestLoop):
         self.assertEqual(stdout, __version__)
 
     @dedicatedloop
-    def test_no_scenario(self):
+    def test_empty_scenario(self):
         stdout, stderr = self._test_molotov('')
         self.assertTrue('Cannot import' in stdout)
+
+    @dedicatedloop
+    def test_no_scenario(self):
+        stdout, stderr = self._test_molotov()
+        self.assertTrue('Cannot import' in stdout)
+
 
     @dedicatedloop
     def test_config_no_scenario(self):
