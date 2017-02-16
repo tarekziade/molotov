@@ -96,14 +96,20 @@ def _expand_args(args, options):
 
 
 def expand_options(config, scenario, args):
-    if not os.path.exists(config):
-        raise OptionError("Can't find %r" % config)
-
-    with open(config) as f:
+    if not isinstance(config, str):
         try:
-            config = json.loads(f.read())
+            config = json.loads(config.read())
         except ValueError:
             raise OptionError("Can't parse %r" % config)
+    else:
+        if not os.path.exists(config):
+            raise OptionError("Can't find %r" % config)
+
+        with open(config) as f:
+            try:
+                config = json.loads(f.read())
+            except ValueError:
+                raise OptionError("Can't parse %r" % config)
 
     if 'molotov' not in config:
         raise OptionError("Bad config -- no molotov key")
@@ -112,6 +118,6 @@ def expand_options(config, scenario, args):
         raise OptionError("Bad config -- no molotov/tests key")
 
     if scenario not in config['molotov']['tests']:
-        raise OptionError("Can't find %r in the config" % args.scenario)
+        raise OptionError("Can't find %r in the config" % scenario)
 
     _expand_args(args, config['molotov']['tests'][scenario])
