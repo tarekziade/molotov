@@ -1,15 +1,24 @@
 """ Molotov-based test.
 """
 import json
-from molotov import scenario, setup
+from molotov import scenario, setup, global_setup, teardown, global_teardown
 
 
 # This is the service you want to load test
 _API = 'http://localhost:8080'
 
 
+@global_setup
+def test_starts(args):
+    """ This functions is called before anything starts.
+
+    Notice that it's not a coroutine.
+    """
+    pass
+
+
 @setup()
-async def init_test(args):
+async def worker_starts(worker_id, args):
     """ This function is called once per worker.
 
     If it returns a mapping, it will be used with all requests.
@@ -19,6 +28,24 @@ async def init_test(args):
     """
     headers = {'SomeHeader': '1'}
     return {'headers': headers}
+
+
+@teardown
+def worker_ends(worker_id):
+    """ This functions is called when the worker is done.
+
+    Notice that it's not a coroutine.
+    """
+    pass
+
+
+@global_teardown
+def test_ends():
+    """ This functions is called when everything is done.
+
+    Notice that it's not a coroutine.
+    """
+    pass
 
 
 # each scenario has a weight. Molotov uses it to determine

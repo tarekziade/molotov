@@ -48,10 +48,27 @@ Quickstart
 ==========
 
 To create a load test, you need to create a Python module with some functions
-decorated with the **scenario** decorator.
+decorated with the **scenario** decorator -- those functions needs to be
+coroutines.
 
 When executed, the function receives a **session** object inherited
 from **aiohttp.ClientSession**.
+
+Molotov also provides 4 decorators to deal with test fixtures:
+
+- **@global_setup()** called once when the test starts, before processes and workers
+  are created. Receives the arguments used to start Molotov. The decorated
+  function should not be a coroutine.
+
+- **@setup()** called once per worker startup. Receives the worker number and the
+  arguments used to start Molotov. The decorated function should be a coroutine.
+
+- **@teardown()** called when a worker is done. Receives the worker id.
+  The decorated function should not be a coroutine.
+
+- **@global_teardown()** called when everything is done.
+  The decorated function should not be a coroutine.
+
 
 Here's a full example :
 
