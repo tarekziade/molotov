@@ -8,29 +8,49 @@ realistic interaction with the service a client can have.
 Before you can do anything, make sure you have Python 3.5+ and
 virtualenv.
 
-Let's create a directory with a virtualenv in it and activate it:
+Let's use **molostart** to get started:
 
 .. code-block:: bash
 
-    $ mkdir loadtest
-    $ cd loadtest
-    $ virtualenv-3.5 .
-    $ source bin/activate
+    $ bin/molostart
+    **** Molotov Quickstart ****
 
-We can then install the latest Molotov in it:
+    Answer to a few questions to get started...
+    > Target directory [.]: /tmp/mytest
+    > Create Makefile [y]:
+    Generating Molotov test...
+    …copying 'Makefile' in '/tmp/mytest'
+    …copying 'loadtest.py' in '/tmp/mytest'
+    …copying 'molotov.json' in '/tmp/mytest'
+
+    All done. Happy Breaking!
+    Go in '/tmp/mytest'
+    Run 'make build' to get started...
+
+**molostart** creates a default molotov layout for you.
+You can build the test with **make build** it will create
+a virtualenv inside the directory with Molotov installed.
+
 
 .. code-block:: bash
 
-    (loadtest) $ pip install molotov
+    $ cd /tmp/mytest
+    $ make build
+    $ source venv/bin/activate
+    (venv)
 
 If that worked, you should now have a **molotov** command-line.
+
+    (venv) $ molotov --version
+    0.4
 
 
 Running one scenario
 --------------------
 
 
-Let's create our first load test in a loadtest.py::
+Let's open loadtests.py, remove all the examples,
+and create our first real load test::
 
     from molotov import scenario
 

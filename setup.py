@@ -31,4 +31,5 @@ setup(name='molotov',
       [console_scripts]
       molotov = molotov.run:main
       moloslave = molotov.slave:main
+      molostart = molotov.quickstart:main
       """)

@@ -1,5 +1,15 @@
+from io import StringIO
+import json
 import unittest
-from molotov.util import resolve
+import os
+from molotov.util import resolve, expand_options, OptionError
+
+_HERE = os.path.dirname(__file__)
+config = os.path.join(_HERE, '..', '..', 'molotov.json')
+
+
+class Args:
+    pass
 
 
 class TestUtil(unittest.TestCase):
@@ -18,3 +28,25 @@ class TestUtil(unittest.TestCase):
             changed, original, resolved = resolve(url)
             self.assertEqual(changed, wanted,
                              '%s vs %s' % (original, resolved))
+
+    def test_config(self):
+        args = Args()
+        expand_options(config, "test", args)
+        self.assertEqual(args.duration, 1)
+
+    def _get_config(self, data):
+        data = json.dumps(data)
+        data = StringIO(data)
+        data.seek(0)
+        return data
+
+    def test_bad_config(self):
+        args = Args()
+
+        bad_data = [({}, 'test'),
+                    ({'molotov': {}}, 'test'),
+                    ({'molotov': {'tests': {}}}, 'test')]
+
+        for data, scenario in bad_data:
+            self.assertRaises(OptionError, expand_options,
+                              self._get_config(data), scenario, args)

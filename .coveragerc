@@ -1,2 +1,2 @@
 [run]
-omit = molotov/tests/*,*tmp*/*
+omit = molotov/tests/*,*tmp*/*,molotov/quickstart/loadtest.py

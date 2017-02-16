@@ -1,3 +1,4 @@
+import json
 import socket
 import os
 import sys
@@ -83,3 +84,40 @@ def resolve(url):
     new = urlunparse((parts.scheme, netloc, parts.path or '', '',
                       parts.query or '', parts.fragment or ''))
     return new, original, host
+
+
+class OptionError(Exception):
+    pass
+
+
+def _expand_args(args, options):
+    for key, val in options.items():
+        setattr(args, key, val)
+
+
+def expand_options(config, scenario, args):
+    if not isinstance(config, str):
+        try:
+            config = json.loads(config.read())
+        except ValueError:
+            raise OptionError("Can't parse %r" % config)
+    else:
+        if not os.path.exists(config):
+            raise OptionError("Can't find %r" % config)
+
+        with open(config) as f:
+            try:
+                config = json.loads(f.read())
+            except ValueError:
+                raise OptionError("Can't parse %r" % config)
+
+    if 'molotov' not in config:
+        raise OptionError("Bad config -- no molotov key")
+
+    if 'tests' not in config['molotov']:
+        raise OptionError("Bad config -- no molotov/tests key")
+
+    if scenario not in config['molotov']['tests']:
+        raise OptionError("Can't find %r in the config" % scenario)
+
+    _expand_args(args, config['molotov']['tests'][scenario])

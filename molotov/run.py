@@ -8,7 +8,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 from molotov.fmwk import runner
 from molotov.api import get_scenarios
 from molotov import __version__
-from molotov.util import log
+from molotov.util import log, expand_options, OptionError
 from molotov import ui
 
 
@@ -18,6 +18,9 @@ def _parser():
     parser.add_argument('scenario', default="loadtest.py",
                         help="path or module name that contains scenarii",
                         nargs="?")
+
+    parser.add_argument('--config', default=None, type=str,
+                        help='Point to a JSON config file.')
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays version and exits.')
@@ -69,9 +72,19 @@ def main():
         sys.exit(0)
 
     if args.scenario is None:
-        print('You need to provide a scenario file.')
+        print('You need to provide a scenario name or file.')
         parser.print_usage()
         sys.exit(0)
+
+    if args.config:
+        if args.scenario == 'loadtest.py':
+            args.scenario = 'test'
+
+        try:
+            expand_options(args.config, args.scenario, args)
+        except OptionError as e:
+            print(str(e))
+            sys.exit(0)
 
     if args.statsd:
         # early import to quit if no aiostatsd
