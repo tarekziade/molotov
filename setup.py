@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 from molotov import __version__
-import sys
 
-install_requires = ['aiohttp', 'statsd', 'urwid', 'humanize']
+
+install_requires = ['aiohttp', 'urwid', 'humanize']
 description = ''
 
 for file_ in ('README', ):
@@ -20,7 +20,7 @@ setup(name='molotov',
       url='https://github.com/loads/molotov',
       packages=find_packages(),
       long_description=description,
-      description=("AsyncIO Loads client"),
+      description=("Spiffy load testing tool."),
       author="Tarek Ziade",
       author_email="tarek@ziade.org",
       include_package_data=True,

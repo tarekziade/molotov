@@ -1,4 +1,3 @@
 aiohttp
-statsd
 urwid
 humanize
