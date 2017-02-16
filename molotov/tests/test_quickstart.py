@@ -3,6 +3,7 @@ import unittest
 import shutil
 import sys
 import os
+import contextlib
 
 from molotov import quickstart
 
@@ -19,15 +20,29 @@ class TestQuickStart(unittest.TestCase):
             return self.tempdir
         return 'y'
 
-    def test_generate(self):
-        quickstart._input = self._input
+    @contextlib.contextmanager
+    def set_args(self, *args):
         old = list(sys.argv)
-        sys.argv[:] = ['molostart']
+        sys.argv[:] = args
         try:
-            quickstart.main()
+            yield
         finally:
             sys.argv[:] = old
+
+    def test_generate(self):
+        quickstart._input = self._input
+
+        with self.set_args('molostart'):
+            quickstart.main()
 
         result = os.listdir(self.tempdir)
         result.sort()
         self.assertEqual(result, ['Makefile', 'loadtest.py', 'molotov.json'])
+
+        # second runs stops
+        with self.set_args('molostart'):
+            try:
+                quickstart.main()
+                raise AssertionError()
+            except SystemExit:
+                pass
