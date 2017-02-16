@@ -71,11 +71,6 @@ def main():
         print(__version__)
         sys.exit(0)
 
-    if args.scenario is None:
-        print('You need to provide a scenario name or file.')
-        parser.print_usage()
-        sys.exit(0)
-
     if args.config:
         if args.scenario == 'loadtest.py':
             args.scenario = 'test'
@@ -127,7 +122,3 @@ def run(args):
     if not args.quiet:
         log('', pid=False)
     log('%(OK)d OK, %(FAILED)d Failed' % res, pid=False)
-
-
-if __name__ == '__main__':
-    main()
