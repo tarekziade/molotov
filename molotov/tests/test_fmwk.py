@@ -1,4 +1,6 @@
 import asyncio
+import os
+import signal
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
@@ -161,3 +163,15 @@ class TestFmwk(TestLoop):
 
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)
+
+    def test_shutdown(self):
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
+
+        self.assertEqual(results['OK'], 1)
+        self.assertEqual(results['FAILED'], 0)
