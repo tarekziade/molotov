@@ -106,7 +106,7 @@ def run(args):
     else:
         try:
             import_module(args.scenario)
-        except ImportError:
+        except (ImportError, ValueError):
             print('Cannot import %r' % args.scenario)
             sys.exit(1)
 

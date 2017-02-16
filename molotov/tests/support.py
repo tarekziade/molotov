@@ -1,3 +1,4 @@
+import sys
 import signal
 import os
 import asyncio
@@ -8,6 +9,7 @@ from contextlib import contextmanager
 import functools
 from collections import namedtuple
 from http.client import HTTPConnection
+from io import StringIO
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -162,3 +164,18 @@ def dedicatedloop(func):
         finally:
             asyncio.set_event_loop(old_loop)
     return _loop
+
+
+@contextmanager
+def set_args(*args):
+    old = list(sys.argv)
+    sys.argv[:] = args
+    oldout, olderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = StringIO(), StringIO()
+    try:
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout.seek(0)
+        sys.stderr.seek(0)
+        sys.argv[:] = old
+        sys.stdout, sys.stderr = oldout, olderr

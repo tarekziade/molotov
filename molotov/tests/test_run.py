@@ -1,10 +1,15 @@
-import sys
+import os
 import asyncio
 from collections import namedtuple
+
 from molotov.api import scenario
-from molotov.tests.support import TestLoop, coserver, dedicatedloop
+from molotov.tests.support import TestLoop, coserver, dedicatedloop, set_args
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
+from molotov import __version__
+
+
+_CONFIG = os.path.join(os.path.dirname(__file__), '..', '..', 'molotov.json')
 
 
 class TestRunner(TestLoop):
@@ -66,9 +71,42 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_main(self):
-        old = list(sys.argv)
-        sys.argv[:] = ['molotov', '-cq', '-d', '1', 'molotov/tests/example.py']
-        try:
+        with set_args('molotov', '-cq', '-d', '1', 'molotov/tests/example.py'):
             main()
-        finally:
-            sys.argv[:] = old
+
+    def _test_molotov(self, *args):
+        with set_args('molotov', *args) as (stdout, stderr):
+            try:
+                main()
+            except SystemExit:
+                pass
+        return stdout.read().strip(), stderr.read().strip()
+
+    @dedicatedloop
+    def test_version(self):
+        stdout, stderr = self._test_molotov('--version')
+        self.assertEqual(stdout, __version__)
+
+    @dedicatedloop
+    def test_no_scenario(self):
+        stdout, stderr = self._test_molotov('')
+        self.assertTrue('Cannot import' in stdout)
+
+    @dedicatedloop
+    def test_config_no_scenario(self):
+        stdout, stderr = self._test_molotov('-c', '--config', _CONFIG,
+                                            'DONTEXIST')
+        wanted = "Can't find 'DONTEXIST' in the config"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_config_verbose(self):
+        stdout, stderr = self._test_molotov('-v', '--config', _CONFIG)
+        wanted = "You have to be in console mode"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_config_verbose_quiet(self):
+        stdout, stderr = self._test_molotov('-qv', '--config', _CONFIG)
+        wanted = "You can't"
+        self.assertTrue(wanted in stdout)
