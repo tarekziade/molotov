@@ -1,5 +1,6 @@
 try:
-    from molotov.api import scenario, setup, global_setup      # NOQA
+    from molotov.api import (scenario, setup, global_setup, teardown,  # NOQA
+                             global_teardown)                          # NOQA
 except ImportError:
     pass   # first import
 

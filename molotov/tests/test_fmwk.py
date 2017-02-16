@@ -4,7 +4,8 @@ import signal
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
-from molotov.api import scenario, setup, global_setup
+from molotov.api import (scenario, setup, global_setup, teardown,
+                         global_teardown)
 from molotov.tests.support import TestLoop, async_test
 
 
@@ -46,7 +47,7 @@ class TestFmwk(TestLoop):
         res = []
 
         @setup()
-        async def setuptest(args):
+        async def setuptest(num, args):
             res.append('0')
 
         @scenario(50)
@@ -62,7 +63,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         statsd = None
 
-        await worker(loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -76,7 +77,7 @@ class TestFmwk(TestLoop):
             res.append('SETUP')
 
         @setup()
-        async def setuptest(args):
+        async def setuptest(num, args):
             res.append('0')
 
         @scenario(50)
@@ -100,7 +101,7 @@ class TestFmwk(TestLoop):
         asyncio.set_event_loop(loop)
 
         @setup()
-        async def setuptest(args):
+        async def setuptest(num, args):
             res.append('0')
 
         @scenario(50)
@@ -124,7 +125,7 @@ class TestFmwk(TestLoop):
         res = []
 
         @setup()
-        async def setuptest(args):
+        async def setuptest(num, args):
             res.append('0')
 
         @scenario(50)
@@ -141,7 +142,7 @@ class TestFmwk(TestLoop):
         args.exception = False
         statsd = None
 
-        await worker(loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -159,12 +160,21 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         statsd = None
 
-        await worker(loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd)
 
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)
 
     def test_shutdown(self):
+        res = []
+
+        @teardown()
+        def _worker_teardown(num):
+            res.append('BYE WORKER')
+
+        @global_teardown()
+        def _teardown():
+            res.append('BYE')
 
         @scenario(100)
         async def test_two(session):
@@ -175,3 +185,4 @@ class TestFmwk(TestLoop):
 
         self.assertEqual(results['OK'], 1)
         self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(res, ['BYE WORKER', 'BYE'])

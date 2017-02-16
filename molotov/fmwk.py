@@ -1,3 +1,4 @@
+from functools import partial
 import signal
 import multiprocessing
 import asyncio
@@ -8,7 +9,7 @@ import os
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
-from molotov.api import get_setup, get_global_setup, pick_scenario
+from molotov.api import get_fixture, pick_scenario
 from molotov.stats import get_statsd_client
 from molotov.ui import quit as quit_screen
 
@@ -83,7 +84,7 @@ async def step(session, quiet, verbose, stream):
 _HOWLONG = 0
 
 
-async def worker(loop, results, args, stream, statsd):
+async def worker(num, loop, results, args, stream, statsd):
     global _STOP
     quiet = args.quiet
     duration = args.duration
@@ -92,10 +93,10 @@ async def worker(loop, results, args, stream, statsd):
     count = 1
     start = _now()
     howlong = 0
-    setup = get_setup()
+    setup = get_fixture('setup')
     if setup is not None:
         try:
-            options = await setup(args)
+            options = await setup(num, args)
         except Exception as e:
             log(e)
             await stream.put('WORKER_STOPPED')
@@ -128,12 +129,23 @@ async def worker(loop, results, args, stream, statsd):
         await stream.put('WORKER_STOPPED')
 
 
+def _worker_done(num, future):
+    teardown = get_fixture('teardown')
+    if teardown is not None:
+        try:
+            teardown(num)
+        except Exception as e:
+            # we can't stop the teardown process
+            log(e)
+
+
 def _runner(loop, args, results, stream, statsd):
     def _prepare():
         tasks = []
         for i in range(args.workers):
-            future = asyncio.ensure_future(worker(loop, results, args,
+            future = asyncio.ensure_future(worker(i, loop, results, args,
                                                   stream, statsd))
+            future.add_done_callback(partial(_worker_done, i))
             tasks.append(future)
         return tasks
     if args.quiet:
@@ -321,8 +333,13 @@ def _launch_processes(args, screen):
 
 
 def runner(args, screen=None):
-    global_setup = get_global_setup()
+    global_setup = get_fixture('global_setup')
     if global_setup is not None:
         global_setup(args)
 
-    return _launch_processes(args, screen)
+    try:
+        return _launch_processes(args, screen)
+    finally:
+        global_teardown = get_fixture('global_teardown')
+        if global_teardown is not None:
+            global_teardown()

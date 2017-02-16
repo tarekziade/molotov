@@ -1,22 +1,33 @@
 import json
-from molotov import scenario, setup, global_setup
+from molotov import scenario, setup, global_setup, global_teardown, teardown
 
 
 _API = 'http://localhost:8080'
 _HEADERS = {}
 
 
-# notice that the global setup is not a coroutine.
+# notice that the global setup, global teardown and teardown
+# are not a coroutine.
 @global_setup()
 def init_test(args):
     _HEADERS['SomeHeader'] = '1'
 
 
+@global_teardown()
+def end_test():
+    print("This is the end")
+
+
 @setup()
-async def init_worker(args):
+async def init_worker(worker_num, args):
     headers = {'AnotherHeader': '1'}
     headers.update(_HEADERS)
     return {'headers': headers}
+
+
+@teardown()
+def end_worker(worker_num):
+    print("This is the end for %d" % worker_num)
 
 
 @scenario(40)

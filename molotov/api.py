@@ -43,36 +43,40 @@ def pick_scenario():
     raise Exception('What')
 
 
-_SETUP = {}
+_FIXTURES = {}
 
 
-def get_global_setup():
-    return _SETUP.get('global_setup')
+def get_fixture(name):
+    return _FIXTURES.get(name)
 
 
-def get_setup():
-    return _SETUP.get('setup')
-
-
-def _setup(name, coroutine=True):
-    def __setup(func, *args, **kw):
+def _fixture(name, coroutine=True):
+    def __fixture(func, *args, **kw):
         if coroutine:
             _check_coroutine(func)
-        if name in _SETUP:
-            raise ValueError("You can't have two setup functions")
-        _SETUP[name] = func
+        if name in _FIXTURES:
+            raise ValueError("You can't have two %r functions" % name)
+        _FIXTURES[name] = func
 
         @functools.wraps(func)
-        def ___setup():
+        def ___fixture():
             return func(*args, **kw)
 
-        return ___setup
-    return __setup
+        return ___fixture
+    return __fixture
 
 
 def setup():
-    return _setup('setup')
+    return _fixture('setup')
 
 
 def global_setup():
-    return _setup('global_setup', coroutine=False)
+    return _fixture('global_setup', coroutine=False)
+
+
+def teardown():
+    return _fixture('teardown', coroutine=False)
+
+
+def global_teardown():
+    return _fixture('global_teardown', coroutine=False)
