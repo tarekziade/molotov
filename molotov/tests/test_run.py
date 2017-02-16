@@ -116,3 +116,9 @@ class TestRunner(TestLoop):
         stdout, stderr = self._test_molotov('-qv', '--config', _CONFIG)
         wanted = "You can't"
         self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_config_no_secnario_found(self):
+        stdout, stderr = self._test_molotov('-c', 'molotov.tests.test_run')
+        wanted = "No scenario was found"
+        self.assertTrue(wanted in stdout)
