@@ -8,7 +8,7 @@ import os
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
-from molotov.api import get_setup, pick_scenario
+from molotov.api import get_setup, get_global_setup, pick_scenario
 from molotov.stats import get_statsd_client
 from molotov.ui import quit as quit_screen
 
@@ -321,4 +321,8 @@ def _launch_processes(args, screen):
 
 
 def runner(args, screen=None):
+    global_setup = get_global_setup()
+    if global_setup is not None:
+        global_setup(args)
+
     return _launch_processes(args, screen)

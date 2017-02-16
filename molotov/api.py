@@ -43,26 +43,36 @@ def pick_scenario():
     raise Exception('What')
 
 
-_SETUP = []
+_SETUP = {}
+
+
+def get_global_setup():
+    return _SETUP.get('global_setup')
 
 
 def get_setup():
-    if len(_SETUP) == 0:
-        return None
-    return _SETUP[0]
+    return _SETUP.get('setup')
+
+
+def _setup(name, coroutine=True):
+    def __setup(func, *args, **kw):
+        if coroutine:
+            _check_coroutine(func)
+        if name in _SETUP:
+            raise ValueError("You can't have two setup functions")
+        _SETUP[name] = func
+
+        @functools.wraps(func)
+        def ___setup():
+            return func(*args, **kw)
+
+        return ___setup
+    return __setup
 
 
 def setup():
-    def _setup(func, *args, **kw):
-        _check_coroutine(func)
-        if len(_SETUP) > 0:
-            raise ValueError("You can't have two setup functions")
+    return _setup('setup')
 
-        _SETUP.append(func)
 
-        @functools.wraps(func)
-        def __setup():
-            return func(*args, **kw)
-        return __setup
-
-    return _setup
+def global_setup():
+    return _setup('global_setup', coroutine=False)

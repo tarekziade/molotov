@@ -1,13 +1,21 @@
 import json
-from molotov import scenario, setup
+from molotov import scenario, setup, global_setup
 
 
 _API = 'http://localhost:8080'
+_HEADERS = {}
+
+
+# notice that the global setup is not a coroutine.
+@global_setup()
+def init_test(args):
+    _HEADERS['SomeHeader'] = '1'
 
 
 @setup()
-async def init_test(args):
-    headers = {'SomeHeader': '1'}
+async def init_worker(args):
+    headers = {'AnotherHeader': '1'}
+    headers.update(_HEADERS)
     return {'headers': headers}
 
 

@@ -114,12 +114,13 @@ def Response(method='GET', status=200, body=b'***'):
 class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = list(_SCENARIO)
-        self.oldsetup = list(_SETUP)
+        self.oldsetup = dict(_SETUP)
         fmwk._STOP = False
 
     def tearDown(self):
         _SCENARIO[:] = self.old
-        _SETUP[:] = self.oldsetup
+        _SETUP.clear()
+        _SETUP.update(self.oldsetup)
 
     def get_args(self):
         args = namedtuple('args', 'verbose quiet duration exception')

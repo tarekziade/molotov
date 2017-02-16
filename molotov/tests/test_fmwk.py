@@ -2,7 +2,7 @@ import asyncio
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
-from molotov.api import scenario, setup
+from molotov.api import scenario, setup, global_setup
 from molotov.tests.support import TestLoop, async_test
 
 
@@ -69,6 +69,10 @@ class TestFmwk(TestLoop):
     def test_runner(self):
         res = []
 
+        @global_setup()
+        def init(args):
+            res.append('SETUP')
+
         @setup()
         async def setuptest(args):
             res.append('0')
@@ -85,6 +89,7 @@ class TestFmwk(TestLoop):
         results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(len(res), 2)
 
     def test_runner_multiprocess(self):
         res = []
