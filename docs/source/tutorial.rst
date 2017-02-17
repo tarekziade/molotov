@@ -135,7 +135,7 @@ The weights (20/20/60) define how often a scenario is executed by a worker.
 These weights does not have to be a sum of 100. Molotov will simply use
 this formula to determine how often a scenario is used::
 
-    scenario_weigth / sum(scenario weights)
+    scenario_weight / sum(scenario weights)
 
 Run from github
 ---------------
