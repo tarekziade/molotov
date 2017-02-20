@@ -344,7 +344,11 @@ def _launch_processes(args, screen):
 def runner(args, screen=None):
     global_setup = get_fixture('global_setup')
     if global_setup is not None:
-        global_setup(args)
+        try:
+            global_setup(args)
+        except Exception:
+            log("The global_setup() fixture failed")
+            raise
 
     try:
         return _launch_processes(args, screen)

@@ -207,3 +207,47 @@ class TestFmwk(TestLoop):
         results = runner(args)
 
         self.assertEqual(results['OK'], 1)
+
+    @dedicatedloop
+    def test_setup_exception(self):
+
+        @setup()
+        async def _worker_setup(num, args):
+            raise Exception('bleh')
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
+        self.assertEqual(results['OK'], 0)
+
+    @dedicatedloop
+    def test_global_setup_exception(self):
+
+        @global_setup()
+        def _setup(args):
+            raise Exception('bleh')
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        self.assertRaises(Exception, runner, args)
+
+    @dedicatedloop
+    def test_setup_not_dict(self):
+
+        @setup()
+        async def _worker_setup(num, args):
+            return 1
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
+        self.assertEqual(results['OK'], 0)
