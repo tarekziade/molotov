@@ -6,7 +6,7 @@ from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown)
-from molotov.tests.support import TestLoop, async_test
+from molotov.tests.support import TestLoop, async_test, dedicatedloop
 
 
 class TestFmwk(TestLoop):
@@ -165,6 +165,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)
 
+    @dedicatedloop
     def test_shutdown(self):
         res = []
 
@@ -186,3 +187,23 @@ class TestFmwk(TestLoop):
         self.assertEqual(results['OK'], 1)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(res, ['BYE WORKER', 'BYE'])
+
+    @dedicatedloop
+    def test_shutdown_exception(self):
+
+        @teardown()
+        def _worker_teardown(num):
+            raise Exception('bleh')
+
+        @global_teardown()
+        def _teardown():
+            raise Exception('bleh')
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
+
+        self.assertEqual(results['OK'], 1)

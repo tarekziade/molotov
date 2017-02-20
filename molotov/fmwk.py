@@ -351,4 +351,8 @@ def runner(args, screen=None):
     finally:
         global_teardown = get_fixture('global_teardown')
         if global_teardown is not None:
-            global_teardown()
+            try:
+                global_teardown()
+            except Exception as e:
+                # we can't stop the teardown process
+                log(e)
