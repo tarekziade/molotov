@@ -9,7 +9,7 @@ import os
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
-from molotov.api import get_fixture, pick_scenario
+from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.stats import get_statsd_client
 from molotov.ui import quit as quit_screen
 
@@ -59,13 +59,16 @@ async def consume(queue, numworkers, console=False, verbose=False):
                 traceback.print_tb(item)
 
 
-async def step(session, quiet, verbose, stream):
+async def step(session, quiet, verbose, stream, scenario=None):
     """ single scenario call.
 
     When it returns 1, it works. -1 the script failed,
     0 the test is stopping or needs to stop.
     """
-    func, args_, kw = pick_scenario()
+    if scenario:
+        __, func, args_, kw = scenario
+    else:
+        func, args_, kw = pick_scenario()
     try:
         await func(session, *args_, **kw)
         await stream.put('.')
@@ -90,6 +93,10 @@ async def worker(num, loop, results, args, stream, statsd):
     duration = args.duration
     verbose = args.verbose
     exception = args.exception
+    if args.single_mode:
+        single = get_scenario(args.single_mode)
+    else:
+        single = None
     count = 1
     start = _now()
     howlong = 0
@@ -112,8 +119,10 @@ async def worker(num, loop, results, args, stream, statsd):
 
     async with Session(loop, stream, verbose, statsd, **options) as session:
         while howlong < duration and not _STOP:
+            if args.max_runs and count > args.max_runs:
+                break
             howlong = _now() - start
-            result = await step(session, quiet, verbose, stream)
+            result = await step(session, quiet, verbose, stream, single)
             if result == 1:
                 results['OK'] += 1
             elif result == -1:

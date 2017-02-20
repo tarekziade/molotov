@@ -10,6 +10,13 @@ def get_scenarios():
     return _SCENARIO
 
 
+def get_scenario(name):
+    for scenario in _SCENARIO:
+        if scenario[1].__name__ == name:
+            return scenario
+    return None
+
+
 def _check_coroutine(func):
     if not asyncio.iscoroutinefunction(func):
         raise TypeError('%s needs to be a coroutine' % str(func))

@@ -133,6 +133,8 @@ class TestLoop(unittest.TestCase):
         args.workers = 1
         args.console = True
         args.statsd = False
+        args.single_mode = None
+        args.max_runs = None
         return args
 
 

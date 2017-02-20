@@ -6,7 +6,7 @@ from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
 from molotov.fmwk import runner
-from molotov.api import get_scenarios
+from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import log, expand_options, OptionError
 from molotov import ui
@@ -18,6 +18,9 @@ def _parser():
     parser.add_argument('scenario', default="loadtest.py",
                         help="path or module name that contains scenarii",
                         nargs="?")
+
+    parser.add_argument('-s', '--single-mode', default=None, type=str,
+                        help="Name of a single scenario to run once.")
 
     parser.add_argument('--config', default=None, type=str,
                         help='Point to a JSON config file.')
@@ -39,6 +42,9 @@ def _parser():
 
     parser.add_argument('-d', '--duration', help='Duration in seconds',
                         type=int, default=10)
+
+    parser.add_argument('-r', '--max-runs', help='Maximum runs per worker',
+                        type=int, default=None)
 
     parser.add_argument('-q', '--quiet', action='store_true', default=False,
                         help='Quiet')
@@ -94,6 +100,7 @@ def main():
 def run(args):
     if not args.quiet:
         log('**** Molotov v%s. Happy breaking! ****' % __version__, pid=None)
+
     if os.path.exists(args.scenario):
         spec = spec_from_file_location("loadtest", args.scenario)
         module = module_from_spec(spec)
@@ -117,6 +124,11 @@ def run(args):
     if args.verbose and not args.console:
         print("You have to be in console mode (-c) to use -v")
         sys.exit(1)
+
+    if args.single_mode:
+        if get_scenario(args.single_mode) is None:
+            print("Can't find %r in registered scenarii" % args.single_mode)
+            sys.exit(1)
 
     res = runner(args, screen=ui.init_screen)
     if not args.quiet:

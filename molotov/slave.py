@@ -29,7 +29,8 @@ def install_reqs(reqfile):
 
 _DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest.py',
              'workers': 1, 'duration': 10, 'quiet': False,
-             'statsd': False, 'console': True, 'debug': False}
+             'statsd': False, 'console': True, 'debug': False,
+             'single_mode': None, 'max_runs': None}
 
 
 def run_test(**options):

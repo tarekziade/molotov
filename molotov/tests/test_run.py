@@ -10,9 +10,13 @@ from molotov import __version__
 
 
 _CONFIG = os.path.join(os.path.dirname(__file__), '..', '..', 'molotov.json')
+_RES = []
 
 
 class TestRunner(TestLoop):
+    def setUp(self):
+        super(TestRunner, self).setUp()
+        _RES[:] = []
 
     @dedicatedloop
     def test_runner(self):
@@ -20,7 +24,6 @@ class TestRunner(TestLoop):
         test_loop.set_debug(True)
         test_loop._close = test_loop.close
         test_loop.close = lambda: None
-        _RES = []
 
         @scenario(10)
         async def here_one(session):
@@ -30,7 +33,8 @@ class TestRunner(TestLoop):
 
         @scenario(90)
         async def here_two(session):
-            session.statsd.incr('yopla')
+            if session.statsd is not None:
+                session.statsd.incr('yopla')
             _RES.append(2)
 
         args = namedtuple('args', 'verbose quiet duration exception')
@@ -46,6 +50,8 @@ class TestRunner(TestLoop):
         args.statsd_server = '127.0.0.1'
         args.statsd_port = 9999
         args.scenario = 'molotov.tests.test_run'
+        args.single_mode = None
+        args.max_runs = None
 
         server = UDPServer('127.0.0.1', 9999, loop=test_loop)
         _stop = asyncio.Future()
@@ -117,7 +123,32 @@ class TestRunner(TestLoop):
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
-    def test_config_no_secnario_found(self):
+    def test_config_no_scenario_found(self):
         stdout, stderr = self._test_molotov('-c', 'molotov.tests.test_run')
         wanted = "No scenario was found"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_config_no_single_mode_found(self):
+
+        @scenario(10)
+        async def not_me(session):
+            _RES.append(3)
+
+        stdout, stderr = self._test_molotov('-c', '-s', 'blah',
+                                            'molotov.tests.test_run')
+        wanted = "Can't find"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_single_mode(self):
+
+        @scenario(10)
+        async def here_three(session):
+            _RES.append(3)
+
+        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                            'here_three',
+                                            'molotov.tests.test_run')
+        wanted = "2 OK, 0 Failed"
         self.assertTrue(wanted in stdout)
