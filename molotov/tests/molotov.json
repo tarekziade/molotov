@@ -1,0 +1,28 @@
+{
+    "molotov": {
+        "tests": {
+            "big": {
+                "duration": 10,
+                "env": {
+                    "SERVER_URL": "http://aserver.net"
+                },
+                "exception": true,
+                "processes": 10,
+                "requirements": "requirements.txt",
+                "scenario": "molotov/tests/example.py",
+                "workers": 100
+            },
+            "scenario_two_once": {
+                "exception": true,
+                "max_runs": 1,
+                "scenario": "molotov/tests/example.py",
+                "single_mode": "scenario_two"
+            },
+            "test": {
+                "duration": 1,
+                "exception": true,
+                "scenario": "molotov/tests/example.py"
+            }
+        }
+    }
+}

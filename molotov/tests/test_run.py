@@ -9,7 +9,7 @@ from molotov.run import run, main
 from molotov import __version__
 
 
-_CONFIG = os.path.join(os.path.dirname(__file__), '..', '..', 'molotov.json')
+_CONFIG = os.path.join(os.path.dirname(__file__), 'molotov.json')
 _RES = []
 
 
