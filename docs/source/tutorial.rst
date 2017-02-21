@@ -12,7 +12,7 @@ Let's use **molostart** to get started:
 
 .. code-block:: bash
 
-    $ bin/molostart
+    $ molostart
     **** Molotov Quickstart ****
 
     Answer to a few questions to get started...
