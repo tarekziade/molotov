@@ -44,7 +44,7 @@ If that worked, you should now have a **molotov** command-line.
 .. code-block:: bash
 
     (venv) $ molotov --version
-    0.4
+    0.5
 
 
 Running one scenario
@@ -67,44 +67,55 @@ A scenario needs to be a coroutine and gets a **session** instance that
 can be used to query a server.
 
 In our example we query https://example.com and make sure it returns
-a 200. Let's run it in console mode for 2 seconds:
+a 200. Let's run it in console mode just once with --max-runs:
 
 .. code-block:: bash
 
-    (loadtest) $ molotov -d 2 -cx loadtests.py
-    **** Molotov v0.4. Happy breaking! ****
-    [44492] Preparing 1 workers...OK
+    (venv) $  molotov --max-runs 1 -cx loadtest.py
+    **** Molotov v0.5. Happy breaking! ****
+    [77947] Preparing 1 workers...OK
     SUCCESSES: 1 | FAILURES: 0
-    4 OK, 0 Failed
+    *** Bye ***
+
+It worked! Let's try for 3 seconds now:
+
+.. code-block:: bash
+
+    (venv) $  molotov -d 3 -cx loadtest.py
+    **** Molotov v0.5. Happy breaking! ****
+    [78005] Preparing 1 workers...OK
+    SUCCESSES: 6 | FAILURES: 0
+    *** Bye ***
 
 Notice that you can stop the test anytime with Ctrl+C.
 
 The next step is to add more workers with -w. A worker is a coroutine that
-will run the scenario concurrently. Let's run the same test with 10 workers:
+will run the scenario concurrently. Let's run the same test with 10
+workers:
 
 .. code-block:: bash
 
-    (loadtest) $ molotov -w 10 -d 2 -cx loadtests.py
+    (venv) $ molotov -w 10 -d 2 -cx loadtest.py
     **** Molotov v0.4. Happy breaking! ****
     [44543] Preparing 10 workers...OK
-    SUCCESSES: 19 | FAILURES: 0
-    20 OK, 0 Failed
+    SUCCESSES: 20 | FAILURES: 0
+    *** Bye ***
 
 Molotov can also run several processes in parallel, each one running its
-own set of workers. Let's try with 4 processes and 10 workers. Virtually it
-means the level of concurrency will be 40:
+own set of workers. Let's try with 4 processes and 10 workers. Virtually
+it means the level of concurrency will be 40:
 
 .. code-block:: bash
 
-    (loadtest) $ molotov -w 10 -p 4 -d 2 -cx loadtests.py
+    (venv) $ molotov -w 10 -p 4 -d 2 -cx loadtest.py
     **** Molotov v0.4. Happy breaking! ****
     Forking 4 processes
     [44553] Preparing 10 workers...OK
     [44554] Preparing 10 workers...OK
     [44555] Preparing 10 workers...OK
     [44556] Preparing 10 workers...OK
-    SUCCESSES: 78 | FAILURES: 0
-    80 OK, 0 Failed
+    SUCCESSES: 80 | FAILURES: 0
+    *** Bye ***
 
 You can usually raise the number of workers to a few hundreds, and the
 number of processes to a few dozens. Depending how fast the server
@@ -139,20 +150,34 @@ this formula to determine how often a scenario is used::
 
     scenario_weight / sum(scenario weights)
 
-Run from github
----------------
 
-XXX
+Adding test fixtures
+--------------------
+
+Test fixtures are useful when you need to call a function once before
+the tests start, and when you want to configure the worker's session
+for all calls that will be made with it.
+
+For instance, if you need an Authorization header that's shared across
+all workers and processes, you can use :func:`global_setup` to bake it
+and :func:`setup` to pass it to the session object that's created
+for each worker::
 
 
-Next steps
-----------
+    from molotov import setup, global_setup, scenario
 
-Load testing a service from your laptop is often not enough. The next
-step is to run a distributed load test using your script.
+    _HEADERS = {}
 
-The simplest way to do it is to create a Docker image that automatically
-runs molotov and orchestrate a distributed load with Loads.
 
-XXX
+    @global_setup()
+    def init_test(args):
+        _HEADERS['Authorization'] = 'Token xxxx'
+
+    @setup()
+    async def init_worker(worker_id, args):
+        return {'headers': _HEADERS}
+
+
+Notice that the function decorated by :func:`setup` needs to be a
+coroutine.
 

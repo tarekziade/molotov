@@ -150,5 +150,5 @@ class TestRunner(TestLoop):
         stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
                                             'here_three',
                                             'molotov.tests.test_run')
-        wanted = "2 OK, 0 Failed"
+        wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)

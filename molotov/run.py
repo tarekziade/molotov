@@ -131,6 +131,8 @@ def run(args):
             sys.exit(1)
 
     res = runner(args, screen=ui.init_screen)
+
     if not args.quiet:
-        log('', pid=False)
-    log('%(OK)d OK, %(FAILED)d Failed' % res, pid=False)
+        print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
+        print('')
+        print('*** Bye ***')
