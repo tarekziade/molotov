@@ -96,7 +96,7 @@ workers:
 .. code-block:: bash
 
     (venv) $ molotov -w 10 -d 2 -cx loadtest.py
-    **** Molotov v0.4. Happy breaking! ****
+    **** Molotov v0.5. Happy breaking! ****
     [44543] Preparing 10 workers...OK
     SUCCESSES: 20 | FAILURES: 0
     *** Bye ***
@@ -108,7 +108,7 @@ it means the level of concurrency will be 40:
 .. code-block:: bash
 
     (venv) $ molotov -w 10 -p 4 -d 2 -cx loadtest.py
-    **** Molotov v0.4. Happy breaking! ****
+    **** Molotov v0.5. Happy breaking! ****
     Forking 4 processes
     [44553] Preparing 10 workers...OK
     [44554] Preparing 10 workers...OK
