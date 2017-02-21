@@ -1,0 +1,10 @@
+include README.rst
+include LICENSE
+include CHANGES.rst
+include requirements.txt
+include tox-requirements.txt
+include docs-requirements.txt
+include tox.ini
+include .travis.yml
+include molotov.json
+include Makefile
