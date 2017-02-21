@@ -5,10 +5,9 @@ import argparse
 import subprocess
 import tempfile
 import shutil
-from collections import namedtuple
 
 from molotov import __version__
-from molotov.run import run
+from molotov.run import run, _parser
 
 
 def clone_repo(github):
@@ -27,19 +26,29 @@ def install_reqs(reqfile):
                           shell=True)
 
 
-_DEFAULTS = {'processes': False, 'verbose': False, 'scenario': 'loadtest.py',
-             'workers': 1, 'duration': 10, 'quiet': False,
-             'statsd': False, 'console': True, 'debug': False,
-             'single_mode': None, 'max_runs': None}
-
-
 def run_test(**options):
-    for option, value in _DEFAULTS.items():
-        if option not in options:
-            options[option] = value
+    parser = _parser()
+    fields = {}
+    cli = []
 
-    args = namedtuple('Arguments', options.keys())(**options)
-    print('Running molotov with %s' % str(args))
+    for action in parser._actions:
+        if action.dest in ('help', 'scenario'):
+            continue
+        op_str = action.option_strings[0]
+        fields[action.dest] = op_str, action.const
+
+    for key, value in options.items():
+        if key in fields:
+            opt, const = fields[key]
+            if const:
+                cli.append(opt)
+            else:
+                cli.append(opt)
+                cli.append(str(value))
+
+    cli.append(options.pop('scenario', 'loadtest.py'))
+    args = parser.parse_args(args=cli)
+    print('Running: molotov %s' % ' '.join(cli))
     return run(args)
 
 
