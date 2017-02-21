@@ -23,8 +23,8 @@ Example:
 
 This will simply run **molotov** with the options from the json file.
 
-As demonstrated in the **big** test, there are also two global
-options you can use to run the test:
+As demonstrated in example, there are also two global options you can
+use when running the tests:
 
 - **requirements**: points to a Pip requirements file that will be installed prior
   to the test

@@ -1,15 +1,15 @@
 {
     "molotov": {
+        "env": {
+            "SERVER_URL": "http://aserver.net"
+        },
+        "requirements": "requirements.txt",
         "tests": {
             "big": {
                 "console": true,
                 "duration": 10,
-                "env": {
-                    "SERVER_URL": "http://aserver.net"
-                },
                 "exception": true,
                 "processes": 10,
-                "requirements": "requirements.txt",
                 "scenario": "molotov/tests/example.py",
                 "workers": 100
             },
