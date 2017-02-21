@@ -90,7 +90,3 @@ def main():
     print("Go in %r" % target_dir)
     if create_makefile:
         print("Run 'make build' to get started...")
-
-
-if __name__ == '__main__':
-    main()
