@@ -9,6 +9,14 @@ from molotov.tests.support import coserver, Response
 from molotov.tests.support import TestLoop, async_test
 
 
+async def serialize(stream):
+    res = []
+    while stream.qsize() > 0:
+        line = await stream.get()
+        res.append(line)
+    return res
+
+
 class TestLoggedClientSession(TestLoop):
 
     @async_test
@@ -20,11 +28,7 @@ class TestLoggedClientSession(TestLoop):
             response = Response(body=binary_body)
             await session.print_response(response)
 
-        res = []
-        while stream.qsize() > 0:
-            line = await stream.get()
-            res.append(line)
-
+        res = await serialize(stream)
         wanted = "can't display this body"
         self.assertTrue(wanted in res[1])
 
@@ -37,12 +41,22 @@ class TestLoggedClientSession(TestLoop):
                 async with session.get('http://localhost:8888') as resp:
                     self.assertEqual(resp.status, 200)
 
-            res = []
-            while stream.qsize() > 0:
-                line = await stream.get()
-                res.append(line)
-
+            res = await serialize(stream)
             self.assertTrue('GET http://127.0.0.1:8888' in res[1])
+
+    @async_test
+    async def test_not_verbose(self, loop):
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream,
+                                       verbose=False) as session:
+            req = ClientRequest('GET', URL('http://example.com'))
+            await session.print_request(req)
+
+            response = Response(body='')
+            await session.print_response(response)
+
+        res = await serialize(stream)
+        self.assertEqual(res, [])
 
     @async_test
     async def test_gzipped_request(self, loop):
@@ -55,11 +69,20 @@ class TestLoggedClientSession(TestLoop):
             req.headers['Content-Encoding'] = 'gzip'
             await session.print_request(req)
 
-        res = []
-        while stream.qsize() > 0:
-            line = await stream.get()
-            res.append(line)
+        res = await serialize(stream)
+        self.assertTrue("Binary" in res[1], res)
 
+    @async_test
+    async def test_gzipped_response(self, loop):
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream,
+                                       verbose=True) as session:
+            binary_body = gzip.compress(b'some gzipped data')
+            response = Response(body=binary_body)
+            response.headers['Content-Encoding'] = 'gzip'
+            await session.print_response(response)
+
+        res = await serialize(stream)
         self.assertTrue("Binary" in res[1], res)
 
     @async_test
@@ -72,9 +95,5 @@ class TestLoggedClientSession(TestLoop):
                                 data=binary_body)
             await session.print_request(req)
 
-        res = []
-        while stream.qsize() > 0:
-            line = await stream.get()
-            res.append(line)
-
+        res = await serialize(stream)
         self.assertTrue("display this body" in res[1], res)
