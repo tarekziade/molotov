@@ -2,6 +2,7 @@
     "molotov": {
         "tests": {
             "big": {
+                "console": true,
                 "duration": 10,
                 "exception": true,
                 "processes": 10,
@@ -9,12 +10,14 @@
                 "workers": 100
             },
             "scenario_two_once": {
+                "console": true,
                 "exception": true,
                 "max_runs": 1,
                 "scenario": "molotov/tests/example.py",
                 "single_mode": "scenario_two"
             },
             "test": {
+                "console": true,
                 "duration": 1,
                 "exception": true,
                 "scenario": "molotov/tests/example.py"
