@@ -14,7 +14,7 @@ $(VENV_PYTHON):
 	virtualenv $(VTENV_OPTS) venv
 
 build: $(VENV_PYTHON)
-	$(INSTALL) --upgrade git+https://github.com/tarekziade/molotov.git
+	$(INSTALL) --upgrade git+https://github.com/loads/molotov.git
 
 test: build
 	$(BIN)/molotov --config molotov.json $(TESTNAME)

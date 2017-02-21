@@ -41,6 +41,8 @@ a virtualenv inside the directory with Molotov installed.
 
 If that worked, you should now have a **molotov** command-line.
 
+.. code-block:: bash
+
     (venv) $ molotov --version
     0.4
 
