@@ -134,5 +134,4 @@ def run(args):
 
     if not args.quiet:
         print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
-        print('')
         print('*** Bye ***')
