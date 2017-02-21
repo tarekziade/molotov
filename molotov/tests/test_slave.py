@@ -18,3 +18,17 @@ class TestSlave(unittest.TestCase):
         finally:
             sys.argv[:] = saved
             asyncio.set_event_loop(oldloop)
+
+    def test_fail(self):
+        oldloop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        saved = list(sys.argv)
+        repo = 'https://github.com/loads/molotov'
+        run = 'fail'
+        sys.argv[:] = ['moloslave', repo, run]
+        try:
+            main()
+        finally:
+            sys.argv[:] = saved
+            asyncio.set_event_loop(oldloop)

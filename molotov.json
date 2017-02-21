@@ -13,6 +13,11 @@
                 "scenario": "molotov/tests/example.py",
                 "workers": 100
             },
+            "fail": {
+                "exception": true,
+                "max_runs": 1,
+                "scenario": "molotov/tests/example3.py"
+            },
             "scenario_two_once": {
                 "console": true,
                 "exception": true,
