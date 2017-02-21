@@ -9,8 +9,5 @@ class TestStats(unittest.TestCase):
                    'aiostatsd': None}
 
         with patch.dict('sys.modules', patched):
-            from molotov import stats
-            stats.StatsdClient = None
-
             from molotov.stats import get_statsd_client
             self.assertRaises(ImportError, get_statsd_client)
