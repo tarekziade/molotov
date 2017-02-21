@@ -1,4 +1,21 @@
-{"molotov": {"tests": {
-  "test": {"duration": 1,
-           "scenario": "molotov/tests/example.py"}
-}}}
+{
+    "molotov": {
+        "tests": {
+            "big": {
+                "duration": 10,
+                "processes": 10,
+                "scenario": "molotov/tests/example.py",
+                "workers": 100
+            },
+            "scenario_two_once": {
+                "max_runs": 1,
+                "scenario": "molotov/tests/example.py",
+                "single_mode": "scenario_two"
+            },
+            "small": {
+                "duration": 2,
+                "scenario": "molotov/tests/example.py"
+            }
+        }
+    }
+}
