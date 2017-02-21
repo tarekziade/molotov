@@ -1,34 +1,30 @@
-import asyncio
-import unittest
-import sys
+from molotov import __version__
 from molotov.slave import main
+from molotov.tests.support import TestLoop, dedicatedloop, set_args
 
 
-class TestSlave(unittest.TestCase):
+_REPO = 'https://github.com/loads/molotov'
+
+
+class TestSlave(TestLoop):
+    @dedicatedloop
     def test_main(self):
-        oldloop = asyncio.get_event_loop()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        saved = list(sys.argv)
-        repo = 'https://github.com/loads/molotov'
-        run = 'test'
-        sys.argv[:] = ['moloslave', repo, run]
-        try:
+        with set_args('moloslave', _REPO, 'test') as out:
             main()
-        finally:
-            sys.argv[:] = saved
-            asyncio.set_event_loop(oldloop)
+        output = out[0].read()
+        self.assertTrue('Preparing 1 workers...OK' in output)
 
+    @dedicatedloop
     def test_fail(self):
-        oldloop = asyncio.get_event_loop()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        saved = list(sys.argv)
-        repo = 'https://github.com/loads/molotov'
-        run = 'fail'
-        sys.argv[:] = ['moloslave', repo, run]
-        try:
-            main()
-        finally:
-            sys.argv[:] = saved
-            asyncio.set_event_loop(oldloop)
+        with set_args('moloslave', _REPO, 'fail'):
+            self.assertRaises(Exception, main)
+
+    @dedicatedloop
+    def test_version(self):
+        with set_args('moloslave', '--version') as out:
+            try:
+                main()
+            except SystemExit:
+                pass
+        version = out[0].read().strip()
+        self.assertTrue(version, __version__)

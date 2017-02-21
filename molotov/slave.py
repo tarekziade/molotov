@@ -67,8 +67,8 @@ def main():
     parser.add_argument('--config', type=str, default='molotov.json',
                         help='Path of the configuration file.')
 
-    parser.add_argument('repo', help='Github repo', type=str)
-    parser.add_argument('run', help='Test to run')
+    parser.add_argument('repo', help='Github repo', type=str, nargs="?")
+    parser.add_argument('run', help='Test to run', nargs="?")
 
     args = parser.parse_args()
 
@@ -104,7 +104,3 @@ def main():
         os.chdir(curdir)
         shutil.rmtree(tempdir, ignore_errors=True)
         raise
-
-
-if __name__ == '__main__':
-    main()
