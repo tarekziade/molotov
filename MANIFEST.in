@@ -8,3 +8,4 @@ include tox.ini
 include .travis.yml
 include molotov.json
 include Makefile
+include molotov/tests/molotov.json
