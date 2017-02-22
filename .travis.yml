@@ -8,6 +8,7 @@ addons:
     packages:
         - g++-4.9
 env:
+ - TOX_ENV=py36
  - TOX_ENV=py35
  - TOX_ENV=docs
  - TOX_ENV=flake8
