@@ -1,12 +1,11 @@
 language: python
-python:
- - 3.6
+python: 3.5
 compiler: gcc
 matrix:
   include:
-    - python: 3.5
+    - python: 3.6
       env:
-      - TOX_ENV=py35
+      - TOX_ENV=py36
 addons:
   apt:
     sources:
