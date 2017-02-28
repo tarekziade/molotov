@@ -41,7 +41,7 @@ def _parser():
                         type=int, default=1)
 
     parser.add_argument('-d', '--duration', help='Duration in seconds',
-                        type=int, default=10)
+                        type=int, default=86400)
 
     parser.add_argument('-r', '--max-runs', help='Maximum runs per worker',
                         type=int, default=None)

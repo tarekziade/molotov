@@ -23,7 +23,11 @@ Here's a full example :
 
 When molotov runs, it creates some workers (coroutines) that will
 run the functions indefinitely until the test is over. A test is over
-when the time in seconds provided by **-d** option is reached.
+when the time in seconds provided by **--duration** option is reached or
+when the maximum number of runs defined by **--max-runs** is reached.
+
+By default, molotov will run for 86400 seconds (one day), but
+you can stop it any time with Ctrl-C.
 
 Each worker randomly picks one scenario to execute, given their weights.
 Once it's finished, it picks the next one, and so on. In our example,
