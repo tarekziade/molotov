@@ -16,7 +16,7 @@ class LoggedClientRequest(ClientRequest):
     session = None
 
     def send(self, writer, reader):
-        if self.session and self.verbose:
+        if self.session and self.verbose > 1:
             info = self.session.print_request(self)
             asyncio.ensure_future(info)
         return super(LoggedClientRequest, self).send(writer, reader)
@@ -24,7 +24,7 @@ class LoggedClientRequest(ClientRequest):
 
 class LoggedClientSession(ClientSession):
 
-    def __init__(self, loop, stream, verbose=False, statsd=None, **kw):
+    def __init__(self, loop, stream, verbose=0, statsd=None, **kw):
         connector = kw.pop('connector', None)
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
@@ -74,7 +74,7 @@ class LoggedClientSession(ClientSession):
         return resp
 
     async def print_request(self, req):
-        if not self.verbose:
+        if self.verbose < 2:
             return
 
         await self.stream.put('>' * 45)
@@ -99,7 +99,7 @@ class LoggedClientSession(ClientSession):
         await self.stream.put(raw)
 
     async def print_response(self, resp):
-        if not self.verbose:
+        if self.verbose < 2:
             return
         await self.stream.put('\n' + '=' * 45 + '\n')
         raw = 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)

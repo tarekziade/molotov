@@ -23,7 +23,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_encoding(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
-                                       verbose=True) as session:
+                                       verbose=2) as session:
             binary_body = b'MZ\x90\x00\x03\x00\x00\x00\x04\x00'
             response = Response(body=binary_body)
             await session.print_response(response)
@@ -37,7 +37,7 @@ class TestLoggedClientSession(TestLoop):
         with coserver():
             stream = asyncio.Queue()
             async with LoggedClientSession(loop, stream,
-                                           verbose=True) as session:
+                                           verbose=2) as session:
                 async with session.get('http://localhost:8888') as resp:
                     self.assertEqual(resp.status, 200)
 
@@ -48,7 +48,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_not_verbose(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
-                                       verbose=False) as session:
+                                       verbose=1) as session:
             req = ClientRequest('GET', URL('http://example.com'))
             await session.print_request(req)
 
@@ -62,7 +62,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_gzipped_request(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
-                                       verbose=True) as session:
+                                       verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             req = ClientRequest('GET', URL('http://example.com'),
                                 data=binary_body)
@@ -76,7 +76,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_gzipped_response(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
-                                       verbose=True) as session:
+                                       verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             response = Response(body=binary_body)
             response.headers['Content-Encoding'] = 'gzip'
@@ -89,7 +89,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_cantread_request(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
-                                       verbose=True) as session:
+                                       verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             req = ClientRequest('GET', URL('http://example.com'),
                                 data=binary_body)

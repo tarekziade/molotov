@@ -38,7 +38,7 @@ class TestRunner(TestLoop):
             _RES.append(2)
 
         args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = True
+        args.verbose = 1
         args.quiet = False
         args.duration = 1
         args.exception = True

@@ -31,8 +31,9 @@ def _parser():
     parser.add_argument('--debug', action='store_true', default=False,
                         help='Run the event loop in debug mode.')
 
-    parser.add_argument('-v', '--verbose', action='store_true', default=False,
-                        help='Verbose')
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+                        help=('Verbosity level. -v will display '
+                              'tracebacks. -vv requests and responses.'))
 
     parser.add_argument('-w', '--workers', help='Number of workers',
                         type=int, default=1)
@@ -117,11 +118,11 @@ def run(args):
         print('A scenario with a weight of 0 is ignored')
         sys.exit(1)
 
-    if args.verbose and args.quiet:
+    if args.verbose > 0 and args.quiet:
         print("You can't use -q and -v at the same time")
         sys.exit(1)
 
-    if args.verbose and not args.console:
+    if args.verbose > 0 and not args.console:
         print("You have to be in console mode (-c) to use -v")
         sys.exit(1)
 

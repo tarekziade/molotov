@@ -29,7 +29,7 @@ def get_live_results():
     return _results
 
 
-async def consume(queue, numworkers, console=False, verbose=False):
+async def consume(queue, numworkers, console=False, verbose=0):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
         try:
@@ -49,12 +49,12 @@ async def consume(queue, numworkers, console=False, verbose=False):
                 elif item == '-':
                     results.incr_failure()
                 else:
-                    if console and verbose:
+                    if console and verbose > 0:
                         print(item)
             except ClosedError:
                 break
         else:
-            if console and verbose:
+            if console and verbose > 0:
                 import traceback
                 traceback.print_tb(item)
 
@@ -77,7 +77,7 @@ async def step(session, quiet, verbose, stream, scenario=None):
         return 0
     except Exception as exc:
         await stream.put('-')
-        if verbose:
+        if verbose > 0:
             await stream.put(repr(exc))
             await stream.put(sys.exc_info()[2])
 
@@ -323,7 +323,7 @@ def _launch_processes(args, screen):
         else:
             ui = None
 
-        if not args.quiet and args.console and not args.verbose:
+        if not args.quiet and args.console and args.verbose == 0:
             def _display(loop):
                 try:
                     print(get_live_results(), end='\r')

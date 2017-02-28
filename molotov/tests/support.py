@@ -124,7 +124,7 @@ class TestLoop(unittest.TestCase):
 
     def get_args(self):
         args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = True
+        args.verbose = 1
         args.quiet = False
         args.duration = 1
         args.exception = True
