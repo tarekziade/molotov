@@ -323,7 +323,7 @@ def _launch_processes(args, screen):
         else:
             ui = None
 
-        if not args.quiet and args.console and args.verbose == 0:
+        if not args.quiet and args.console and args.verbose > 0:
             def _display(loop):
                 try:
                     print(get_live_results(), end='\r')
