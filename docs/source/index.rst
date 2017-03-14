@@ -64,5 +64,6 @@ Check out the detailed documentation:
    fixtures
    cli
    slave
+   docker
    design
    tutorial

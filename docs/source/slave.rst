@@ -1,3 +1,5 @@
+.. _from-github:
+
 Run from GitHub
 ===============
 
