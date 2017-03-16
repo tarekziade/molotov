@@ -65,5 +65,4 @@ Check out the detailed documentation:
    cli
    slave
    docker
-   design
    tutorial

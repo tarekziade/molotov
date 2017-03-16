@@ -5,6 +5,7 @@ import argparse
 import subprocess
 import tempfile
 import shutil
+import site
 
 from molotov import __version__
 from molotov.run import run, _parser
@@ -93,6 +94,11 @@ def main():
         # install deps
         if 'requirements' in config['molotov']:
             install_reqs(config['molotov']['requirements'])
+
+        # load deps into sys.path
+        pyver = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
+        site.addsitedir(os.path.join(tempdir,
+                        'venv', 'lib', 'python' + pyver, 'site-packages'))
 
         # environment
         if 'env' in config['molotov']:
