@@ -5,7 +5,7 @@ from molotov import __version__
 install_requires = ['aiohttp', 'urwid', 'humanize']
 description = ''
 
-for file_ in ('README', ):
+for file_ in ('README', 'CHANGELOG'):
     with open('%s.rst' % file_) as f:
         description += f.read() + '\n\n'
 
@@ -19,7 +19,7 @@ setup(name='molotov',
       version=__version__,
       url='https://github.com/loads/molotov',
       packages=find_packages(),
-      long_description=description,
+      long_description=description.strip(),
       description=("Spiffy load testing tool."),
       author="Tarek Ziade",
       author_email="tarek@ziade.org",
