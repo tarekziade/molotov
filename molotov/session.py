@@ -3,6 +3,10 @@ from urllib.parse import urlparse
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
 from aiohttp import TCPConnector
+try:
+    from aiohttp.payload import Payload
+except ImportError:
+    Payload = None
 from molotov.util import resolve
 
 
@@ -87,13 +91,16 @@ class LoggedClientSession(ClientSession):
         if req.headers.get('Content-Encoding') in _COMPRESSED:
             raw += '\n\n' + _BINARY + '\n'
         elif req.body:
-            if isinstance(req.body, bytes):
-                try:
-                    body = str(req.body, 'utf8')
-                except UnicodeDecodeError:
-                    body = _UNREADABLE
+            if Payload is not None and isinstance(req.body, Payload):
+                body = req.body._value
             else:
                 body = req.body
+
+            if not isinstance(body, str):
+                try:
+                    body = str(body, 'utf8')
+                except UnicodeDecodeError:
+                    body = _UNREADABLE
 
             raw += '\n\n' + body + '\n'
         await self.stream.put(raw)
