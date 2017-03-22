@@ -15,11 +15,11 @@ _COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 class LoggedClientRequest(ClientRequest):
     session = None
 
-    def send(self, writer, reader):
+    def send(self, *args, **kw):
         if self.session and self.verbose > 1:
             info = self.session.print_request(self)
             asyncio.ensure_future(info)
-        return super(LoggedClientRequest, self).send(writer, reader)
+        return super(LoggedClientRequest, self).send(*args, **kw)
 
 
 class LoggedClientSession(ClientSession):
