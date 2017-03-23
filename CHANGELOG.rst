@@ -1,8 +1,7 @@
 CHANGELOG
 =========
 
-0.7 - DATE
-----------
+1.0 - 2017-03-23
+----------------
 
-XXX
-
+- Initial stable release
