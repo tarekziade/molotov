@@ -10,6 +10,8 @@ import functools
 from collections import namedtuple
 from http.client import HTTPConnection
 from io import StringIO
+import http.server
+import socketserver
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -17,15 +19,14 @@ from molotov.api import _SCENARIO, _FIXTURES
 from molotov import fmwk
 
 
+HERE = os.path.dirname(__file__)
+
+
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
     def _run():
-        import http.server
-        import socketserver
-        import signal
-        import sys
-
+        os.chdir(HERE)
         socketserver.TCPServer.allow_reuse_address = True
         Handler = http.server.SimpleHTTPRequestHandler
         attempts = 0
