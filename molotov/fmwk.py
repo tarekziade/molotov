@@ -117,7 +117,13 @@ async def worker(num, loop, results, args, stream, statsd):
     else:
         options = {}
 
+    ssetup = get_fixture('session_setup')
+    steardown = get_fixture('session_teardown')
+
     async with Session(loop, stream, verbose, statsd, **options) as session:
+        if ssetup is not None:
+            await ssetup(session)
+
         while howlong < duration and not _STOP:
             if args.max_runs and count > args.max_runs:
                 break
@@ -133,6 +139,13 @@ async def worker(num, loop, results, args, stream, statsd):
             elif result == 0:
                 break
             count += 1
+
+        if steardown is not None:
+            try:
+                await steardown(session)
+            except Exception as e:
+                # we can't stop the teardown process
+                log(e)
 
     if not _STOP:
         await stream.put('WORKER_STOPPED')

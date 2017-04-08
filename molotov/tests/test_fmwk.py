@@ -5,7 +5,7 @@ import signal
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
-                         global_teardown)
+                         global_teardown, session_setup, session_teardown)
 from molotov.tests.support import TestLoop, async_test, dedicatedloop
 
 
@@ -76,6 +76,11 @@ class TestFmwk(TestLoop):
         def init(args):
             res.append('SETUP')
 
+        @session_setup()
+        async def _session(session):
+            session.some = 1
+            res.append('SESSION')
+
         @setup()
         async def setuptest(num, args):
             res.append('0')
@@ -88,12 +93,17 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
+        @session_teardown()
+        async def _session_teardown(session):
+            self.assertEqual(session.some, 1)
+            res.append('SESSION_TEARDOWN')
+
         args = self.get_args()
         args.console = console
         results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
-        self.assertEqual(len(res), 2)
+        self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
 
     @dedicatedloop
     def test_runner(self):
@@ -220,6 +230,25 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         results = runner(args)
 
+        self.assertEqual(results['OK'], 1)
+
+    @dedicatedloop
+    def test_session_shutdown_exception(self):
+
+        @session_teardown()
+        async def _session_teardown(session):
+            raise Exception('bleh')
+
+        @global_teardown()
+        def _teardown():
+            raise Exception('bleh')
+
+        @scenario(100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
         self.assertEqual(results['OK'], 1)
 
     @dedicatedloop
