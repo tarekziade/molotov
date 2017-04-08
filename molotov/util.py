@@ -157,12 +157,32 @@ async def _request(endpoint, verb='GET', session_options=None,
 
 
 def request(endpoint, verb='GET', session_options=None, **options):
+    """Performs a synchronous request.
+
+    Uses a dedicated event loop and aiohttp.ClientSession object.
+
+    Options:
+
+    - endpoint: the endpoint to call
+    - verb: the HTTP verb to use (defaults: GET)
+    - session_options: a dict containing options to initialize the session
+      (defaults: None)
+    - options: extra options for the request (defaults: None)
+
+    Returns a dict object with the following keys:
+
+    - content: the content of the response
+    - status: the status
+    - headers: a dict with all the response headers
+    """
     req = functools.partial(_request, endpoint, verb, session_options,
                             **options)
     return _run_in_fresh_loop(req)
 
 
 def json_request(endpoint, verb='GET', session_options=None, **options):
+    """Like :func:`molotov.request` but extracts json from the response.
+    """
     req = functools.partial(_request, endpoint, verb, session_options,
                             json=True, **options)
     return _run_in_fresh_loop(req)
