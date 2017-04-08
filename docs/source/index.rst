@@ -62,6 +62,7 @@ Check out the detailed documentation:
 
    installation
    fixtures
+   helpers
    cli
    slave
    docker

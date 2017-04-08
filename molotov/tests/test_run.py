@@ -2,10 +2,11 @@ import os
 import asyncio
 from collections import namedtuple
 
-from molotov.api import scenario
+from molotov.api import scenario, global_setup
 from molotov.tests.support import TestLoop, coserver, dedicatedloop, set_args
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
+from molotov.util import request, json_request
 from molotov import __version__
 
 
@@ -24,6 +25,13 @@ class TestRunner(TestLoop):
         test_loop.set_debug(True)
         test_loop._close = test_loop.close
         test_loop.close = lambda: None
+
+        @global_setup()
+        def something_sync(args):
+            grab = request('http://localhost:8888')
+            self.assertEqual(grab['status'], 200)
+            grab_json = json_request('http://localhost:8888/molotov.json')
+            self.assertTrue('molotov' in grab_json['content'])
 
         @scenario(10)
         async def here_one(session):

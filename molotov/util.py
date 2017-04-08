@@ -1,10 +1,13 @@
+import functools
 import json
 import socket
 import os
 import sys
+import asyncio
 from contextlib import contextmanager
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
+from aiohttp import ClientSession
 
 
 @contextmanager
@@ -121,3 +124,65 @@ def expand_options(config, scenario, args):
         raise OptionError("Can't find %r in the config" % scenario)
 
     _expand_args(args, config['molotov']['tests'][scenario])
+
+
+def _run_in_fresh_loop(coro):
+    loop = asyncio.new_event_loop()
+    res = None
+    try:
+        task = loop.create_task(coro(loop=loop))
+        res = loop.run_until_complete(task)
+    finally:
+        loop.close()
+    return res
+
+
+async def _request(endpoint, verb='GET', session_options=None,
+                   json=False, loop=None, **options):
+    if session_options is None:
+        session_options = {}
+
+    async with ClientSession(loop=loop, **session_options) as session:
+        meth = getattr(session, verb.lower())
+        result = {}
+        async with meth(endpoint, **options) as resp:
+            if json:
+                result['content'] = await resp.json()
+            else:
+                result['content'] = await resp.text()
+            result['status'] = resp.status
+            result['headers'] = resp.headers
+
+        return result
+
+
+def request(endpoint, verb='GET', session_options=None, **options):
+    """Performs a synchronous request.
+
+    Uses a dedicated event loop and aiohttp.ClientSession object.
+
+    Options:
+
+    - endpoint: the endpoint to call
+    - verb: the HTTP verb to use (defaults: GET)
+    - session_options: a dict containing options to initialize the session
+      (defaults: None)
+    - options: extra options for the request (defaults: None)
+
+    Returns a dict object with the following keys:
+
+    - content: the content of the response
+    - status: the status
+    - headers: a dict with all the response headers
+    """
+    req = functools.partial(_request, endpoint, verb, session_options,
+                            **options)
+    return _run_in_fresh_loop(req)
+
+
+def json_request(endpoint, verb='GET', session_options=None, **options):
+    """Like :func:`molotov.request` but extracts json from the response.
+    """
+    req = functools.partial(_request, endpoint, verb, session_options,
+                            json=True, **options)
+    return _run_in_fresh_loop(req)

@@ -69,7 +69,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
-    def test_runner(self):
+    def _runner(self, console):
         res = []
 
         @global_setup()
@@ -89,20 +89,28 @@ class TestFmwk(TestLoop):
             pass
 
         args = self.get_args()
+        args.console = console
         results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 2)
 
-    def test_runner_multiprocess(self):
+    @dedicatedloop
+    def test_runner(self):
+        return self._runner(console=False)
+
+    @dedicatedloop
+    def _test_runner_console(self):
+        return self._runner(console=True)
+
+    @dedicatedloop
+    def _multiprocess(self, console, nosetup=False):
         res = []
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        @setup()
-        async def setuptest(num, args):
-            res.append('0')
+        if not nosetup:
+            @setup()
+            async def setuptest(num, args):
+                res.append('0')
 
         @scenario(50)
         async def test_one(session):
@@ -115,9 +123,15 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         args.processes = 2
         args.workers = 5
+        args.console = console
         results = runner(args)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
+
+    @dedicatedloop
+    def test_runner_multiprocess_console(self):
+        self._multiprocess(console=True)
+        self._multiprocess(console=False, nosetup=True)
 
     @async_test
     async def test_aworker_noexc(self, loop):
