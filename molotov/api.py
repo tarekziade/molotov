@@ -87,3 +87,11 @@ def teardown():
 
 def global_teardown():
     return _fixture('global_teardown', coroutine=False)
+
+
+def session_setup():
+    return _fixture('session_setup')
+
+
+def session_teardown():
+    return _fixture('session_teardown')
