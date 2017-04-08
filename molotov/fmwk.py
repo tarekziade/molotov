@@ -117,7 +117,6 @@ async def worker(num, loop, results, args, stream, statsd):
     else:
         options = {}
 
-
     ssetup = get_fixture('session_setup')
     steardown = get_fixture('session_teardown')
 
