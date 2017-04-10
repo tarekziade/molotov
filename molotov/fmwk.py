@@ -122,7 +122,7 @@ async def worker(num, loop, results, args, stream, statsd):
 
     async with Session(loop, stream, verbose, statsd, **options) as session:
         if ssetup is not None:
-            await ssetup(session)
+            await ssetup(num, session)
 
         while howlong < duration and not _STOP:
             if args.max_runs and count > args.max_runs:
@@ -142,7 +142,7 @@ async def worker(num, loop, results, args, stream, statsd):
 
         if steardown is not None:
             try:
-                await steardown(session)
+                await steardown(num, session)
             except Exception as e:
                 # we can't stop the teardown process
                 log(e)

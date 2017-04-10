@@ -77,7 +77,7 @@ class TestFmwk(TestLoop):
             res.append('SETUP')
 
         @session_setup()
-        async def _session(session):
+        async def _session(wid, session):
             session.some = 1
             res.append('SESSION')
 
@@ -94,7 +94,7 @@ class TestFmwk(TestLoop):
             pass
 
         @session_teardown()
-        async def _session_teardown(session):
+        async def _session_teardown(wid, session):
             self.assertEqual(session.some, 1)
             res.append('SESSION_TEARDOWN')
 
@@ -236,7 +236,7 @@ class TestFmwk(TestLoop):
     def test_session_shutdown_exception(self):
 
         @session_teardown()
-        async def _session_teardown(session):
+        async def _session_teardown(wid, session):
             raise Exception('bleh')
 
         @global_teardown()
