@@ -12,11 +12,13 @@ Molotov provides 4 decorators to deal with test fixtures:
 
 - **@setup_session()** called once per worker startup when the
   :class:`aoihttp.ClienSession` instance has been created.
-  The decorated function should be a coroutine and receives the session.
+  The decorated function should be a coroutine and receives the worker
+  id and the session.
 
 - **@teardown_session()** called once per worker startup when the
   :class:`aoihttp.ClienSession` instance is going to be closed.
-  The decorated function should be a coroutine and receives the session.
+  The decorated function should be a coroutine and receives the
+  worker id and the session.
 
 - **@teardown()** called when a worker is done. Receives the worker id.
   The decorated function should not be a coroutine.
