@@ -130,11 +130,17 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
+        class init_screen:
+            def __init__(self, *args, **kw):
+                pass
+            set_alarm_in = __init__
+            run = __init__
+
         args = self.get_args()
         args.processes = 2
         args.workers = 5
         args.console = console
-        results = runner(args)
+        results = runner(args, screen=init_screen)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
 
