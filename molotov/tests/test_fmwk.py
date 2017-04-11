@@ -9,6 +9,16 @@ from molotov.api import (scenario, setup, global_setup, teardown,
 from molotov.tests.support import TestLoop, async_test, dedicatedloop
 
 
+class init_screen:
+    def __init__(self, *args, **kw):
+        self.loop = asyncio.get_event_loop()
+
+    def set_alarm_in(self, when, func):
+        self.loop.call_later(when, func)
+
+    start = stop = run = __init__
+
+
 class TestFmwk(TestLoop):
 
     @async_test
@@ -69,7 +79,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
-    def _runner(self, console):
+    def _runner(self, console, screen=None):
         res = []
 
         @global_setup()
@@ -100,17 +110,18 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         args.console = console
-        results = runner(args)
+        args.verbose = 1
+        results = runner(args, screen=screen)
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
 
     @dedicatedloop
     def test_runner(self):
-        return self._runner(console=False)
+        return self._runner(console=False, screen=init_screen)
 
     @dedicatedloop
-    def _test_runner_console(self):
+    def test_runner_console(self):
         return self._runner(console=True)
 
     @dedicatedloop
@@ -129,15 +140,6 @@ class TestFmwk(TestLoop):
         @scenario(100)
         async def test_two(session):
             pass
-
-        class init_screen:
-            def __init__(self, *args, **kw):
-                self.loop = asyncio.get_event_loop()
-
-            def set_alarm_in(self, when, func):
-                self.loop.call_later(when, func)
-
-            run = __init__
 
         args = self.get_args()
         args.processes = 2
