@@ -1,5 +1,5 @@
 from molotov.api import pick_scenario, scenario, get_scenarios, setup
-from molotov.tests.support import TestLoop
+from molotov.tests.support import TestLoop, async_test
 
 
 class TestUtil(TestLoop):
@@ -16,6 +16,22 @@ class TestUtil(TestLoop):
         picked = [pick_scenario()[0].__name__ for i in range(100)]
         ones = len([f for f in picked if f == '_one'])
         self.assertTrue(ones < 20)
+
+    @async_test
+    async def test_can_call(self, loop):
+        @setup()
+        async def _setup(self):
+            pass
+
+        @scenario(10)
+        async def _one(self):
+            pass
+
+        # can still be called
+        await _one(self)
+
+        # same for fixtures
+        await _setup(self)
 
     def test_no_scenario(self):
         @scenario(0)
@@ -47,5 +63,22 @@ class TestUtil(TestLoop):
             async def _two(self):
                 pass
         except TypeError:
+            return
+        raise AssertionError("Should raise")
+
+    def test_two_fixtures(self):
+        try:
+            @setup()
+            async def _setup(self):
+                pass
+
+            @setup()
+            async def _setup2(self):
+                pass
+
+            @scenario(90)
+            async def _two(self):
+                pass
+        except ValueError:
             return
         raise AssertionError("Should raise")

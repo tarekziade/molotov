@@ -29,7 +29,7 @@ def scenario(weight):
             _SCENARIO.append((weight, func, args, kw))
 
         @functools.wraps(func)
-        def __scenario():
+        def __scenario(*args, **kw):
             return func(*args, **kw)
         return __scenario
 
@@ -47,7 +47,6 @@ def pick_scenario():
             func, args, kw = item[1:]
             return func, args, kw
         upto += weight
-    raise Exception('What')
 
 
 _FIXTURES = {}
@@ -66,7 +65,7 @@ def _fixture(name, coroutine=True):
         _FIXTURES[name] = func
 
         @functools.wraps(func)
-        def ___fixture():
+        def ___fixture(*args, **kw):
             return func(*args, **kw)
 
         return ___fixture
