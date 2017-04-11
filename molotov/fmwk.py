@@ -292,11 +292,7 @@ def _launch_processes(args, screen):
             _PROCESSES.append(job)
 
         if screen is not None and not args.console:
-            if args.processes == 1:
-                pids = [os.getpid()]
-            else:
-                pids = [job.pid for job in jobs]
-
+            pids = [job.pid for job in jobs]
             ui = screen(pids, get_live_results)
 
             def check_procs(*args):

@@ -132,8 +132,11 @@ class TestFmwk(TestLoop):
 
         class init_screen:
             def __init__(self, *args, **kw):
-                pass
-            set_alarm_in = __init__
+                self.loop = asyncio.get_event_loop()
+
+            def set_alarm_in(self, when, func):
+                self.loop.call_later(when, func)
+
             run = __init__
 
         args = self.get_args()
