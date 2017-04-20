@@ -44,3 +44,8 @@ use the same one that the session's.
 The :func:`global_setup` decorator is useful if you need to set up
 some fixtures that are shared by all workers.
 
+
+Here's a full example, in order of calls:
+
+.. literalinclude:: ../../molotov/tests/example4.py
+
