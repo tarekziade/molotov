@@ -121,6 +121,8 @@ async def worker(num, loop, results, args, stream, statsd):
     steardown = get_fixture('session_teardown')
 
     async with Session(loop, stream, verbose, statsd, **options) as session:
+        session.args = args
+
         if ssetup is not None:
             await ssetup(num, session)
 

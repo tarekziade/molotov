@@ -3,6 +3,18 @@ Helpers
 
 Molotov provides a few helpers to make it easier to write tests.
 
+
+Global variables
+----------------
+
+If you need to use an object in various test fixtures or tests,
+you can use the :func:`set_var` and :func:`get_var` functions.
+
+.. autofunction:: molotov.set_var
+
+.. autofunction:: molotov.get_var
+
+
 Synchronous requests
 --------------------
 
@@ -15,12 +27,10 @@ If you need to perform synchronous requests in your setup:
 
 .. code-block:: python
 
-    from molotov import global_setup, json_request
+    from molotov import global_setup, json_request, set_var
 
-
-    _TOKEN = {}
 
     @global_setup(args)
     def _setup():
-        _TOKEN['data'] = json_request('http://example.com')['content']
+        set_var('token') = json_request('http://example.com')['content']
 

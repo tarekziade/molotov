@@ -2,7 +2,8 @@ from io import StringIO
 import json
 import unittest
 import os
-from molotov.util import resolve, expand_options, OptionError
+from molotov.util import (resolve, expand_options, OptionError, set_var,
+                          get_var)
 
 _HERE = os.path.dirname(__file__)
 config = os.path.join(_HERE, '..', '..', 'molotov.json')
@@ -50,3 +51,8 @@ class TestUtil(unittest.TestCase):
         for data, scenario in bad_data:
             self.assertRaises(OptionError, expand_options,
                               self._get_config(data), scenario, args)
+
+    def test_setget_var(self):
+        me = object()
+        set_var('me', me)
+        self.assertTrue(get_var('me') is me)

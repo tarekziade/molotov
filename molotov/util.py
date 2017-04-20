@@ -186,3 +186,14 @@ def json_request(endpoint, verb='GET', session_options=None, **options):
     req = functools.partial(_request, endpoint, verb, session_options,
                             json=True, **options)
     return _run_in_fresh_loop(req)
+
+
+_VARS = {}
+
+
+def set_var(name, value):
+    _VARS[name] = value
+
+
+def get_var(name):
+    return _VARS.get(name)
