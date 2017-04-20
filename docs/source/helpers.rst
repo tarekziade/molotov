@@ -32,5 +32,5 @@ If you need to perform synchronous requests in your setup:
 
     @global_setup(args)
     def _setup():
-        set_var('token') = json_request('http://example.com')['content']
+        set_var('token', json_request('http://example.com')['content'])
 
