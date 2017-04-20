@@ -1,7 +1,7 @@
 Fixtures
 ========
 
-Molotov provides 4 decorators to deal with test fixtures:
+Molotov provides some decorators to deal with test fixtures:
 
 - **@global_setup()** called once when the test starts, before processes and workers
   are created. Receives the arguments used to start Molotov. The decorated
