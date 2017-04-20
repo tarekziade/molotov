@@ -192,8 +192,19 @@ _VARS = {}
 
 
 def set_var(name, value):
+    """Sets a global variable.
+
+    Options:
+
+    - name: name of the variable
+    - value: object to set
+    """
     _VARS[name] = value
 
 
 def get_var(name):
+    """Gets a global variable given its name.
+
+    If not set, returns None.
+    """
     return _VARS.get(name)
