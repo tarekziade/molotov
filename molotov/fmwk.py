@@ -117,8 +117,8 @@ async def worker(num, loop, results, args, stream, statsd):
     else:
         options = {}
 
-    ssetup = get_fixture('session_setup')
-    steardown = get_fixture('session_teardown')
+    ssetup = get_fixture('setup_session')
+    steardown = get_fixture('teardown_session')
 
     async with Session(loop, stream, verbose, statsd, **options) as session:
         session.args = args

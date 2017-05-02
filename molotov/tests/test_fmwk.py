@@ -5,7 +5,7 @@ import signal
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
-                         global_teardown, session_setup, session_teardown)
+                         global_teardown, setup_session, teardown_session)
 from molotov.tests.support import TestLoop, async_test, dedicatedloop
 
 
@@ -86,7 +86,7 @@ class TestFmwk(TestLoop):
         def init(args):
             res.append('SETUP')
 
-        @session_setup()
+        @setup_session()
         async def _session(wid, session):
             session.some = 1
             res.append('SESSION')
@@ -103,8 +103,8 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        @session_teardown()
-        async def _session_teardown(wid, session):
+        @teardown_session()
+        async def _teardown_session(wid, session):
             self.assertEqual(session.some, 1)
             res.append('SESSION_TEARDOWN')
 
@@ -246,8 +246,8 @@ class TestFmwk(TestLoop):
     @dedicatedloop
     def test_session_shutdown_exception(self):
 
-        @session_teardown()
-        async def _session_teardown(wid, session):
+        @teardown_session()
+        async def _teardown_session(wid, session):
             raise Exception('bleh')
 
         @global_teardown()
