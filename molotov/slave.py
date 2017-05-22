@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import shutil
 import site
+import pkg_resources
 
 from molotov import __version__
 from molotov.run import run, _parser
@@ -97,8 +98,10 @@ def main():
 
         # load deps into sys.path
         pyver = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
-        site.addsitedir(os.path.join(tempdir,
-                        'venv', 'lib', 'python' + pyver, 'site-packages'))
+        site_pkg = os.path.join(tempdir, 'venv', 'lib', 'python' + pyver,
+                                'site-packages')
+        site.addsitedir(site_pkg)
+        pkg_resources.working_set.add_entry(site_pkg)
 
         # environment
         if 'env' in config['molotov']:
