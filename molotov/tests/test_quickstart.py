@@ -1,14 +1,14 @@
 import tempfile
-import unittest
 import shutil
 import os
 
 from molotov import quickstart, __version__, run
-from molotov.tests.support import set_args
+from molotov.tests.support import set_args, TestLoop
 
 
-class TestQuickStart(unittest.TestCase):
+class TestQuickStart(TestLoop):
     def setUp(self):
+        super(TestQuickStart, self).setUp()
         self._curdir = os.getcwd()
         self.tempdir = tempfile.mkdtemp()
         self._answers = ['y', 'welp', self.tempdir]
@@ -16,6 +16,7 @@ class TestQuickStart(unittest.TestCase):
     def tearDown(self):
         os.chdir(self._curdir)
         shutil.rmtree(self.tempdir)
+        super(TestQuickStart, self).tearDown()
 
     def _input(self, text):
         if self._answers == []:
