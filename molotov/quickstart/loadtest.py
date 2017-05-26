@@ -8,7 +8,7 @@ from molotov import scenario, setup, global_setup, teardown, global_teardown
 _API = 'http://localhost:8080'
 
 
-@global_setup
+@global_setup()
 def test_starts(args):
     """ This functions is called before anything starts.
 
@@ -30,7 +30,7 @@ async def worker_starts(worker_id, args):
     return {'headers': headers}
 
 
-@teardown
+@teardown()
 def worker_ends(worker_id):
     """ This functions is called when the worker is done.
 
@@ -39,7 +39,7 @@ def worker_ends(worker_id):
     pass
 
 
-@global_teardown
+@global_teardown()
 def test_ends():
     """ This functions is called when everything is done.
 

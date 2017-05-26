@@ -3,16 +3,18 @@ import unittest
 import shutil
 import os
 
-from molotov import quickstart, __version__
+from molotov import quickstart, __version__, run
 from molotov.tests.support import set_args
 
 
 class TestQuickStart(unittest.TestCase):
     def setUp(self):
+        self._curdir = os.getcwd()
         self.tempdir = tempfile.mkdtemp()
         self._answers = ['y', 'welp', self.tempdir]
 
     def tearDown(self):
+        os.chdir(self._curdir)
         shutil.rmtree(self.tempdir)
 
     def _input(self, text):
@@ -47,5 +49,22 @@ class TestQuickStart(unittest.TestCase):
             try:
                 quickstart.main()
                 raise AssertionError()
+            except SystemExit:
+                pass
+
+    def test_codeworks(self):
+        quickstart._input = self._input
+
+        with set_args('molostart'):
+            quickstart.main()
+
+        result = os.listdir(self.tempdir)
+        result.sort()
+        self.assertEqual(result, ['Makefile', 'loadtest.py', 'molotov.json'])
+
+        os.chdir(self.tempdir)
+        with set_args('molotov', '-cxv', '--max-runs', '1'):
+            try:
+                run.main()
             except SystemExit:
                 pass
