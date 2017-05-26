@@ -227,6 +227,8 @@ def _process(args):
         loop.run_until_complete(run_task)
     finally:
         _stop_statsd()
+        for task in _TASKS:
+            del task
         loop.close()
 
     return results
