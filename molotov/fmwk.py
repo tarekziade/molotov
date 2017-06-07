@@ -122,6 +122,7 @@ async def worker(num, loop, results, args, stream, statsd):
 
     async with Session(loop, stream, verbose, statsd, **options) as session:
         session.args = args
+        session.worker_id = num
 
         if ssetup is not None:
             await ssetup(num, session)
