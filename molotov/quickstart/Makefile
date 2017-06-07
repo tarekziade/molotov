@@ -1,7 +1,7 @@
 HERE = $(shell pwd)
 PYTHON = python3
 VTENV_OPTS = --python $(PYTHON)
-
+TESTNAME = smoke
 BIN = $(HERE)/venv/bin
 VENV_PIP = $(BIN)/pip3
 VENV_PYTHON = $(BIN)/python
