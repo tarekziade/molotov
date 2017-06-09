@@ -56,3 +56,11 @@ class TestUtil(unittest.TestCase):
         me = object()
         set_var('me', me)
         self.assertTrue(get_var('me') is me)
+
+    def test_get_var_factory(self):
+        me = object()
+
+        def factory():
+            return me
+
+        self.assertTrue(get_var('me', factory) is me)

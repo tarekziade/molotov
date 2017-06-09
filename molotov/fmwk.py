@@ -131,6 +131,7 @@ async def worker(num, loop, results, args, stream, statsd):
             if args.max_runs and count > args.max_runs:
                 break
             howlong = _now() - start
+            session.step = count
             result = await step(session, quiet, verbose, stream, single)
             if result == 1:
                 results['OK'] += 1
