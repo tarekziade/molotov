@@ -1,6 +1,7 @@
 import asyncio
 import os
 import signal
+from unittest.mock import patch
 
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
@@ -29,15 +30,20 @@ class TestFmwk(TestLoop):
         async def test_one(session):
             res.append('1')
 
-        @scenario(weight=100)
+        @scenario(weight=100, delay=1.5)
         async def test_two(session):
             res.append('2')
 
-        stream = asyncio.Queue()
-        async with LoggedClientSession(loop, stream) as session:
-            result = await step(session, False, False, stream)
-            self.assertTrue(result, 1)
-            self.assertEqual(len(res), 1)
+        async def _slept(time):
+            res.append(time)
+
+        with patch('asyncio.sleep', _slept):
+            stream = asyncio.Queue()
+            async with LoggedClientSession(loop, stream) as session:
+                result = await step(session, False, False, stream)
+                self.assertTrue(result, 1)
+                self.assertEqual(len(res), 2)
+                self.assertEqual(res[1], 1.5)
 
     @async_test
     async def test_failing_step(self, loop):

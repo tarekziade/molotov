@@ -13,7 +13,7 @@ class TestUtil(TestLoop):
         async def _two(self):
             pass
 
-        picked = [pick_scenario()[0].__name__ for i in range(100)]
+        picked = [pick_scenario()[1].__name__ for i in range(100)]
         ones = len([f for f in picked if f == '_one'])
         self.assertTrue(ones < 20)
 
