@@ -50,7 +50,7 @@ def test_ends():
 
 # each scenario has a weight. Molotov uses it to determine
 # how often the scenario is picked.
-@scenario(40)
+@scenario(weight=40)
 async def scenario_one(session):
     async with session.get(_API) as resp:
         # if Molotov is called with --statsd
@@ -65,7 +65,7 @@ async def scenario_one(session):
 
 
 # all scenarii are coroutines
-@scenario(30)
+@scenario(weight=30)
 async def scenario_two(session):
     # a call to one of the session method should be awaited
     # see aiohttp.Client docs for more info on this
@@ -73,7 +73,7 @@ async def scenario_two(session):
         assert resp.status == 200
 
 
-@scenario(30)
+@scenario(weight=30)
 async def scenario_three(session):
     somedata = json.dumps({'OK': 1})
     async with session.post(_API, data=somedata) as resp:

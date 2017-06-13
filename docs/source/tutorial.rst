@@ -56,7 +56,7 @@ and create our first real load test::
 
     from molotov import scenario
 
-    @scenario(100)
+    @scenario(weight=100)
     async def _test(session):
         async with session.get('https://example.com') as resp:
             assert resp.status == 200, resp.status
@@ -130,16 +130,16 @@ You can add more scenarii and adapt their weights::
 
     from molotov import scenario
 
-    @scenario(20)
+    @scenario(weight=20)
     async def _test(session):
         async with session.get('https://example.com') as resp:
             assert resp.status == 200, resp.status
 
-    @scenario(20)
+    @scenario(weight=20)
     async def _test2(session):
         # do something
 
-    @scenario(60)
+    @scenario(weight=60)
     async def _test3(session):
         # do something different
 

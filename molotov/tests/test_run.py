@@ -33,13 +33,13 @@ class TestRunner(TestLoop):
             grab_json = json_request('http://localhost:8888/molotov.json')
             self.assertTrue('molotov' in grab_json['content'])
 
-        @scenario(10)
+        @scenario(weight=10)
         async def here_one(session):
             async with session.get('http://localhost:8888') as resp:
                 await resp.text()
             _RES.append(1)
 
-        @scenario(90)
+        @scenario(weight=90)
         async def here_two(session):
             if session.statsd is not None:
                 session.statsd.incr('yopla')
@@ -139,7 +139,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_config_no_single_mode_found(self):
 
-        @scenario(10)
+        @scenario(weight=10)
         async def not_me(session):
             _RES.append(3)
 
@@ -151,7 +151,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_single_mode(self):
 
-        @scenario(10)
+        @scenario(weight=10)
         async def here_three(session):
             _RES.append(3)
 
