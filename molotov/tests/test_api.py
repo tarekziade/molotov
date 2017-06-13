@@ -33,6 +33,14 @@ class TestUtil(TestLoop):
         # same for fixtures
         await _setup(self)
 
+    def test_default_weight(self):
+        @scenario()
+        async def _default_weight(self):
+            pass
+
+        self.assertEqual(len(get_scenarios()), 1)
+        self.assertEqual(get_scenarios()[0][0], 1)
+
     def test_no_scenario(self):
         @scenario(weight=0)
         async def _one(self):

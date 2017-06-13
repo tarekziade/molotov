@@ -22,7 +22,7 @@ def _check_coroutine(func):
         raise TypeError('%s needs to be a coroutine' % str(func))
 
 
-def scenario(weight):
+def scenario(weight=1):
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
         if weight > 0:
