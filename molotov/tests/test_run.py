@@ -1,6 +1,7 @@
 import os
 import asyncio
 from collections import namedtuple
+from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import TestLoop, coserver, dedicatedloop, set_args
@@ -60,6 +61,7 @@ class TestRunner(TestLoop):
         args.scenario = 'molotov.tests.test_run'
         args.single_mode = None
         args.max_runs = None
+        args.delay = 0.
 
         server = UDPServer('127.0.0.1', 9999, loop=test_loop)
         _stop = asyncio.Future()
@@ -160,3 +162,25 @@ class TestRunner(TestLoop):
                                             'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_delay(self):
+
+        delay = []
+
+        async def _slept(time):
+            delay.append(time)
+
+        with patch('asyncio.sleep', _slept):
+
+            @scenario(weight=10, delay=.1)
+            async def here_three(session):
+                _RES.append(3)
+
+            stdout, stderr = self._test_molotov('--delay', '.6',
+                                                '-cx', '--max-runs', '2', '-s',
+                                                'here_three',
+                                                'molotov.tests.test_run')
+            wanted = "SUCCESSES: 2"
+            self.assertTrue(wanted in stdout)
+            self.assertEqual(delay, [.1, .6] * 2)

@@ -145,6 +145,8 @@ async def worker(num, loop, results, args, stream, statsd):
             elif result == 0:
                 break
             count += 1
+            if args.delay > 0.:
+                await asyncio.sleep(args.delay)
 
         if steardown is not None:
             try:
