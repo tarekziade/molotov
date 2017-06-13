@@ -6,6 +6,6 @@ def init_test(args):
     raise Exception("BAM")
 
 
-@scenario(100)
+@scenario(weight=100)
 async def fail(session):
     raise Exception("I am failing")

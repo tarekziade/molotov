@@ -25,11 +25,11 @@ class TestFmwk(TestLoop):
     async def test_step(self, loop):
         res = []
 
-        @scenario(0)
+        @scenario(weight=0)
         async def test_one(session):
             res.append('1')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             res.append('2')
 
@@ -42,7 +42,7 @@ class TestFmwk(TestLoop):
     @async_test
     async def test_failing_step(self, loop):
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             raise ValueError()
 
@@ -60,11 +60,11 @@ class TestFmwk(TestLoop):
         async def setuptest(num, args):
             res.append('0')
 
-        @scenario(50)
+        @scenario(weight=50)
         async def test_one(session):
             pass
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             pass
 
@@ -95,11 +95,11 @@ class TestFmwk(TestLoop):
         async def setuptest(num, args):
             res.append('0')
 
-        @scenario(50)
+        @scenario(weight=50)
         async def test_one(session):
             pass
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             pass
 
@@ -133,11 +133,11 @@ class TestFmwk(TestLoop):
             async def setuptest(num, args):
                 res.append('0')
 
-        @scenario(50)
+        @scenario(weight=50)
         async def test_one(session):
             pass
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             pass
 
@@ -163,11 +163,11 @@ class TestFmwk(TestLoop):
         async def setuptest(num, args):
             res.append('0')
 
-        @scenario(50)
+        @scenario(weight=50)
         async def test_one(session):
             pass
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             pass
 
@@ -186,7 +186,7 @@ class TestFmwk(TestLoop):
     @async_test
     async def test_failure(self, loop):
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_failing(session):
             raise ValueError()
 
@@ -212,7 +212,7 @@ class TestFmwk(TestLoop):
         def _teardown():
             res.append('BYE')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -234,7 +234,7 @@ class TestFmwk(TestLoop):
         def _teardown():
             raise Exception('bleh')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -254,7 +254,7 @@ class TestFmwk(TestLoop):
         def _teardown():
             raise Exception('bleh')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -269,7 +269,7 @@ class TestFmwk(TestLoop):
         async def _worker_setup(num, args):
             raise Exception('bleh')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -284,7 +284,7 @@ class TestFmwk(TestLoop):
         def _setup(args):
             raise Exception('bleh')
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -298,7 +298,7 @@ class TestFmwk(TestLoop):
         async def _worker_setup(num, args):
             return 1
 
-        @scenario(100)
+        @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
 

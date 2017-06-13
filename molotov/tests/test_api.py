@@ -5,11 +5,11 @@ from molotov.tests.support import TestLoop, async_test
 class TestUtil(TestLoop):
     def test_pick_scenario(self):
 
-        @scenario(10)
+        @scenario(weight=10)
         async def _one(self):
             pass
 
-        @scenario(90)
+        @scenario(weight=90)
         async def _two(self):
             pass
 
@@ -23,7 +23,7 @@ class TestUtil(TestLoop):
         async def _setup(self):
             pass
 
-        @scenario(10)
+        @scenario(weight=10)
         async def _one(self):
             pass
 
@@ -34,11 +34,11 @@ class TestUtil(TestLoop):
         await _setup(self)
 
     def test_no_scenario(self):
-        @scenario(0)
+        @scenario(weight=0)
         async def _one(self):
             pass
 
-        @scenario(0)
+        @scenario(weight=0)
         async def _two(self):
             pass
 
@@ -46,7 +46,7 @@ class TestUtil(TestLoop):
 
     def test_scenario_not_coroutine(self):
         try:
-            @scenario(1)
+            @scenario(weight=1)
             def _one(self):
                 pass
         except TypeError:
@@ -59,7 +59,7 @@ class TestUtil(TestLoop):
             def _setup(self):
                 pass
 
-            @scenario(90)
+            @scenario(weight=90)
             async def _two(self):
                 pass
         except TypeError:
@@ -76,7 +76,7 @@ class TestUtil(TestLoop):
             async def _setup2(self):
                 pass
 
-            @scenario(90)
+            @scenario(weight=90)
             async def _two(self):
                 pass
         except ValueError:
