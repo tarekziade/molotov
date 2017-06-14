@@ -8,7 +8,13 @@ To write tests, the only function you need to use is the :func:`scenario` decora
 .. autofunction:: molotov.scenario
 
 
-Molotov also provides optional decorators to deal with test fixtures:
+Molotov also provides optional decorators to deal with test fixtures.
+
+The lifecycle of a test is shown in the diagram below, and
+test fixtures can be used to run functions at various stages.
+
+.. image:: _static/lifecycle.jpg
+
 
 .. autofunction:: molotov.global_setup
 
