@@ -15,4 +15,4 @@ Example:
 
 .. code-block:: bash
 
-    docker run -e TEST_REPO=https://github.com/loads/molotov -e TEST_NAME=test tarekziade/molotov:latest
+    docker run -i --rm -e TEST_REPO=https://github.com/loads/molotov -e TEST_NAME=test tarekziade/molotov:latest
