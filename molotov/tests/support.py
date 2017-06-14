@@ -136,6 +136,7 @@ class TestLoop(unittest.TestCase):
         args.statsd = False
         args.single_mode = None
         args.max_runs = None
+        args.delay = .0
         return args
 
 
@@ -166,6 +167,8 @@ def dedicatedloop(func):
         try:
             return func(*args, **kw)
         finally:
+            loop.stop()
+            loop.close()
             asyncio.set_event_loop(old_loop)
     return _loop
 

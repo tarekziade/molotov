@@ -66,12 +66,14 @@ async def step(session, quiet, verbose, stream, scenario=None):
     0 the test is stopping or needs to stop.
     """
     if scenario:
-        __, func, args_, kw = scenario
+        __, delay, func, args_, kw = scenario
     else:
-        func, args_, kw = pick_scenario()
+        delay, func, args_, kw = pick_scenario()
     try:
         await func(session, *args_, **kw)
         await stream.put('.')
+        if delay > 0.0:
+            await asyncio.sleep(delay)
         return 1
     except asyncio.CancelledError:
         return 0
@@ -143,6 +145,8 @@ async def worker(num, loop, results, args, stream, statsd):
             elif result == 0:
                 break
             count += 1
+            if args.delay > 0.:
+                await asyncio.sleep(args.delay)
 
         if steardown is not None:
             try:
