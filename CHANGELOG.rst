@@ -1,10 +1,13 @@
 CHANGELOG
 =========
 
-1.2 - ??
---------
+1.2 - 2017-06-15
+----------------
 
-XXX Not yet released
+- improved docs
+- added delay options (#48)
+- added --ramp-up option (#61)
+- fix a bug on response display (#62)
 
 
 1.1 - 2017-06-09
