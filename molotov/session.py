@@ -116,13 +116,16 @@ class LoggedClientSession(ClientSession):
         if resp.headers.get('Content-Encoding') in _COMPRESSED:
             raw += '\n\n' + _BINARY
         elif resp.content:
-            content = await resp.content.read()
-            # put back the data in the content
-            resp.content.unread_data(content)
-            try:
-                raw += '\n\n' + content.decode()
-            except UnicodeDecodeError:
-                raw += '\n\n' + _UNREADABLE
+           content = await resp.content.read()
+            if len(content) > 0:
+                # put back the data in the content
+                resp.content.unread_data(content)
+                try:
+                    raw += '\n\n' + content.decode()
+                except UnicodeDecodeError:
+                    raw += '\n\n' + _UNREADABLE
+            else:
+                raw += '\n\n'
 
         await self.stream.put(raw)
         await self.stream.put('\n' + '<' * 45 + '\n')
