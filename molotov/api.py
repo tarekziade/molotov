@@ -32,6 +32,8 @@ def scenario(weight=1, delay=0.0):
       Integer, defaults to 1.
     - **delay** once the scenario is done, the worker will sleep
       *delay* seconds. Float, defaults to 0.
+      The general --delay argument you can pass to Molotov
+      will be summed with this delay.
 
     The decorated function receives an :class:`aoihttp.ClienSession` instance.
     """
