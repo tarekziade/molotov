@@ -116,7 +116,7 @@ class LoggedClientSession(ClientSession):
         if resp.headers.get('Content-Encoding') in _COMPRESSED:
             raw += '\n\n' + _BINARY
         elif resp.content:
-           content = await resp.content.read()
+            content = await resp.content.read()
             if len(content) > 0:
                 # put back the data in the content
                 resp.content.unread_data(content)
