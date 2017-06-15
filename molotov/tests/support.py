@@ -22,19 +22,28 @@ from molotov import fmwk
 HERE = os.path.dirname(__file__)
 
 
+class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/redirect":
+            self.send_response(302)
+            self.send_header('Location', '/')
+            self.end_headers()
+            return
+        return super(HandlerRedirect, self).do_GET()
+
+
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
     def _run():
         os.chdir(HERE)
         socketserver.TCPServer.allow_reuse_address = True
-        Handler = http.server.SimpleHTTPRequestHandler
         attempts = 0
         httpd = None
 
         while attempts < 3:
             try:
-                httpd = socketserver.TCPServer(("", port), Handler)
+                httpd = socketserver.TCPServer(("", port), HandlerRedirect)
                 break
             except Exception:
                 attempts += 1

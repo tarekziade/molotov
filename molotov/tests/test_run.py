@@ -20,6 +20,60 @@ class TestRunner(TestLoop):
         super(TestRunner, self).setUp()
         _RES[:] = []
 
+    def _get_args(self):
+        args = namedtuple('args', 'verbose quiet duration exception')
+        args.verbose = 1
+        args.quiet = False
+        args.duration = 1
+        args.exception = True
+        args.console = True
+        args.processes = 1
+        args.workers = 1
+        args.debug = True
+        args.statsd = True
+        args.statsd_server = '127.0.0.1'
+        args.statsd_port = 9999
+        args.scenario = 'molotov.tests.test_run'
+        args.single_mode = None
+        args.max_runs = None
+        args.delay = 0.
+        return args
+
+    @dedicatedloop
+    def test_redirect(self):
+        test_loop = asyncio.get_event_loop()
+        test_loop.set_debug(True)
+        test_loop._close = test_loop.close
+        test_loop.close = lambda: None
+
+        @scenario(weight=10)
+        async def _one(session):
+            # redirected
+            async with session.get('http://localhost:8888/redirect') as resp:
+                redirect = resp.history
+                assert redirect[0].status == 302
+                assert resp.status == 200
+
+            # not redirected
+            async with session.get('http://localhost:8888/redirect',
+                                   allow_redirects=False) as resp:
+                redirect = resp.history
+                assert len(redirect) == 0
+                assert resp.status == 302
+                content = await resp.text()
+                assert content == ''
+
+            _RES.append(1)
+
+        args = self._get_args()
+        args.verbose = 2
+
+        with coserver():
+            run(args)
+
+        self.assertTrue(len(_RES) > 0)
+        test_loop._close()
+
     @dedicatedloop
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
@@ -46,23 +100,7 @@ class TestRunner(TestLoop):
                 session.statsd.incr('yopla')
             _RES.append(2)
 
-        args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = 1
-        args.quiet = False
-        args.duration = 1
-        args.exception = True
-        args.console = True
-        args.processes = 1
-        args.workers = 1
-        args.debug = True
-        args.statsd = True
-        args.statsd_server = '127.0.0.1'
-        args.statsd_port = 9999
-        args.scenario = 'molotov.tests.test_run'
-        args.single_mode = None
-        args.max_runs = None
-        args.delay = 0.
-
+        args = self._get_args()
         server = UDPServer('127.0.0.1', 9999, loop=test_loop)
         _stop = asyncio.Future()
 
