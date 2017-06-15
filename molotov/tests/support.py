@@ -113,6 +113,10 @@ def Response(method='GET', status=200, body=b'***'):
             return body
 
         def unread_data(self, data):
+            if body == b'':
+                err = AttributeError("'EmptyStreamReader' object has no "
+                                     "attribute 'unread_data'")
+                raise err
             pass
 
     response.content = Body()

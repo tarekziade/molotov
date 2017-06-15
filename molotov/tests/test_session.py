@@ -20,6 +20,17 @@ async def serialize(stream):
 class TestLoggedClientSession(TestLoop):
 
     @async_test
+    async def test_empty_response(self, loop):
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream,
+                                       verbose=2) as session:
+            binary_body = b''
+            response = Response(body=binary_body)
+            await session.print_response(response)
+
+        await serialize(stream)
+
+    @async_test
     async def test_encoding(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
