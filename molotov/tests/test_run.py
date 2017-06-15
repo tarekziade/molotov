@@ -210,3 +210,29 @@ class TestRunner(TestLoop):
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout)
             self.assertEqual(delay, [.1, .6] * 2)
+
+    @dedicatedloop
+    def test_rampup(self):
+        delay = []
+
+        async def _slept(time):
+            delay.append(time)
+
+        with patch('asyncio.sleep', _slept):
+
+            @scenario(weight=10)
+            async def here_three(session):
+                _RES.append(3)
+
+            stdout, stderr = self._test_molotov('--ramp-up', '10',
+                                                '--workers', '5',
+                                                '-cx', '--max-runs', '2', '-s',
+                                                'here_three',
+                                                'molotov.tests.test_run')
+            # workers should start every 2 seconds since
+            # we have 5 workers and a ramp-up
+            # the first one starts immediatly, then each worker
+            # sleeps 2 seconds more.
+            self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
+            wanted = "SUCCESSES: 10"
+            self.assertTrue(wanted in stdout)

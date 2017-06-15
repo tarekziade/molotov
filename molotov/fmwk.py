@@ -174,16 +174,19 @@ def _worker_done(num, future):
 def _runner(loop, args, results, stream, statsd):
     def _prepare():
         tasks = []
-        if args.ramp_up > 0:
-            delay = args.ramp_up / len(args.workers)
+        delay = 0
+        if args.ramp_up > 0.:
+            step = args.ramp_up / args.workers
         else:
-            delay = 0
+            step = 0.
 
         for i in range(args.workers):
             future = asyncio.ensure_future(worker(i, loop, results, args,
                                                   stream, statsd, delay))
             future.add_done_callback(partial(_worker_done, i))
             tasks.append(future)
+            delay += step
+
         return tasks
     if args.quiet:
         return _prepare()
