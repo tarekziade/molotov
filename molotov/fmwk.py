@@ -89,8 +89,10 @@ async def step(session, quiet, verbose, stream, scenario=None):
 _HOWLONG = 0
 
 
-async def worker(num, loop, results, args, stream, statsd):
+async def worker(num, loop, results, args, stream, statsd, delay):
     global _STOP
+    if delay > 0.:
+        await asyncio.sleep(delay)
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -172,9 +174,14 @@ def _worker_done(num, future):
 def _runner(loop, args, results, stream, statsd):
     def _prepare():
         tasks = []
+        if args.ramp_up > 0:
+            delay = args.ramp_up / len(args.workers)
+        else:
+            delay = 0
+
         for i in range(args.workers):
             future = asyncio.ensure_future(worker(i, loop, results, args,
-                                                  stream, statsd))
+                                                  stream, statsd, delay))
             future.add_done_callback(partial(_worker_done, i))
             tasks.append(future)
         return tasks

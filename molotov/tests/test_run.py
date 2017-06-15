@@ -1,6 +1,5 @@
 import os
 import asyncio
-from collections import namedtuple
 from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
@@ -21,22 +20,11 @@ class TestRunner(TestLoop):
         _RES[:] = []
 
     def _get_args(self):
-        args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = 1
-        args.quiet = False
-        args.duration = 1
-        args.exception = True
-        args.console = True
-        args.processes = 1
-        args.workers = 1
-        args.debug = True
+        args = self.get_args()
         args.statsd = True
         args.statsd_server = '127.0.0.1'
         args.statsd_port = 9999
         args.scenario = 'molotov.tests.test_run'
-        args.single_mode = None
-        args.max_runs = None
-        args.delay = 0.
         return args
 
     @dedicatedloop

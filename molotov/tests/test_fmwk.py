@@ -79,7 +79,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd, delay=0)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -183,7 +183,7 @@ class TestFmwk(TestLoop):
         args.exception = False
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd, delay=0)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -201,7 +201,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd)
+        await worker(1, loop, results, args, stream, statsd, delay=0)
 
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)
