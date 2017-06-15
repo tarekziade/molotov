@@ -1,6 +1,5 @@
 import os
 import asyncio
-from collections import namedtuple
 from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
@@ -21,22 +20,11 @@ class TestRunner(TestLoop):
         _RES[:] = []
 
     def _get_args(self):
-        args = namedtuple('args', 'verbose quiet duration exception')
-        args.verbose = 1
-        args.quiet = False
-        args.duration = 1
-        args.exception = True
-        args.console = True
-        args.processes = 1
-        args.workers = 1
-        args.debug = True
+        args = self.get_args()
         args.statsd = True
         args.statsd_server = '127.0.0.1'
         args.statsd_port = 9999
         args.scenario = 'molotov.tests.test_run'
-        args.single_mode = None
-        args.max_runs = None
-        args.delay = 0.
         return args
 
     @dedicatedloop
@@ -222,3 +210,29 @@ class TestRunner(TestLoop):
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout)
             self.assertEqual(delay, [.1, .6] * 2)
+
+    @dedicatedloop
+    def test_rampup(self):
+        delay = []
+
+        async def _slept(time):
+            delay.append(time)
+
+        with patch('asyncio.sleep', _slept):
+
+            @scenario(weight=10)
+            async def here_three(session):
+                _RES.append(3)
+
+            stdout, stderr = self._test_molotov('--ramp-up', '10',
+                                                '--workers', '5',
+                                                '-cx', '--max-runs', '2', '-s',
+                                                'here_three',
+                                                'molotov.tests.test_run')
+            # workers should start every 2 seconds since
+            # we have 5 workers and a ramp-up
+            # the first one starts immediatly, then each worker
+            # sleeps 2 seconds more.
+            self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
+            wanted = "SUCCESSES: 10"
+            self.assertTrue(wanted in stdout)

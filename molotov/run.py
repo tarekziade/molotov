@@ -38,6 +38,9 @@ def _parser():
     parser.add_argument('-w', '--workers', help='Number of workers',
                         type=int, default=1)
 
+    parser.add_argument('--ramp-up', help='Ramp-up time in seconds.',
+                        type=float, default=0.)
+
     parser.add_argument('--delay', help='Delay between each worker run',
                         type=float, default=0.)
 
