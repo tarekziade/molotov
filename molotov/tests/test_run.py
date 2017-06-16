@@ -177,6 +177,24 @@ class TestRunner(TestLoop):
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
+    def test_name(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        @scenario(weight=30, name='me')
+        async def here_four(session):
+            _RES.append(4)
+
+        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                            'me',
+                                            'molotov.tests.test_run')
+        wanted = "SUCCESSES: 2"
+        self.assertTrue(wanted in stdout)
+        self.assertTrue(_RES, [4, 4])
+
+    @dedicatedloop
     def test_single_mode(self):
 
         @scenario(weight=10)
