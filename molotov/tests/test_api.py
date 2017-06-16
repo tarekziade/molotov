@@ -13,7 +13,7 @@ class TestUtil(TestLoop):
         async def _two(self):
             pass
 
-        picked = [pick_scenario()[1].__name__ for i in range(100)]
+        picked = [pick_scenario()['name'] for i in range(100)]
         ones = len([f for f in picked if f == '_one'])
         self.assertTrue(ones < 20)
 
@@ -39,7 +39,7 @@ class TestUtil(TestLoop):
             pass
 
         self.assertEqual(len(get_scenarios()), 1)
-        self.assertEqual(get_scenarios()[0][0], 1)
+        self.assertEqual(get_scenarios()[0]['weight'], 1)
 
     def test_no_scenario(self):
         @scenario(weight=0)

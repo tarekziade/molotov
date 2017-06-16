@@ -3,18 +3,17 @@ import functools
 import asyncio
 
 
-_SCENARIO = []
+_SCENARIO = {}
 
 
 def get_scenarios():
-    return _SCENARIO
+    scenarios = list(_SCENARIO.values())
+    scenarios.sort()
+    return scenarios
 
 
 def get_scenario(name):
-    for scenario in _SCENARIO:
-        if scenario[2].__name__ == name:
-            return scenario
-    return None
+    return _SCENARIO.get(name)
 
 
 def _check_coroutine(func):
@@ -22,7 +21,7 @@ def _check_coroutine(func):
         raise TypeError('%s needs to be a coroutine' % str(func))
 
 
-def scenario(weight=1, delay=0.0):
+def scenario(weight=1, delay=0.0, name=None):
     """Decorator to register a function as a Molotov test.
 
     Options:
@@ -34,13 +33,18 @@ def scenario(weight=1, delay=0.0):
       *delay* seconds. Float, defaults to 0.
       The general --delay argument you can pass to Molotov
       will be summed with this delay.
+    - **name** name of the scenario. If not provided, will use the
+      function __name___ attribute.
 
     The decorated function receives an :class:`aoihttp.ClienSession` instance.
     """
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
         if weight > 0:
-            _SCENARIO.append((weight, delay, func, args, kw))
+            data = {'name': name or func.__name__,
+                    'weight': weight, 'delay': delay,
+                    'func': func, 'args': args, 'kw': kw}
+            _SCENARIO[name] = data
 
         @functools.wraps(func)
         def __scenario(*args, **kw):
@@ -52,14 +56,13 @@ def scenario(weight=1, delay=0.0):
 
 def pick_scenario():
     scenarios = get_scenarios()
-    total = sum(item[0] for item in scenarios)
+    total = sum(item['weight'] for item in scenarios)
     selection = random.uniform(0, total)
     upto = 0
     for item in scenarios:
-        weight = item[0]
-        if upto + item[0] > selection:
-            delay, func, args, kw = item[1:]
-            return delay, func, args, kw
+        weight = item['weight']
+        if upto + weight > selection:
+            return item
         upto += weight
 
 
