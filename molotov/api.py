@@ -28,7 +28,8 @@ def scenario(weight=1, delay=0.0, name=None):
 
     - **weight** used by Molotov when the scenarii are randomly picked.
       The functions with the highest values are more likely to be picked.
-      Integer, defaults to 1.
+      Integer, defaults to 1. This value is ignored when the
+      *scenario_picker* decorator is used.
     - **delay** once the scenario is done, the worker will sleep
       *delay* seconds. Float, defaults to 0.
       The general --delay argument you can pass to Molotov
