@@ -40,7 +40,7 @@ class TestFmwk(TestLoop):
         with patch('asyncio.sleep', _slept):
             stream = asyncio.Queue()
             async with LoggedClientSession(loop, stream) as session:
-                result = await step(session, False, False, stream)
+                result = await step(0, 0, session, False, False, stream)
                 self.assertTrue(result, 1)
                 self.assertEqual(len(res), 2)
                 self.assertEqual(res[1], 1.5)
@@ -54,7 +54,7 @@ class TestFmwk(TestLoop):
 
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream) as session:
-            result = await step(session, False, False, stream)
+            result = await step(0, 0, session, False, False, stream)
             self.assertTrue(result, -1)
 
     @async_test

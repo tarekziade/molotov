@@ -55,7 +55,11 @@ def scenario(weight=1, delay=0.0, name=None):
     return _scenario
 
 
-def pick_scenario():
+def pick_scenario(worker_id=0, step_id=0):
+    custom_picker = get_fixture('scenario_picker')
+    if custom_picker is not None:
+        return custom_picker(worker_id=worker_id, step_id=step_id)
+
     scenarios = get_scenarios()
     total = sum(item['weight'] for item in scenarios)
     selection = random.uniform(0, total)
@@ -65,6 +69,24 @@ def pick_scenario():
         if upto + weight > selection:
             return item
         upto += weight
+
+
+def scenario_picker():
+    """Called to chose a scenario.
+
+    Arguments received by the decorated function:
+
+    - **worker_id** the worker number
+    - **step_id** the loop counter
+
+    The decorated function should return the name
+    of the scenario the worker should execute next.
+
+    When used, the weights are ignored.
+
+    *The decorated function should not be a coroutine.*
+    """
+    return _fixture('scenario_picker')
 
 
 _FIXTURES = {}
