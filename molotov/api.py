@@ -58,7 +58,8 @@ def scenario(weight=1, delay=0.0, name=None):
 def pick_scenario(worker_id=0, step_id=0):
     custom_picker = get_fixture('scenario_picker')
     if custom_picker is not None:
-        return custom_picker(worker_id=worker_id, step_id=step_id)
+        name = custom_picker(worker_id, step_id)
+        return get_scenario(name)
 
     scenarios = get_scenarios()
     total = sum(item['weight'] for item in scenarios)
@@ -86,7 +87,7 @@ def scenario_picker():
 
     *The decorated function should not be a coroutine.*
     """
-    return _fixture('scenario_picker')
+    return _fixture('scenario_picker', coroutine=False)
 
 
 _FIXTURES = {}
