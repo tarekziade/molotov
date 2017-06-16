@@ -7,9 +7,9 @@ _SCENARIO = {}
 
 
 def get_scenarios():
-    scenarios = list(_SCENARIO.values())
+    scenarios = list(_SCENARIO.items())
     scenarios.sort()
-    return scenarios
+    return [scenario for (name, scenario) in scenarios]
 
 
 def get_scenario(name):
@@ -41,10 +41,11 @@ def scenario(weight=1, delay=0.0, name=None):
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
         if weight > 0:
-            data = {'name': name or func.__name__,
+            sname = name or func.__name__
+            data = {'name': sname,
                     'weight': weight, 'delay': delay,
                     'func': func, 'args': args, 'kw': kw}
-            _SCENARIO[name] = data
+            _SCENARIO[sname] = data
 
         @functools.wraps(func)
         def __scenario(*args, **kw):

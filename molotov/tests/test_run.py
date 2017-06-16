@@ -208,7 +208,7 @@ class TestRunner(TestLoop):
                                                 'here_three',
                                                 'molotov.tests.test_run')
             wanted = "SUCCESSES: 2"
-            self.assertTrue(wanted in stdout)
+            self.assertTrue(wanted in stdout, stdout)
             self.assertEqual(delay, [.1, .6] * 2)
 
     @dedicatedloop
