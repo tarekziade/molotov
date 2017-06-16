@@ -191,12 +191,9 @@ def _runner(loop, args, results, stream, statsd):
     if args.quiet:
         return _prepare()
     else:
-        with stream_log(
-            'Preparing {} worker{}'.format(
-                args.workers,
-                's' if args.workers > 1 else ''
-            )
-        ):
+        msg = 'Preparing {} worker{}'
+        with stream_log(msg.format(args.workers,
+                                   's' if args.workers > 1 else '')):
             return _prepare()
 
 
