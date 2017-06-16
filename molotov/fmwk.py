@@ -59,21 +59,20 @@ async def consume(queue, numworkers, console=False, verbose=0):
                 traceback.print_tb(item)
 
 
-async def step(session, quiet, verbose, stream, scenario=None):
+async def step(worker_id, step_id, session, quiet, verbose, stream,
+               scenario=None):
     """ single scenario call.
 
     When it returns 1, it works. -1 the script failed,
     0 the test is stopping or needs to stop.
     """
-    if scenario:
-        __, delay, func, args_, kw = scenario
-    else:
-        delay, func, args_, kw = pick_scenario()
+    if scenario is None:
+        scenario = pick_scenario(worker_id, step_id)
     try:
-        await func(session, *args_, **kw)
+        await scenario['func'](session, *scenario['args'], **scenario['kw'])
         await stream.put('.')
-        if delay > 0.0:
-            await asyncio.sleep(delay)
+        if scenario['delay'] > 0.:
+            await asyncio.sleep(scenario['delay'])
         return 1
     except asyncio.CancelledError:
         return 0
@@ -136,7 +135,8 @@ async def worker(num, loop, results, args, stream, statsd, delay):
                 break
             howlong = _now() - start
             session.step = count
-            result = await step(session, quiet, verbose, stream, single)
+            result = await step(num, count, session, quiet, verbose,
+                                stream, single)
             if result == 1:
                 results['OK'] += 1
             elif result == -1:

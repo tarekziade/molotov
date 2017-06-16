@@ -127,12 +127,12 @@ def Response(method='GET', status=200, body=b'***'):
 
 class TestLoop(unittest.TestCase):
     def setUp(self):
-        self.old = list(_SCENARIO)
+        self.old = dict(_SCENARIO)
         self.oldsetup = dict(_FIXTURES)
         fmwk._STOP = False
 
     def tearDown(self):
-        _SCENARIO[:] = self.old
+        _SCENARIO.clear()
         _FIXTURES.clear()
         _FIXTURES.update(self.oldsetup)
 

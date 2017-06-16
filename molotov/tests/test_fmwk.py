@@ -6,7 +6,8 @@ from unittest.mock import patch
 from molotov.session import LoggedClientSession
 from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
-                         global_teardown, setup_session, teardown_session)
+                         global_teardown, setup_session, teardown_session,
+                         scenario_picker)
 from molotov.tests.support import TestLoop, async_test, dedicatedloop
 
 
@@ -40,10 +41,34 @@ class TestFmwk(TestLoop):
         with patch('asyncio.sleep', _slept):
             stream = asyncio.Queue()
             async with LoggedClientSession(loop, stream) as session:
-                result = await step(session, False, False, stream)
+                result = await step(0, 0, session, False, False, stream)
                 self.assertTrue(result, 1)
                 self.assertEqual(len(res), 2)
                 self.assertEqual(res[1], 1.5)
+
+    @async_test
+    async def test_picker(self, loop):
+        res = []
+
+        @scenario_picker()
+        def picker(wid, sid):
+            series = '_one', '_two', '_two', '_one'
+            return series[sid]
+
+        @scenario()
+        async def _one(session):
+            res.append('1')
+
+        @scenario()
+        async def _two(session):
+            res.append('2')
+
+        stream = asyncio.Queue()
+        for i in range(4):
+            async with LoggedClientSession(loop, stream) as session:
+                await step(0, i, session, False, False, stream)
+
+        self.assertEqual(res, ['1', '2', '2', '1'])
 
     @async_test
     async def test_failing_step(self, loop):
@@ -54,7 +79,7 @@ class TestFmwk(TestLoop):
 
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream) as session:
-            result = await step(session, False, False, stream)
+            result = await step(0, 0, session, False, False, stream)
             self.assertTrue(result, -1)
 
     @async_test

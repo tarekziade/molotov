@@ -7,6 +7,11 @@ To write tests, the only function you need to use is the :func:`scenario` decora
 
 .. autofunction:: molotov.scenario
 
+If you don't want scenarii to be picked randomly given the weights, you can
+provide your own scenario picker function, by decorating it with the
+:func:`scenario_picker` decorator.
+
+.. autofunction:: molotov.scenario_picker
 
 Molotov also provides optional decorators to deal with test fixtures.
 
