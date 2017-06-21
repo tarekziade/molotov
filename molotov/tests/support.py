@@ -12,6 +12,7 @@ from http.client import HTTPConnection
 from io import StringIO
 import http.server
 import socketserver
+import pytest
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -20,6 +21,9 @@ from molotov import fmwk
 
 
 HERE = os.path.dirname(__file__)
+
+skip_pypy = pytest.mark.skipif(platform.python_implementation() == 'PyPy',
+                               reason='could not make work on pypy')
 
 
 class HandlerRedirect(http.server.SimpleHTTPRequestHandler):

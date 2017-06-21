@@ -3,7 +3,8 @@ import asyncio
 from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
-from molotov.tests.support import TestLoop, coserver, dedicatedloop, set_args
+from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
+                                   skip_pypy)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
 from molotov.util import request, json_request
@@ -62,6 +63,7 @@ class TestRunner(TestLoop):
         self.assertTrue(len(_RES) > 0)
         test_loop._close()
 
+    @skip_pypy
     @dedicatedloop
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
