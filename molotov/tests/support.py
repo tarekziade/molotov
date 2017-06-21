@@ -13,6 +13,7 @@ from io import StringIO
 import http.server
 import socketserver
 import pytest
+import platform
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
