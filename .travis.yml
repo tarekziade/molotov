@@ -16,6 +16,7 @@ env:
  - TOX_ENV=py35
  - TOX_ENV=docs
  - TOX_ENV=flake8
+ - TOX_ENV=pypy3
 install:
  - pip install tox
 script:
