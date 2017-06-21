@@ -4,10 +4,12 @@ import os
 
 from molotov.ui import init_screen, quit
 from molotov.result import LiveResults
+from molotov.tests.support import skip_pypy
 
 
 class TestUI(unittest.TestCase):
 
+    @skip_pypy
     def test_init_screen(self):
         results = LiveResults()
 
