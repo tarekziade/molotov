@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import platform
 
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
@@ -10,6 +11,9 @@ from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import log, expand_options, OptionError
 from molotov import ui
+
+
+PYPY = platform.python_implementation() == 'PyPy'
 
 
 def _parser():
@@ -104,6 +108,10 @@ def main():
             sys.exit(0)
 
     if args.uvloop:
+        if PYPY:
+            print("You can't use uvloop with PyPy")
+            sys.exit(0)
+
         try:
             import uvloop
         except ImportError:

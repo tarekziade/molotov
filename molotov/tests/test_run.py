@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
-                                   skip_pypy)
+                                   skip_pypy, only_pypy)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
 from molotov.util import request, json_request
@@ -209,6 +209,30 @@ class TestRunner(TestLoop):
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
 
+    @only_pypy
+    @dedicatedloop
+    def test_uvloop_pypy(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        orig_import = __import__
+
+        def import_mock(name, *args):
+            if name == 'uvloop':
+                raise ImportError()
+            return orig_import(name, *args)
+
+        with patch('builtins.__import__', side_effect=import_mock):
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '2',
+                                                '-s',
+                                                'here_three', '--uvloop',
+                                                'molotov.tests.test_run')
+        wanted = "You can't use uvloop"
+        self.assertTrue(wanted in stdout)
+
+    @skip_pypy
     @dedicatedloop
     def test_uvloop_import_error(self):
 
@@ -231,6 +255,7 @@ class TestRunner(TestLoop):
         wanted = "You need to install uvloop"
         self.assertTrue(wanted in stdout)
 
+    @skip_pypy
     @dedicatedloop
     def test_uvloop(self):
 

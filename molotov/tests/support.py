@@ -13,18 +13,19 @@ from io import StringIO
 import http.server
 import socketserver
 import pytest
-import platform
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
 from molotov import fmwk
+from molotov.run import PYPY
 
 
 HERE = os.path.dirname(__file__)
 
-skip_pypy = pytest.mark.skipif(platform.python_implementation() == 'PyPy',
+skip_pypy = pytest.mark.skipif(PYPY,
                                reason='could not make work on pypy')
+only_pypy = pytest.mark.skipif(not PYPY, reason='only pypy')
 
 
 class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
