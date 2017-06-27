@@ -1,7 +1,2 @@
-Cython
-git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
-aiostatsd
-pytest
-pytest-cov
-coveralls
+-r tox-pypy-requirements.txt
 uvloop
