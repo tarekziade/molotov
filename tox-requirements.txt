@@ -4,3 +4,4 @@ aiostatsd
 pytest
 pytest-cov
 coveralls
+uvloop

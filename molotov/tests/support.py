@@ -186,8 +186,9 @@ def dedicatedloop(func):
         try:
             return func(*args, **kw)
         finally:
-            loop.stop()
-            loop.close()
+            if not loop.is_closed():
+                loop.stop()
+                loop.close()
             asyncio.set_event_loop(old_loop)
     return _loop
 

@@ -210,6 +210,41 @@ class TestRunner(TestLoop):
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
+    def test_uvloop_import_error(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        orig_import = __import__
+
+        def import_mock(name, *args):
+            if name == 'uvloop':
+                raise ImportError()
+            return orig_import(name, *args)
+
+        with patch('builtins.__import__', side_effect=import_mock):
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '2',
+                                                '-s',
+                                                'here_three', '--uvloop',
+                                                'molotov.tests.test_run')
+        wanted = "You need to install uvloop"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_uvloop(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                            'here_three', '--uvloop',
+                                            'molotov.tests.test_run')
+        wanted = "SUCCESSES: 2"
+        self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
     def test_delay(self):
 
         delay = []

@@ -73,6 +73,8 @@ def _parser():
     parser.add_argument('--statsd-port', help='Statsd Port',
                         type=int, default=8125)
 
+    parser.add_argument('--uvloop', help='Use uvloop', default=False,
+                        action='store_true')
     return parser
 
 
@@ -100,6 +102,16 @@ def main():
         if StatsdClient is None:
             print('You need to install aiostatsd when using --statds')
             sys.exit(0)
+
+    if args.uvloop:
+        try:
+            import uvloop
+        except ImportError:
+            print('You need to install uvloop when using --uvloop')
+            sys.exit(0)
+
+        import asyncio
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
     return run(args)
 
