@@ -12,6 +12,8 @@ molotov
 .. image:: http://readthedocs.org/projects/molotov/badge/?version=latest
    :target: https://readthedocs.org/projects/molotov
 
+.. image:: https://img.shields.io/pypi/pyversions/molotov.svg
+
 
 Simple Python 3.5+ tool to write load tests.
 
