@@ -13,12 +13,13 @@ molotov
    :target: https://readthedocs.org/projects/molotov
 
 .. image:: https://img.shields.io/pypi/pyversions/molotov.svg
+   :target: https://molotov.readthedocs.io
 
 
 Simple Python 3.5+ tool to write load tests.
 
 Based on `asyncio <https://docs.python.org/3/library/asyncio.html>`_,
-`aiohttp.client <http://aiohttp.readthedocs.io/en/stable/client.html>`_ and
+Built with `aiohttp <http://aiohttp.readthedocs.io>`_ and
 `Urwid <http://urwid.org/>`_ for its curses console.
 
 `Full Documentation <https://molotov.readthedocs.io>`_
