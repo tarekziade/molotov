@@ -6,7 +6,7 @@ from molotov.api import scenario, global_setup
 from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
                                    skip_pypy, only_pypy)
 from molotov.tests.statsd import UDPServer
-from molotov.run import run, main
+from molotov.run import run, main, PYPY
 from molotov.util import request, json_request
 from molotov import __version__
 
@@ -22,9 +22,12 @@ class TestRunner(TestLoop):
 
     def _get_args(self):
         args = self.get_args()
-        args.statsd = True
-        args.statsd_server = '127.0.0.1'
-        args.statsd_port = 9999
+        if not PYPY:
+            args.statsd = True
+            args.statsd_server = '127.0.0.1'
+            args.statsd_port = 9999
+        else:
+            args.statsd = False
         args.scenario = 'molotov.tests.test_run'
         return args
 
@@ -56,7 +59,6 @@ class TestRunner(TestLoop):
 
         args = self._get_args()
         args.verbose = 2
-
         with coserver():
             run(args)
 
