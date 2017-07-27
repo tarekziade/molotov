@@ -32,18 +32,21 @@ def run_test(**options):
     parser = _parser()
     fields = {}
     cli = []
-
     for action in parser._actions:
         if action.dest in ('help', 'scenario'):
             continue
         op_str = action.option_strings[0]
-        fields[action.dest] = op_str, action.const
+        fields[action.dest] = op_str, action.const, type(action)
 
     for key, value in options.items():
         if key in fields:
-            opt, const = fields[key]
-            if const:
-                cli.append(opt)
+            opt, const, type_ = fields[key]
+            is_count = type_ is argparse._CountAction
+            if const or is_count:
+                if is_count:
+                    cli += [opt] * value
+                else:
+                    cli.append(opt)
             else:
                 cli.append(opt)
                 cli.append(str(value))

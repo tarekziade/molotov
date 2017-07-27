@@ -21,7 +21,8 @@
             "test": {
                 "duration": 1,
                 "exception": true,
-                "scenario": "molotov/tests/example.py"
+                "scenario": "molotov/tests/example.py",
+                "verbose": 1
             }
         }
     }
