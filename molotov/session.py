@@ -1,3 +1,4 @@
+import io
 import socket
 from urllib.parse import urlparse
 import asyncio
@@ -13,6 +14,7 @@ from molotov.util import resolve
 _HOST = socket.gethostname()
 _UNREADABLE = "***WARNING: Molotov can't display this body***"
 _BINARY = "**** Binary content ****"
+_FILE = "**** File content ****"
 _COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 
@@ -96,13 +98,16 @@ class LoggedClientSession(ClientSession):
             else:
                 body = req.body
 
-            if not isinstance(body, str):
-                try:
-                    body = str(body, 'utf8')
-                except UnicodeDecodeError:
-                    body = _UNREADABLE
+            if isinstance(body, io.IOBase):
+                raw += '\n\n' + _FILE + '\n'
+            else:
+                if not isinstance(body, str):
+                    try:
+                        body = str(body, 'utf8')
+                    except UnicodeDecodeError:
+                        body = _UNREADABLE
 
-            raw += '\n\n' + body + '\n'
+                raw += '\n\n' + body + '\n'
         await self.stream.put(raw)
 
     async def print_response(self, resp):

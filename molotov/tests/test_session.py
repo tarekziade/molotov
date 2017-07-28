@@ -84,6 +84,34 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("Binary" in res[1], res)
 
     @async_test
+    async def test_file_request(self, loop):
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream,
+                                       verbose=2) as session:
+            with open(__file__) as f:
+                req = ClientRequest('POST', URL('http://example.com'),
+                                    data=f)
+                req.headers['Content-Encoding'] = 'something/bin'
+                await session.print_request(req)
+
+        res = await serialize(stream)
+        self.assertTrue("File" in res[1], res)
+
+    @async_test
+    async def test_binary_file_request(self, loop):
+        stream = asyncio.Queue()
+        async with LoggedClientSession(loop, stream,
+                                       verbose=2) as session:
+            with open(__file__, 'rb') as f:
+                req = ClientRequest('POST', URL('http://example.com'),
+                                    data=f)
+                req.headers['Content-Encoding'] = 'something/bin'
+                await session.print_request(req)
+
+        res = await serialize(stream)
+        self.assertTrue("File" in res[1], res)
+
+    @async_test
     async def test_gzipped_response(self, loop):
         stream = asyncio.Queue()
         async with LoggedClientSession(loop, stream,
