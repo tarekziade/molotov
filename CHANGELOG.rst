@@ -1,10 +1,15 @@
 CHANGELOG
 =========
 
-1.3 - ???
----------
+1.3 - 2017-07-28
+----------------
 
-- Not released yet
+- fixed file-based requests with sessions -vvv option (#73)
+- proper managment of the verbose option in moloslave
+- added uvloop support (#68)
+- added initial PyPy support (#47)
+- Added name & @scenario_picker() options (#65)
+
 
 1.2 - 2017-06-15
 ----------------
