@@ -29,6 +29,14 @@ def get_live_results():
     return _results
 
 
+def res2key(res):
+    if res == '.':
+        return 'OK'
+    elif res == '-':
+        return 'FAILED'
+    raise NotImplementedError(res)
+
+
 async def consume(queue, numworkers, console=False, verbose=0):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
@@ -44,10 +52,8 @@ async def consume(queue, numworkers, console=False, verbose=0):
         elif isinstance(item, str):
             results = get_live_results()
             try:
-                if item == '.':
-                    results.incr_success()
-                elif item == '-':
-                    results.incr_failure()
+                if item in ['.', '-']:
+                    results.incr(res2key(item))
                 else:
                     if console and verbose > 0:
                         print(item)

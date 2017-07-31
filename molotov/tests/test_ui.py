@@ -23,8 +23,8 @@ class TestUI(unittest.TestCase):
             if time.time() - running > 2:
                 quit()
             else:
-                results.incr_success()
-                results.incr_failure()
+                results.incr('OK')
+                results.incr('FAILED')
 
             return results
 

@@ -13,8 +13,8 @@ class LiveResultsTest(unittest.TestCase):
         live = LiveResults(use_buffer=False)
 
         def _do_it():
-            live.incr_success()
-            live.incr_failure()
+            live.incr('OK')
+            live.incr('FAILED')
 
         # we fork 2 processes
         p1 = multiprocessing.Process(target=_do_it)
