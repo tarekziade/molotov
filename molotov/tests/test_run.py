@@ -6,7 +6,7 @@ from molotov.api import scenario, global_setup
 from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
                                    skip_pypy, only_pypy)
 from molotov.tests.statsd import UDPServer
-from molotov.run import run, main, PYPY
+from molotov.run import run, main
 from molotov.util import request, json_request
 from molotov import __version__
 
@@ -22,11 +22,8 @@ class TestRunner(TestLoop):
 
     def _get_args(self):
         args = self.get_args()
-        if not PYPY:
-            args.statsd = True
-            args.statsd_address = 'udp://127.0.0.1:9999'
-        else:
-            args.statsd = False
+        args.statsd = True
+        args.statsd_address = 'udp://127.0.0.1:9999'
         args.scenario = 'molotov.tests.test_run'
         return args
 
@@ -64,7 +61,6 @@ class TestRunner(TestLoop):
         self.assertTrue(len(_RES) > 0)
         test_loop._close()
 
-    @skip_pypy
     @dedicatedloop
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
