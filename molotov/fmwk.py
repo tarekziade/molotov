@@ -223,10 +223,9 @@ def _process(args):
     co_tasks = []
 
     if args.statsd:
-        statsd = get_statsd_client(args.statsd_server, args.statsd_port)
-        stastd_task = asyncio.ensure_future(statsd.run())
+        statsd = get_statsd_client(args.statsd_address, loop=loop)
     else:
-        statsd = stastd_task = None
+        statsd = None
 
     consumer = asyncio.ensure_future(consume(stream, args.workers,
                                      args.console, args.verbose))
@@ -239,7 +238,6 @@ def _process(args):
     run_task = asyncio.gather(*workers, loop=loop, return_exceptions=True)
 
     _TASKS.extend(workers)
-    _STATSD.append((statsd, stastd_task))
 
     try:
         loop.run_until_complete(run_task)
@@ -250,7 +248,8 @@ def _process(args):
         run_task.cancel()
         loop.run_until_complete(run_task)
     finally:
-        _stop_statsd()
+        if statsd is not None:
+            statsd.close()
         for task in _TASKS:
             del task
         loop.close()
@@ -258,27 +257,8 @@ def _process(args):
     return results
 
 
-_STATSD = []
 _PROCESSES = []
 _TASKS = []
-
-
-def _stop_statsd():
-
-    if _STATSD != []:
-        loop = asyncio.get_event_loop()
-
-        async def stop():
-            statsd, stastd_task = _STATSD[0]
-            try:
-                await statsd.stop()
-                await stastd_task
-            except Exception:
-                pass
-
-        stop = asyncio.ensure_future(stop())
-        loop.run_until_complete(stop)
-        _STATSD[:] = []
 
 
 def _shutdown(signal, frame):

@@ -1,5 +1,2 @@
 -r tox-pypy-requirements.txt
 uvloop
-Cython
-git+https://github.com/tarekziade/cystatsd.git#egg=cystatsd
-aiostatsd

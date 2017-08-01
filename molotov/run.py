@@ -71,11 +71,8 @@ def _parser():
     parser.add_argument('--statsd', help='Activates statsd',
                         action='store_true', default=False)
 
-    parser.add_argument('--statsd-server', help='Statsd Server',
-                        type=str, default="127.0.0.1")
-
-    parser.add_argument('--statsd-port', help='Statsd Port',
-                        type=int, default=8125)
+    parser.add_argument('--statsd-address', help='Statsd Address',
+                        type=str, default="udp://127.0.0.1:8125")
 
     parser.add_argument('--uvloop', help='Use uvloop', default=False,
                         action='store_true')
@@ -98,13 +95,6 @@ def main():
             expand_options(args.config, args.scenario, args)
         except OptionError as e:
             print(str(e))
-            sys.exit(0)
-
-    if args.statsd:
-        # early import to quit if no aiostatsd
-        from aiostatsd.client import StatsdClient
-        if StatsdClient is None:
-            print('You need to install aiostatsd when using --statds')
             sys.exit(0)
 
     if args.uvloop:

@@ -24,8 +24,7 @@ class TestRunner(TestLoop):
         args = self.get_args()
         if not PYPY:
             args.statsd = True
-            args.statsd_server = '127.0.0.1'
-            args.statsd_port = 9999
+            args.statsd_address = 'udp://127.0.0.1:9999'
         else:
             args.statsd = False
         args.scenario = 'molotov.tests.test_run'
