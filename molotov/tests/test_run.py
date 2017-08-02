@@ -1,3 +1,4 @@
+import random
 import os
 import asyncio
 from unittest.mock import patch
@@ -7,18 +8,21 @@ from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
                                    skip_pypy, only_pypy)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
+from molotov import fmwk
 from molotov.util import request, json_request
 from molotov import __version__
 
 
 _CONFIG = os.path.join(os.path.dirname(__file__), 'molotov.json')
 _RES = []
+_RES2 = {}
 
 
 class TestRunner(TestLoop):
     def setUp(self):
         super(TestRunner, self).setUp()
         _RES[:] = []
+        _RES2.clear()
 
     def _get_args(self):
         args = self.get_args()
@@ -270,9 +274,12 @@ class TestRunner(TestLoop):
     def test_delay(self):
 
         delay = []
+        _original = asyncio.sleep
 
         async def _slept(time):
             delay.append(time)
+            # forces a context switch
+            await _original(0)
 
         with patch('asyncio.sleep', _slept):
 
@@ -292,8 +299,12 @@ class TestRunner(TestLoop):
     def test_rampup(self):
         delay = []
 
+        _original = asyncio.sleep
+
         async def _slept(time):
             delay.append(time)
+            # forces a context switch
+            await _original(0)
 
         with patch('asyncio.sleep', _slept):
 
@@ -310,6 +321,81 @@ class TestRunner(TestLoop):
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
+            delay = [d for d in delay if d != 0]
             self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_sizing(self):
+        delay = []
+        _RES2['fail'] = 0
+        _RES2['succ'] = 0
+
+        async def _slept(time):
+            delay.append(time)
+
+        with patch('asyncio.sleep', _slept):
+
+            @scenario()
+            async def sizer(session):
+                if random.randint(0, 20) == 1:
+                    _RES2['fail'] += 1
+                    raise AssertionError()
+                else:
+                    _RES2['succ'] += 1
+
+            stdout, stderr = self._test_molotov('--sizing',
+                                                '--sizing-tolerance', '5',
+                                                '-cs', 'sizer',
+                                                'molotov.tests.test_run')
+            ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
+            self.assertTrue(ratio < 10. and ratio > 5.)
+
+    @dedicatedloop
+    def test_timed_sizing(self):
+        delay = []
+        _RES2['fail'] = 0
+        _RES2['succ'] = 0
+        _RES2['messed'] = False
+        _original = asyncio.sleep
+
+        async def _slept(time):
+            delay.append(time)
+            # forces a context switch
+            await _original(0)
+
+        with patch('asyncio.sleep', _slept):
+
+            @scenario()
+            async def sizer(session):
+                if session.worker_id == 200 and not _RES2['messed']:
+                    # worker 2 will mess with fmwk._TOLERANCE
+                    # so we can test a _TOLERANCE reset
+                    # since we're faking all timers, the current
+                    # time in the test is always around 0
+                    # so to have now() - _TOLERANCE > 60
+                    # we need to set a negative value here
+                    # to trick it
+                    fmwk._TOLERANCE = - 61
+                    _RES2['messed'] = True
+                    _RES2['fail'] = _RES2['succ'] = 0
+
+                if session.worker_id > 100:
+                    # starting to introduce errors passed the 100th
+                    if random.randint(0, 10) == 1:
+                        _RES2['fail'] += 1
+                        raise AssertionError()
+                    else:
+                        _RES2['succ'] += 1
+
+                # forces a switch
+                await asyncio.sleep(0)
+
+            stdout, stderr = self._test_molotov('--sizing',
+                                                '--sizing-tolerance', '5',
+                                                '-cs', 'sizer',
+                                                'molotov.tests.test_run')
+
+            ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
+            self.assertTrue(ratio < 15. and ratio > 5.)

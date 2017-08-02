@@ -135,7 +135,9 @@ class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = dict(_SCENARIO)
         self.oldsetup = dict(_FIXTURES)
-        fmwk._STOP = False
+        fmwk._REACHED_TOLERANCE = fmwk._STOP = False
+        fmwk._STARTED_AT = fmwk._TOLERANCE = None
+        fmwk._REFRESH = .3
 
     def tearDown(self):
         _SCENARIO.clear()
@@ -157,6 +159,8 @@ class TestLoop(unittest.TestCase):
         args.single_mode = None
         args.max_runs = None
         args.delay = .0
+        args.sizing = False
+        args.sizing_tolerance = .0
         return args
 
 
