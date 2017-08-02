@@ -14,8 +14,17 @@ from molotov.stats import get_statsd_client
 from molotov.ui import quit as quit_screen
 
 
-_STOP = False
+_REACHED_TOLERANCE = _STOP = False
+_STARTED_AT = _TOLERANCE = None
 _REFRESH = .3
+_HOWLONG = 0
+_SIZING_RES = {'workers': 0}
+
+
+def get_sizing_results():
+    if _REACHED_TOLERANCE:
+        return _SIZING_RES
+    return None
 
 
 def _now():
@@ -91,13 +100,48 @@ async def step(worker_id, step_id, session, quiet, verbose, stream,
     return -1
 
 
-_HOWLONG = 0
+def _reached_tolerance(results, minute_res, current_time, args):
+    if not args.sizing:
+        return False
+
+    global _TOLERANCE, _REACHED_TOLERANCE
+
+    if _REACHED_TOLERANCE:
+        return True
+
+    if current_time - _TOLERANCE > 60:
+        # we need to reset the tolerance counters
+        _TOLERANCE = current_time
+        minute_res['OK'] = 0
+        minute_res['FAILED'] = 0
+        return False
+
+    OK = minute_res['OK']
+    FAILED = minute_res['FAILED']
+
+    if OK + FAILED < 100:
+        # we don't have enough samples
+        return False
+
+    current_ratio = float(FAILED) / float(OK) * 100.
+    reached = current_ratio > args.sizing_tolerance
+    if reached:
+        _REACHED_TOLERANCE = True
+        _SIZING_RES['ratio'] = current_ratio
+        _SIZING_RES['OK'] = results['OK']
+        _SIZING_RES['FAILED'] = results['FAILED']
+        _SIZING_RES['MINUTE_OK'] = minute_res['OK']
+        _SIZING_RES['MINUTE_FAILED'] = minute_res['FAILED']
+
+    return reached
 
 
-async def worker(num, loop, results, args, stream, statsd, delay):
+async def worker(num, loop, results, minute_res, args, stream, statsd, delay):
     global _STOP
     if delay > 0.:
         await asyncio.sleep(delay)
+    if args.sizing:
+        _SIZING_RES['workers'] += 1
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -136,25 +180,37 @@ async def worker(num, loop, results, args, stream, statsd, delay):
         if ssetup is not None:
             await ssetup(num, session)
 
-        while howlong < duration and not _STOP:
+        while howlong < duration and not _STOP and not _REACHED_TOLERANCE:
             if args.max_runs and count > args.max_runs:
                 break
-            howlong = _now() - start
+            current_time = _now()
+            howlong = current_time - start
             session.step = count
             result = await step(num, count, session, quiet, verbose,
                                 stream, single)
             if result == 1:
                 results['OK'] += 1
+                minute_res['OK'] += 1
             elif result == -1:
                 results['FAILED'] += 1
+                minute_res['FAILED'] += 1
                 if exception:
                     await stream.put('WORKER_STOPPED')
                     _STOP = True
             elif result == 0:
                 break
+
+            if _reached_tolerance(results, minute_res, current_time, args):
+                await stream.put('WORKER_STOPPED')
+                _STOP = True
+                os.kill(os.getpid(), signal.SIGINT)
+
             count += 1
             if args.delay > 0.:
                 await asyncio.sleep(args.delay)
+            else:
+                # forces a context switch
+                await asyncio.sleep(0)
 
         if steardown is not None:
             try:
@@ -177,7 +233,7 @@ def _worker_done(num, future):
             log(e)
 
 
-def _runner(loop, args, results, stream, statsd):
+def _runner(loop, args, results, minute_res, stream, statsd):
     def _prepare():
         tasks = []
         delay = 0
@@ -185,10 +241,10 @@ def _runner(loop, args, results, stream, statsd):
             step = args.ramp_up / args.workers
         else:
             step = 0.
-
         for i in range(args.workers):
-            future = asyncio.ensure_future(worker(i, loop, results, args,
-                                                  stream, statsd, delay))
+            f = worker(i, loop, results, minute_res, args, stream, statsd,
+                       delay)
+            future = asyncio.ensure_future(f)
             future.add_done_callback(partial(_worker_done, i))
             tasks.append(future)
             delay += step
@@ -204,7 +260,9 @@ def _runner(loop, args, results, stream, statsd):
 
 
 def _process(args):
-    global _STOP
+    global _STOP, _STARTED_AT, _TOLERANCE
+    _STARTED_AT = _TOLERANCE = _now()
+
     if args.processes > 1:
         signal.signal(signal.SIGINT, _shutdown)
         signal.signal(signal.SIGTERM, _shutdown)
@@ -218,6 +276,7 @@ def _process(args):
         loop.set_debug(True)
 
     results = {'OK': 0, 'FAILED': 0}
+    minute_res = {'OK': 0, 'FAILED': 0}
     stream = asyncio.Queue(loop=loop)
 
     co_tasks = []
@@ -234,7 +293,7 @@ def _process(args):
 
     co_tasks = asyncio.gather(*co_tasks, loop=loop, return_exceptions=True)
 
-    workers = _runner(loop, args, results, stream, statsd)
+    workers = _runner(loop, args, results, minute_res, stream, statsd)
     run_task = asyncio.gather(*workers, loop=loop, return_exceptions=True)
 
     _TASKS.extend(workers)

@@ -181,3 +181,22 @@ for each worker::
 Notice that the function decorated by :func:`setup` needs to be a
 coroutine.
 
+
+Autosizing
+----------
+
+Molotov comes with an autosizing feature. When the --sizing option is
+used, Molotov will slowly ramp-up the number of workers per process
+and will stop once there are too many failures per minute.
+
+The default tolerance for failure is 5%, but this can be tweaked
+with the --sizing-tolerance option.
+
+Molotov will use 500 workers that are getting ramped up in 5 minutes,
+but you can set your own values with --workers and --ramp-up if you
+want to autosize at a different pace.
+
+
+.. code-block:: bash
+
+    (venv) $ molotov --sizing -c loadtest.py

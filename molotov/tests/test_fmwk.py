@@ -100,11 +100,12 @@ class TestFmwk(TestLoop):
             pass
 
         results = {'OK': 0, 'FAILED': 0}
+        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd, delay=0)
+        await worker(1, loop, results, min, args, stream, statsd, delay=0)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -203,12 +204,13 @@ class TestFmwk(TestLoop):
             pass
 
         results = {'OK': 0, 'FAILED': 0}
+        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         args.exception = False
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd, delay=0)
+        await worker(1, loop, results, min, args, stream, statsd, delay=0)
 
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
@@ -222,11 +224,12 @@ class TestFmwk(TestLoop):
             raise ValueError()
 
         results = {'OK': 0, 'FAILED': 0}
+        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, args, stream, statsd, delay=0)
+        await worker(1, loop, results, min, args, stream, statsd, delay=0)
 
         self.assertEqual(results['OK'], 0)
         self.assertTrue(results['FAILED'] > 0)

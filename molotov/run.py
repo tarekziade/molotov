@@ -6,7 +6,7 @@ import platform
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner
+from molotov.fmwk import runner, get_sizing_results
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import log, expand_options, OptionError
@@ -44,6 +44,12 @@ def _parser():
 
     parser.add_argument('--ramp-up', help='Ramp-up time in seconds',
                         type=float, default=0.)
+
+    parser.add_argument('--sizing', help='Autosizing', action='store_true',
+                        default=False)
+
+    parser.add_argument('--sizing-tolerance', help='Sizing tolerance',
+                        type=float, default=5.)
 
     parser.add_argument('--delay', help='Delay between each worker run',
                         type=float, default=0.)
@@ -111,7 +117,27 @@ def main():
         import asyncio
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
+    if args.sizing:
+        # sizing is just ramping up workers indefinitely until
+        # something things break. If the user has not set the values,
+        # we do it here with 5 minutes and 500 workers
+        if args.ramp_up == 0.:
+            args.ramp_up = 300
+        if args.workers == 1:
+            args.workers = 500
+
     return run(args)
+
+
+_SIZING = """\
+
+Sizing is over!
+
+Error Ratio %(ratio).1f%% obtained with %(workers)d workers.
+
+OVERALL: SUCCESSES: %(OK)d | FAILURES: %(FAILED)d
+LAST MINUTE: SUCCESSES: %(MINUTE_OK)d | FAILURES: %(MINUTE_FAILED)d
+"""
 
 
 def run(args):
@@ -147,8 +173,19 @@ def run(args):
             print("Can't find %r in registered scenarii" % args.single_mode)
             sys.exit(1)
 
+    if args.sizing and args.processes > 1:
+        print("Sizing does not work yet with multiple processes")
+        sys.exit(1)
+
     res = runner(args, screen=ui.init_screen)
 
     if not args.quiet:
-        print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
+        if args.sizing:
+            results = get_sizing_results()
+            if results is not None:
+                print(_SIZING % results)
+            else:
+                print('Sizing was not finished. (interrupted)')
+        else:
+            print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
         print('*** Bye ***')
