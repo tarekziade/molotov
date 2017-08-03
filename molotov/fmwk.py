@@ -11,7 +11,6 @@ from molotov.session import LoggedClientSession as Session
 from molotov.result import LiveResults, ClosedError
 from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.stats import get_statsd_client
-from molotov.ui import quit as quit_screen
 
 
 _REACHED_TOLERANCE = _STOP = False
@@ -46,7 +45,7 @@ def res2key(res):
     raise NotImplementedError(res)
 
 
-async def consume(queue, numworkers, console=False, verbose=0):
+async def consume(queue, numworkers, verbose=0):
     worker_stopped = 0
     while True and worker_stopped < numworkers:
         try:
@@ -64,12 +63,12 @@ async def consume(queue, numworkers, console=False, verbose=0):
                 if item in ['.', '-']:
                     results.incr(res2key(item))
                 else:
-                    if console and verbose > 0:
+                    if verbose > 0:
                         print(item)
             except ClosedError:
                 break
         else:
-            if console and verbose > 0:
+            if verbose > 0:
                 import traceback
                 traceback.print_tb(item)
 
@@ -287,7 +286,7 @@ def _process(args):
         statsd = None
 
     consumer = asyncio.ensure_future(consume(stream, args.workers,
-                                     args.console, args.verbose))
+                                             args.verbose))
     co_tasks.append(consumer)
     _TASKS.extend(co_tasks)
 
@@ -333,7 +332,7 @@ def _shutdown(signal, frame):
         proc.terminate()
 
 
-def _launch_processes(args, screen):
+def _launch_processes(args):
     results = {'FAILED': 0, 'OK': 0}
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
@@ -342,7 +341,6 @@ def _launch_processes(args, screen):
         if not args.quiet:
             log('Forking %d processes' % args.processes, pid=False)
         result_queue = multiprocessing.Queue()
-        ui = None
         loop = asyncio.get_event_loop()
 
         def _pprocess(result_queue):
@@ -358,21 +356,9 @@ def _launch_processes(args, screen):
         for job in jobs:
             _PROCESSES.append(job)
 
-        if screen is not None and not args.console:
-            pids = [job.pid for job in jobs]
-            ui = screen(pids, get_live_results)
-
-            def check_procs(*args):
-                dead = [not p.is_alive() for p in _PROCESSES]
-                if all(dead):
-                    quit_screen()
-
-            ui.set_alarm_in(1, check_procs)
-            ui.run()
-
-        async def run(loop, quiet, console):
+        async def run(loop, quiet):
             while len(_PROCESSES) > 0:
-                if not quiet and console:
+                if not quiet:
                     try:
                         print(get_live_results(), end='\r')
                     except ClosedError:
@@ -384,8 +370,7 @@ def _launch_processes(args, screen):
 
                 await asyncio.sleep(.2)
 
-        loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet,
-                                                          args.console)))
+        loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet)))
 
         for job in jobs:
             proc_result = result_queue.get()
@@ -393,11 +378,6 @@ def _launch_processes(args, screen):
             results['OK'] += proc_result['OK']
     else:
         loop = asyncio.get_event_loop()
-        if screen is not None and not args.console:
-            ui = screen([os.getpid()], get_live_results, loop)
-            ui.start()
-        else:
-            ui = None
 
         if not args.quiet and args.console and args.verbose > 0:
             def _display(loop):
@@ -411,13 +391,10 @@ def _launch_processes(args, screen):
 
         results = _process(args)
 
-        if ui is not None:
-            ui.stop()
-
     return results
 
 
-def runner(args, screen=None):
+def runner(args):
     global_setup = get_fixture('global_setup')
     if global_setup is not None:
         try:
@@ -427,7 +404,7 @@ def runner(args, screen=None):
             raise
 
     try:
-        return _launch_processes(args, screen)
+        return _launch_processes(args)
     finally:
         global_teardown = get_fixture('global_teardown')
         if global_teardown is not None:

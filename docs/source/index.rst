@@ -4,8 +4,7 @@ molotov
 Simple Python 3.5+ tool to write load tests.
 
 Based on `asyncio <https://docs.python.org/3/library/asyncio.html>`_,
-`aiohttp.client <http://aiohttp.readthedocs.io/en/stable/client.html>`_ and
-`Urwid <http://urwid.org/>`_ for its curses console.
+`aiohttp.client <http://aiohttp.readthedocs.io/en/stable/client.html>`_.
 
 
 Quickstart

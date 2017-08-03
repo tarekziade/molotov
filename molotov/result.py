@@ -19,13 +19,13 @@ class LiveResults:
     def close(self):
         self.closed = True
 
-    def get_successes(self, pid=None):
-        return self._count('OK', pid)
+    def get_successes(self):
+        return self._count('OK')
 
-    def get_failures(self, pid=None):
-        return self._count('FAILED', pid)
+    def get_failures(self):
+        return self._count('FAILED')
 
-    def _count(self, value, pid=None):
+    def _count(self, value):
         return self._counters[value].value
 
     def incr(self, counter, count=1):

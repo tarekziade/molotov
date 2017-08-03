@@ -150,12 +150,6 @@ class TestRunner(TestLoop):
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
-    def test_config_verbose(self):
-        stdout, stderr = self._test_molotov('-v', '--config', _CONFIG)
-        wanted = "You have to be in console mode"
-        self.assertTrue(wanted in stdout)
-
-    @dedicatedloop
     def test_config_verbose_quiet(self):
         stdout, stderr = self._test_molotov('-qv', '--config', _CONFIG)
         wanted = "You can't"

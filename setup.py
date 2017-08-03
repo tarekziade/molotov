@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from molotov import __version__
 
 
-install_requires = ['aiohttp', 'urwid', 'humanize']
+install_requires = ['aiohttp']
 description = ''
 
 for file_ in ('README', 'CHANGELOG'):

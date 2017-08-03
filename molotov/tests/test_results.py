@@ -23,9 +23,5 @@ class LiveResultsTest(unittest.TestCase):
         p2.start()
         p1.join()
         p2.join()
-        pids = [p1.pid, p2.pid]
         self.assertEqual(live.get_successes(), 2)
         self.assertEqual(live.get_failures(), 2)
-        for pid in pids:
-            self.assertTrue(live.get_successes(pid) > 0)
-            self.assertTrue(live.get_failures(pid) > 0)

@@ -10,7 +10,6 @@ from molotov.fmwk import runner, get_sizing_results
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import log, expand_options, OptionError
-from molotov import ui
 
 
 PYPY = platform.python_implementation() == 'PyPy'
@@ -71,7 +70,7 @@ def _parser():
                         help='Stop on first failure.')
 
     parser.add_argument('-c', '--console', action='store_true',
-                        default=False,
+                        default=True,
                         help='Use simple console for feedback')
 
     parser.add_argument('--statsd', help='Activates statsd',
@@ -164,10 +163,6 @@ def run(args):
         print("You can't use -q and -v at the same time")
         sys.exit(1)
 
-    if args.verbose > 0 and not args.console:
-        print("You have to be in console mode (-c) to use -v")
-        sys.exit(1)
-
     if args.single_mode:
         if get_scenario(args.single_mode) is None:
             print("Can't find %r in registered scenarii" % args.single_mode)
@@ -177,7 +172,7 @@ def run(args):
         print("Sizing does not work yet with multiple processes")
         sys.exit(1)
 
-    res = runner(args, screen=ui.init_screen)
+    res = runner(args)
 
     if not args.quiet:
         if args.sizing:
