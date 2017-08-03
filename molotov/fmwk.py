@@ -18,21 +18,21 @@ _STOP = False
 _STARTED_AT = _TOLERANCE = None
 _REFRESH = .3
 _HOWLONG = 0
-_SIZING_RES = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK', 'FAILED',
+_RESULTS = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK', 'FAILED',
                              'MINUTE_OK', 'MINUTE_FAILED')
 
 
 def is_reached():
-    return _SIZING_RES['REACHED'].value == 1
+    return _RESULTS['REACHED'].value == 1
 
 
 def set_reached():
-    _SIZING_RES['REACHED'].value = 1
+    _RESULTS['REACHED'].value = 1
 
 
 def get_sizing_results():
     if is_reached():
-        return _SIZING_RES
+        return _RESULTS
     return None
 
 
@@ -68,15 +68,8 @@ async def consume(queue, numworkers, verbose=0):
             break
 
         elif isinstance(item, str):
-            results = get_live_results()
-            try:
-                if item in ['.', '-']:
-                    results.incr(res2key(item))
-                else:
-                    if verbose > 0:
-                        print(item)
-            except ClosedError:
-                break
+            if verbose > 0:
+                print(item)
         else:
             if verbose > 0:
                 import traceback
@@ -121,12 +114,12 @@ def _reached_tolerance(current_time, args):
     if current_time - _TOLERANCE > 60:
         # we need to reset the tolerance counters
         _TOLERANCE = current_time
-        _SIZING_RES['MINUTE_OK'].value = 0
-        _SIZING_RES['MINUTE_FAILED'].value = 0
+        _RESULTS['MINUTE_OK'].value = 0
+        _RESULTS['MINUTE_FAILED'].value = 0
         return False
 
-    OK = _SIZING_RES['MINUTE_OK'].value
-    FAILED = _SIZING_RES['MINUTE_FAILED'].value
+    OK = _RESULTS['MINUTE_OK'].value
+    FAILED = _RESULTS['MINUTE_FAILED'].value
 
     if OK + FAILED < 100:
         # we don't have enough samples
@@ -136,7 +129,7 @@ def _reached_tolerance(current_time, args):
     reached = current_ratio > args.sizing_tolerance
     if reached:
         set_reached()
-        _SIZING_RES['RATIO'] = int(current_ratio * 100)
+        _RESULTS['RATIO'] = int(current_ratio * 100)
 
     return reached
 
@@ -146,7 +139,7 @@ async def worker(num, loop, args, stream, statsd, delay):
     if delay > 0.:
         await asyncio.sleep(delay)
     if args.sizing:
-        _SIZING_RES['WORKER'] += 1
+        _RESULTS['WORKER'] += 1
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
@@ -194,11 +187,11 @@ async def worker(num, loop, args, stream, statsd, delay):
             result = await step(num, count, session, quiet, verbose,
                                 stream, single)
             if result == 1:
-                _SIZING_RES['OK'] += 1
-                _SIZING_RES['MINUTE_OK'] += 1
+                _RESULTS['OK'] += 1
+                _RESULTS['MINUTE_OK'] += 1
             elif result == -1:
-                _SIZING_RES['FAILED'] += 1
-                _SIZING_RES['MINUTE_FAILED'] += 1
+                _RESULTS['FAILED'] += 1
+                _RESULTS['MINUTE_FAILED'] += 1
                 if exception:
                     await stream.put('WORKER_STOPPED')
                     _STOP = True
@@ -379,7 +372,7 @@ def _launch_processes(args):
 
         _process(args)
 
-    return _SIZING_RES
+    return _RESULTS
 
 
 def runner(args):

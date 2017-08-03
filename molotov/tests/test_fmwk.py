@@ -96,8 +96,8 @@ class TestFmwk(TestLoop):
 
         await worker(1, loop, args, stream, statsd, delay=0)
 
-        self.assertTrue(fmwk._SIZING_RES['OK'] > 0)
-        self.assertEqual(fmwk._SIZING_RES['FAILED'], 0)
+        self.assertTrue(fmwk._RESULTS['OK'] > 0)
+        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     def _runner(self, console, screen=None):
@@ -198,8 +198,8 @@ class TestFmwk(TestLoop):
         statsd = None
 
         await worker(1, loop, args, stream, statsd, delay=0)
-        self.assertTrue(fmwk._SIZING_RES['OK'] > 0)
-        self.assertEqual(fmwk._SIZING_RES['FAILED'], 0)
+        self.assertTrue(fmwk._RESULTS['OK'] > 0)
+        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     @async_test
@@ -214,8 +214,8 @@ class TestFmwk(TestLoop):
         statsd = None
 
         await worker(1, loop, args, stream, statsd, delay=0)
-        self.assertTrue(fmwk._SIZING_RES['OK'] == 0)
-        self.assertTrue(fmwk._SIZING_RES['FAILED'] > 0)
+        self.assertTrue(fmwk._RESULTS['OK'] == 0)
+        self.assertTrue(fmwk._RESULTS['FAILED'] > 0)
 
     @dedicatedloop
     def test_shutdown(self):

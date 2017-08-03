@@ -135,8 +135,8 @@ class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = dict(_SCENARIO)
         self.oldsetup = dict(_FIXTURES)
-        for key in fmwk._SIZING_RES:
-            fmwk._SIZING_RES[key] = 0
+        for key in fmwk._RESULTS:
+            fmwk._RESULTS[key] = 0
         fmwk._STOP = False
         fmwk._STARTED_AT = fmwk._TOLERANCE = None
         fmwk._REFRESH = .3

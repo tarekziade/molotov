@@ -347,7 +347,7 @@ class TestRunner(TestLoop):
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
             self.assertTrue(fmwk.is_reached())
-            self.assertEqual(int(ratio*100), fmwk._SIZING_RES['RATIO'].value)
+            self.assertEqual(int(ratio*100), fmwk._RESULTS['RATIO'].value)
             self.assertTrue(ratio < 10. and ratio > 5.)
 
     @dedicatedloop
@@ -376,9 +376,9 @@ class TestRunner(TestLoop):
                      float(counters['OK'].value) * 100.)
             self.assertTrue(fmwk.is_reached())
             self.assertEqual(counters['FAILED'].value,
-                             fmwk._SIZING_RES['FAILED'].value)
+                             fmwk._RESULTS['FAILED'].value)
             self.assertEqual(counters['OK'].value,
-                             fmwk._SIZING_RES['OK'].value)
+                             fmwk._RESULTS['OK'].value)
             self.assertTrue(ratio > 5., ratio)
 
     @dedicatedloop
