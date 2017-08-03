@@ -8,7 +8,6 @@ import os
 
 from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
-from molotov.result import LiveResults, ClosedError
 from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
@@ -19,7 +18,7 @@ _STARTED_AT = _TOLERANCE = None
 _REFRESH = .3
 _HOWLONG = 0
 _RESULTS = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK', 'FAILED',
-                             'MINUTE_OK', 'MINUTE_FAILED')
+                          'MINUTE_OK', 'MINUTE_FAILED')
 
 
 def is_reached():
@@ -30,6 +29,11 @@ def set_reached():
     _RESULTS['REACHED'].value = 1
 
 
+def display_results():
+    ok, fail = _RESULTS['OK'].value, _RESULTS['FAILED'].value
+    return 'SUCCESSES: %s | FAILURES: %s' % (ok, fail)
+
+
 def get_sizing_results():
     if is_reached():
         return _RESULTS
@@ -38,13 +42,6 @@ def get_sizing_results():
 
 def _now():
     return int(time.time())
-
-
-_results = LiveResults()
-
-
-def get_live_results():
-    return _results
 
 
 def res2key(res):
@@ -87,14 +84,12 @@ async def step(worker_id, step_id, session, quiet, verbose, stream,
         scenario = pick_scenario(worker_id, step_id)
     try:
         await scenario['func'](session, *scenario['args'], **scenario['kw'])
-        await stream.put('.')
         if scenario['delay'] > 0.:
             await asyncio.sleep(scenario['delay'])
         return 1
     except asyncio.CancelledError:
         return 0
     except Exception as exc:
-        await stream.put('-')
         if verbose > 0:
             await stream.put(repr(exc))
             await stream.put(sys.exc_info()[2])
@@ -315,7 +310,6 @@ _TASKS = []
 def _shutdown(signal, frame):
     global _STOP
     _STOP = True
-    get_live_results().close()
 
     for task in _TASKS:
         task.cancel()
@@ -345,15 +339,10 @@ def _launch_processes(args):
         async def run(loop, quiet):
             while len(_PROCESSES) > 0:
                 if not quiet:
-                    try:
-                        print(get_live_results(), end='\r')
-                    except ClosedError:
-                        # finished
-                        return
+                    print(display_results(), end='\r')
                 for job in jobs:
                     if job.exitcode is not None and job in _PROCESSES:
                         _PROCESSES.remove(job)
-
                 await asyncio.sleep(.2)
 
         loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet)))
@@ -362,14 +351,10 @@ def _launch_processes(args):
 
         if not args.quiet and args.console and args.verbose > 0:
             def _display(loop):
-                try:
-                    print(get_live_results(), end='\r')
-                except ClosedError:
-                    return
+                print(display_results(), end='\r')
                 loop.call_later(_REFRESH, _display, loop)
 
             loop.call_soon(_display, loop)
-
         _process(args)
 
     return _RESULTS
