@@ -10,7 +10,7 @@ class LiveResultsTest(unittest.TestCase):
     async def test_live(self, loop):
 
         # we have results
-        live = LiveResults(use_buffer=False)
+        live = LiveResults()
 
         def _do_it():
             live.incr('OK')
@@ -24,7 +24,6 @@ class LiveResultsTest(unittest.TestCase):
         p1.join()
         p2.join()
         pids = [p1.pid, p2.pid]
-        live.update()
         self.assertEqual(live.get_successes(), 2)
         self.assertEqual(live.get_failures(), 2)
         for pid in pids:

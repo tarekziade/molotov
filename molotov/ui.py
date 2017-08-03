@@ -29,7 +29,6 @@ def process_box(procid, refresh=None, loop=None):
     def update_box(body, footer, refresh, loop, *args):
         try:
             results = refresh()
-            results.update()
             oks = results.get_successes(procid)
             fails = results.get_failures(procid)
         except ClosedError:
