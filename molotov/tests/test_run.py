@@ -9,6 +9,7 @@ from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
 from molotov import fmwk
+from molotov.sharedcounter import SharedCounters
 from molotov.util import request, json_request
 from molotov import __version__
 
@@ -343,8 +344,42 @@ class TestRunner(TestLoop):
                                                 '--sizing-tolerance', '5',
                                                 '-cs', 'sizer',
                                                 'molotov.tests.test_run')
+
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
+            self.assertTrue(fmwk.is_reached())
+            self.assertEqual(int(ratio*100), fmwk._SIZING_RES['RATIO'].value)
             self.assertTrue(ratio < 10. and ratio > 5.)
+
+    @dedicatedloop
+    def test_sizing_multiprocess(self):
+
+        counters = SharedCounters('OK', 'FAILED')
+        _original = asyncio.sleep
+
+        async def _slept(time):
+            _original(0)
+
+        with patch('asyncio.sleep', _slept):
+            @scenario()
+            async def sizer(session):
+                if random.randint(0, 10) == 1:
+                    counters['FAILED'] += 1
+                    raise AssertionError()
+                else:
+                    counters['OK'] += 1
+
+            stdout, stderr = self._test_molotov('--sizing', '-p', '2',
+                                                '--sizing-tolerance', '5',
+                                                '-s', 'sizer',
+                                                'molotov.tests.test_run')
+            ratio = (float(counters['FAILED'].value) /
+                     float(counters['OK'].value) * 100.)
+            self.assertTrue(fmwk.is_reached())
+            self.assertEqual(counters['FAILED'].value,
+                             fmwk._SIZING_RES['FAILED'].value)
+            self.assertEqual(counters['OK'].value,
+                             fmwk._SIZING_RES['OK'].value)
+            self.assertTrue(ratio > 5., ratio)
 
     @dedicatedloop
     def test_timed_sizing(self):

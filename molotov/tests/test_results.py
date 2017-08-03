@@ -1,4 +1,5 @@
 import unittest
+import time
 import multiprocessing
 from molotov.result import LiveResults
 from molotov.tests.support import async_test
@@ -23,5 +24,7 @@ class LiveResultsTest(unittest.TestCase):
         p2.start()
         p1.join()
         p2.join()
+        live.start = time.time() - 10
         self.assertEqual(live.get_successes(), 2)
         self.assertEqual(live.get_failures(), 2)
+        self.assertTrue(live.howlong() > 0)

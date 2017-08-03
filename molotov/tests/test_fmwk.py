@@ -4,6 +4,7 @@ import signal
 from unittest.mock import patch
 
 from molotov.session import LoggedClientSession
+from molotov import fmwk
 from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
@@ -89,16 +90,14 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        results = {'OK': 0, 'FAILED': 0}
-        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, min, args, stream, statsd, delay=0)
+        await worker(1, loop, args, stream, statsd, delay=0)
 
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
+        self.assertTrue(fmwk._SIZING_RES['OK'] > 0)
+        self.assertEqual(fmwk._SIZING_RES['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     def _runner(self, console, screen=None):
@@ -193,17 +192,14 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        results = {'OK': 0, 'FAILED': 0}
-        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         args.exception = False
         statsd = None
 
-        await worker(1, loop, results, min, args, stream, statsd, delay=0)
-
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
+        await worker(1, loop, args, stream, statsd, delay=0)
+        self.assertTrue(fmwk._SIZING_RES['OK'] > 0)
+        self.assertEqual(fmwk._SIZING_RES['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     @async_test
@@ -213,16 +209,13 @@ class TestFmwk(TestLoop):
         async def test_failing(session):
             raise ValueError()
 
-        results = {'OK': 0, 'FAILED': 0}
-        min = {'OK': 0, 'FAILED': 0}
         stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, results, min, args, stream, statsd, delay=0)
-
-        self.assertEqual(results['OK'], 0)
-        self.assertTrue(results['FAILED'] > 0)
+        await worker(1, loop, args, stream, statsd, delay=0)
+        self.assertTrue(fmwk._SIZING_RES['OK'] == 0)
+        self.assertTrue(fmwk._SIZING_RES['FAILED'] > 0)
 
     @dedicatedloop
     def test_shutdown(self):

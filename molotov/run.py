@@ -6,7 +6,7 @@ import platform
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner, get_sizing_results
+from molotov.fmwk import runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import log, expand_options, OptionError
@@ -132,7 +132,7 @@ _SIZING = """\
 
 Sizing is over!
 
-Error Ratio %(ratio).1f%% obtained with %(workers)d workers.
+Error Ratio %(RATIO).2f %% obtained with %(WORKER)d workers.
 
 OVERALL: SUCCESSES: %(OK)d | FAILURES: %(FAILED)d
 LAST MINUTE: SUCCESSES: %(MINUTE_OK)d | FAILURES: %(MINUTE_FAILED)d
@@ -168,17 +168,23 @@ def run(args):
             print("Can't find %r in registered scenarii" % args.single_mode)
             sys.exit(1)
 
-    if args.sizing and args.processes > 1:
-        print("Sizing does not work yet with multiple processes")
-        sys.exit(1)
-
     res = runner(args)
+
+    def _dict(counters):
+        res = {}
+        for k, v in counters.items():
+            if k == 'RATIO':
+                res[k] = float(v.value) / 100.
+            else:
+                res[k] = v.value
+        return res
+
+    res = _dict(res)
 
     if not args.quiet:
         if args.sizing:
-            results = get_sizing_results()
-            if results is not None:
-                print(_SIZING % results)
+            if res['REACHED'] == 1:
+                print(_SIZING % res)
             else:
                 print('Sizing was not finished. (interrupted)')
         else:
