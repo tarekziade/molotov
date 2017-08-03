@@ -23,7 +23,8 @@ _RESULTS = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK', 'FAILED',
 
 def display_results():
     ok, fail = _RESULTS['OK'].value, _RESULTS['FAILED'].value
-    return 'SUCCESSES: %s | FAILURES: %s' % (ok, fail)
+    workers = _RESULTS['WORKER'].value
+    return 'SUCCESSES: %s | FAILURES: %s | WORKERS: %s' % (ok, fail, workers)
 
 
 def _now():
@@ -336,7 +337,7 @@ def _launch_processes(args):
     else:
         loop = asyncio.get_event_loop()
 
-        if not args.quiet and args.console and args.verbose > 0:
+        if not args.quiet:
             def _display(loop):
                 print(display_results(), end='\r')
                 loop.call_later(_REFRESH, _display, loop)
