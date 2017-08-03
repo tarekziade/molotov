@@ -346,7 +346,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(fmwk.is_reached())
+            self.assertTrue(fmwk._RESULTS['REACHED'] == 1)
             self.assertEqual(int(ratio*100), fmwk._RESULTS['RATIO'].value)
             self.assertTrue(ratio < 10. and ratio > 5.)
 
@@ -374,7 +374,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
             ratio = (float(counters['FAILED'].value) /
                      float(counters['OK'].value) * 100.)
-            self.assertTrue(fmwk.is_reached())
+            self.assertTrue(fmwk._RESULTS['REACHED'] == 1)
             self.assertEqual(counters['FAILED'].value,
                              fmwk._RESULTS['FAILED'].value)
             self.assertEqual(counters['OK'].value,

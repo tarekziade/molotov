@@ -21,23 +21,9 @@ _RESULTS = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK', 'FAILED',
                           'MINUTE_OK', 'MINUTE_FAILED')
 
 
-def is_reached():
-    return _RESULTS['REACHED'].value == 1
-
-
-def set_reached():
-    _RESULTS['REACHED'].value = 1
-
-
 def display_results():
     ok, fail = _RESULTS['OK'].value, _RESULTS['FAILED'].value
     return 'SUCCESSES: %s | FAILURES: %s' % (ok, fail)
-
-
-def get_sizing_results():
-    if is_reached():
-        return _RESULTS
-    return None
 
 
 def _now():
@@ -103,7 +89,7 @@ def _reached_tolerance(current_time, args):
 
     global _TOLERANCE
 
-    if is_reached():
+    if _RESULTS['REACHED'] == 1:
         return True
 
     if current_time - _TOLERANCE > 60:
@@ -123,7 +109,7 @@ def _reached_tolerance(current_time, args):
     current_ratio = float(FAILED) / float(OK) * 100.
     reached = current_ratio > args.sizing_tolerance
     if reached:
-        set_reached()
+        _RESULTS['REACHED'] = 1
         _RESULTS['RATIO'] = int(current_ratio * 100)
 
     return reached
@@ -173,7 +159,8 @@ async def worker(num, loop, args, stream, statsd, delay):
         if ssetup is not None:
             await ssetup(num, session)
 
-        while howlong < duration and not _STOP and not is_reached():
+        while (howlong < duration and not _STOP and
+               not _RESULTS['REACHED'] == 1):
             if args.max_runs and count > args.max_runs:
                 break
             current_time = _now()

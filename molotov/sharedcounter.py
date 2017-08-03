@@ -83,9 +83,6 @@ class SharedCounters(object):
         for key in keys:
             self._counters[key] = SharedCounter(key)
 
-    def iterkeys(self):
-        return self._counters.iterkeys()
-
     def items(self):
         return self._counters.items()
 

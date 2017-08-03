@@ -21,11 +21,20 @@ class TestSharedCounters(unittest.TestCase):
         c2.value = 5
         self.assertTrue(c1 <= c2)
         self.assertTrue(c1 < c2)
-        self.assertTrue(c1 <= 5)
-        self.assertTrue(c1 < 5)
+        self.assertTrue(c1 >= 2)
+        self.assertTrue(c1 > 2)
         self.assertTrue(c1 == 4)
+        self.assertTrue(c1 != 5)
         c2.value = 4
         self.assertTrue(c1 == c2)
+        repr(c1)
+        str(c1)
+
+        def _t():
+            c = SharedCounter('ok')
+            c += 6.2
+
+        self.assertRaises(NotImplementedError, _t)
 
     def test_interface(self):
         data = SharedCounters('one', 'two')
@@ -41,6 +50,10 @@ class TestSharedCounters(unittest.TestCase):
             self.assertTrue(data[key], value)
 
         data.values()
+        repr(data)
+        str(data)
+        self.assertRaises(KeyError, data.__setitem__, 'meh', 1)
+        self.assertRaises(TypeError, data.__setitem__, 'one', '1')
 
     def test_mapping(self):
         # making sure it works like a defaultdict(int)
