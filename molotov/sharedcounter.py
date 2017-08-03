@@ -47,21 +47,15 @@ class SharedCounter(object):
         return self
 
     def __add__(self, other):
-        if isinstance(other, int):
-            self._incr(other)
-        else:
-            raise NotImplementedError()
+        with self._val.get_lock():
+            if isinstance(other, SharedCounter):
+                other = other.value
+            if not isinstance(other, int):
+                raise NotImplementedError()
+            self._val.value += other
 
     def __sub__(self, other):
         self.__add__(-other)
-
-    def _incr(self, value=1):
-        with self._val.get_lock():
-            if isinstance(value, SharedCounter):
-                value = value.value
-            if not isinstance(value, int):
-                raise TypeError(value)
-            self._val.value += value
 
     @property
     def value(self):

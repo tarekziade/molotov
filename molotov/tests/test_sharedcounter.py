@@ -26,6 +26,7 @@ class TestSharedCounters(unittest.TestCase):
         self.assertTrue(c1 == 4)
         self.assertTrue(c1 != 5)
         c2.value = 4
+        c2 += SharedCounter('ok')
         self.assertTrue(c1 == c2)
         repr(c1)
         str(c1)
@@ -35,6 +36,11 @@ class TestSharedCounters(unittest.TestCase):
             c += 6.2
 
         self.assertRaises(NotImplementedError, _t)
+
+        def _c():
+            SharedCounter('ok') != 6.3
+
+        self.assertRaises(TypeError, _c)
 
     def test_interface(self):
         data = SharedCounters('one', 'two')
