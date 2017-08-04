@@ -29,6 +29,7 @@
                 "console": true,
                 "duration": 1,
                 "exception": true,
+                "verbose": 1,
                 "scenario": "molotov/tests/example.py"
             }
         }

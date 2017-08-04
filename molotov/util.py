@@ -2,32 +2,10 @@ import functools
 import json
 import socket
 import os
-import sys
 import asyncio
-from contextlib import contextmanager
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
 from aiohttp import ClientSession
-
-
-@contextmanager
-def stream_log(msg, pid=True):
-    if pid:
-        msg = '[%d] %s...' % (os.getpid(), msg)
-    sys.stdout.write(msg)
-    sys.stdout.flush()
-
-    yield
-
-    sys.stdout.write('OK\n')
-    sys.stdout.flush()
-
-
-def log(msg, pid=True):
-    if pid:
-        print('[%d] %s' % (os.getpid(), msg))
-    else:
-        print(msg)
 
 
 _DNS_CACHE = {}

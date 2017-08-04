@@ -19,6 +19,7 @@ from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
 from molotov import fmwk
 from molotov.run import PYPY
+from molotov.sharedconsole import SharedConsole
 
 
 HERE = os.path.dirname(__file__)
@@ -139,12 +140,15 @@ class TestLoop(unittest.TestCase):
             fmwk._RESULTS[key] = 0
         fmwk._STOP = False
         fmwk._STARTED_AT = fmwk._TOLERANCE = None
+        fmwk._HOWLONG = 0
         fmwk._REFRESH = .3
+        self.policy = asyncio.get_event_loop_policy()
 
     def tearDown(self):
         _SCENARIO.clear()
         _FIXTURES.clear()
         _FIXTURES.update(self.oldsetup)
+        asyncio.set_event_loop_policy(self.policy)
 
     def get_args(self):
         args = namedtuple('args', 'verbose quiet duration exception')
@@ -163,6 +167,8 @@ class TestLoop(unittest.TestCase):
         args.delay = .0
         args.sizing = False
         args.sizing_tolerance = .0
+        args.console_update = 0
+        args.shared_console = SharedConsole(interval=0)
         return args
 
 
@@ -174,7 +180,9 @@ def async_test(func):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
+        console = SharedConsole(loop=loop, interval=0)
         kw['loop'] = loop
+        kw['console'] = console
         try:
             loop.run_until_complete(cofunc(*args, **kw))
         finally:
@@ -198,6 +206,18 @@ def dedicatedloop(func):
                 loop.close()
             asyncio.set_event_loop(old_loop)
     return _loop
+
+
+@contextmanager
+def catch_output():
+    oldout, olderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = StringIO(), StringIO()
+    try:
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout.seek(0)
+        sys.stderr.seek(0)
+        sys.stdout, sys.stderr = oldout, olderr
 
 
 @contextmanager

@@ -3,7 +3,7 @@ import json
 import unittest
 import os
 from molotov.util import (resolve, expand_options, OptionError, set_var,
-                          get_var)
+                          get_var, _VARS)
 
 _HERE = os.path.dirname(__file__)
 config = os.path.join(_HERE, '..', '..', 'molotov.json')
@@ -14,6 +14,10 @@ class Args:
 
 
 class TestUtil(unittest.TestCase):
+    def setUp(self):
+        super(TestUtil, self).setUp()
+        _VARS.clear()
+
     def test_resolve(self):
 
         urls = [('http://localhost:80/blah', 'http://127.0.0.1:80/blah'),

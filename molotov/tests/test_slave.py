@@ -12,7 +12,7 @@ class TestSlave(TestLoop):
         with set_args('moloslave', _REPO, 'test') as out:
             main()
         output = out[0].read()
-        self.assertTrue('Preparing 1 worker...OK' in output)
+        self.assertTrue('Preparing 1 worker...\nOK' in output, output)
 
     @dedicatedloop
     def test_fail(self):

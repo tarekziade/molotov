@@ -15,7 +15,7 @@ from molotov.tests.support import TestLoop, async_test, dedicatedloop
 class TestFmwk(TestLoop):
 
     @async_test
-    async def test_step(self, loop):
+    async def test_step(self, loop, console):
         res = []
 
         @scenario(weight=0)
@@ -38,7 +38,7 @@ class TestFmwk(TestLoop):
                 self.assertEqual(res[1], 1.5)
 
     @async_test
-    async def test_picker(self, loop):
+    async def test_picker(self, loop, console):
         res = []
 
         @scenario_picker()
@@ -62,7 +62,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(res, ['1', '2', '2', '1'])
 
     @async_test
-    async def test_failing_step(self, loop):
+    async def test_failing_step(self, loop, console):
 
         @scenario(weight=100)
         async def test_two(session):
@@ -74,7 +74,7 @@ class TestFmwk(TestLoop):
             self.assertTrue(result, -1)
 
     @async_test
-    async def test_aworker(self, loop):
+    async def test_aworker(self, loop, console):
 
         res = []
 
@@ -90,11 +90,10 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, args, stream, statsd, delay=0)
+        await worker(1, loop, args, statsd, delay=0)
 
         self.assertTrue(fmwk._RESULTS['OK'] > 0)
         self.assertEqual(fmwk._RESULTS['FAILED'], 0)
@@ -176,7 +175,7 @@ class TestFmwk(TestLoop):
         self._multiprocess(console=False, nosetup=True)
 
     @async_test
-    async def test_aworker_noexc(self, loop):
+    async def test_aworker_noexc(self, loop, console):
 
         res = []
 
@@ -192,28 +191,26 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        stream = asyncio.Queue()
         args = self.get_args()
         args.exception = False
         statsd = None
 
-        await worker(1, loop, args, stream, statsd, delay=0)
+        await worker(1, loop, args, statsd, delay=0)
         self.assertTrue(fmwk._RESULTS['OK'] > 0)
         self.assertEqual(fmwk._RESULTS['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     @async_test
-    async def test_failure(self, loop):
+    async def test_failure(self, loop, console):
 
         @scenario(weight=100)
         async def test_failing(session):
             raise ValueError()
 
-        stream = asyncio.Queue()
         args = self.get_args()
         statsd = None
 
-        await worker(1, loop, args, stream, statsd, delay=0)
+        await worker(1, loop, args, statsd, delay=0)
         self.assertTrue(fmwk._RESULTS['OK'] == 0)
         self.assertTrue(fmwk._RESULTS['FAILED'] > 0)
 
@@ -242,7 +239,6 @@ class TestFmwk(TestLoop):
 
     @dedicatedloop
     def test_shutdown_exception(self):
-
         @teardown()
         def _worker_teardown(num):
             raise Exception('bleh')
@@ -257,11 +253,11 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         results = runner(args)
-
         self.assertEqual(results['OK'], 1)
 
     @dedicatedloop
     def test_session_shutdown_exception(self):
+        print(fmwk._RESULTS)
 
         @teardown_session()
         async def _teardown_session(wid, session):
@@ -278,6 +274,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         results = runner(args)
         self.assertEqual(results['OK'], 1)
+        print(fmwk._RESULTS)
 
     @dedicatedloop
     def test_setup_exception(self):

@@ -18,7 +18,7 @@ class TestUtil(TestLoop):
         self.assertTrue(ones < 20)
 
     @async_test
-    async def test_can_call(self, loop):
+    async def test_can_call(self, loop, console):
         @setup()
         async def _setup(self):
             pass

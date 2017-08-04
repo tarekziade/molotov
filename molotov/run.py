@@ -9,7 +9,8 @@ from importlib.util import spec_from_file_location, module_from_spec
 from molotov.fmwk import runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
-from molotov.util import log, expand_options, OptionError
+from molotov.util import expand_options, OptionError
+from molotov.sharedconsole import SharedConsole
 
 
 PYPY = platform.python_implementation() == 'PyPy'
@@ -52,6 +53,10 @@ def _parser():
 
     parser.add_argument('--delay', help='Delay between each worker run',
                         type=float, default=0.)
+
+    parser.add_argument('--console-update',
+                        help='Delay between each console update',
+                        type=float, default=0.2)
 
     parser.add_argument('-p', '--processes', help='Number of processes',
                         type=int, default=1)
@@ -138,10 +143,13 @@ OVERALL: SUCCESSES: %(OK)d | FAILURES: %(FAILED)d
 LAST MINUTE: SUCCESSES: %(MINUTE_OK)d | FAILURES: %(MINUTE_FAILED)d
 """
 
+HELLO = '**** Molotov v%s. Happy breaking! ****' % __version__
+
 
 def run(args):
+    args.shared_console = SharedConsole(interval=args.console_update)
     if not args.quiet:
-        log('**** Molotov v%s. Happy breaking! ****' % __version__, pid=None)
+        args.shared_console.print(HELLO)
 
     if os.path.exists(args.scenario):
         spec = spec_from_file_location("loadtest", args.scenario)

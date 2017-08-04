@@ -3,7 +3,7 @@ import shutil
 import os
 
 from molotov import quickstart, __version__, run
-from molotov.tests.support import set_args, TestLoop
+from molotov.tests.support import set_args, TestLoop, dedicatedloop
 
 
 class TestQuickStart(TestLoop):
@@ -53,6 +53,7 @@ class TestQuickStart(TestLoop):
             except SystemExit:
                 pass
 
+    @dedicatedloop
     def test_codeworks(self):
         quickstart._input = self._input
 

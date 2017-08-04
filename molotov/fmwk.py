@@ -3,10 +3,8 @@ import signal
 import multiprocessing
 import asyncio
 import time
-import sys
 import os
 
-from molotov.util import log, stream_log
 from molotov.session import LoggedClientSession as Session
 from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.stats import get_statsd_client
@@ -39,28 +37,7 @@ def res2key(res):
     raise NotImplementedError(res)
 
 
-async def consume(queue, numworkers, verbose=0):
-    worker_stopped = 0
-    while True and worker_stopped < numworkers:
-        try:
-            item = await queue.get()
-        except RuntimeError:
-            break
-        if item == 'WORKER_STOPPED':
-            worker_stopped += 1
-        elif item == 'STOP':
-            break
-
-        elif isinstance(item, str):
-            if verbose > 0:
-                print(item)
-        else:
-            if verbose > 0:
-                import traceback
-                traceback.print_tb(item)
-
-
-async def step(worker_id, step_id, session, quiet, verbose, stream,
+async def step(worker_id, step_id, session, quiet, verbose, console,
                scenario=None):
     """ single scenario call.
 
@@ -78,8 +55,7 @@ async def step(worker_id, step_id, session, quiet, verbose, stream,
         return 0
     except Exception as exc:
         if verbose > 0:
-            await stream.put(repr(exc))
-            await stream.put(sys.exc_info()[2])
+            console.print_error(exc)
 
     return -1
 
@@ -116,16 +92,24 @@ def _reached_tolerance(current_time, args):
     return reached
 
 
-async def worker(num, loop, args, stream, statsd, delay):
-    global _STOP
+async def worker(num, loop, args, statsd, delay):
     if delay > 0.:
         await asyncio.sleep(delay)
-    if args.sizing:
-        _RESULTS['WORKER'] += 1
+    _RESULTS['WORKER'] += 1
+    try:
+        return await _worker(num, loop, args, statsd, delay)
+    finally:
+        _RESULTS['WORKER'] -= 1
+
+
+async def _worker(num, loop, args, statsd, delay):
+    global _STOP
     quiet = args.quiet
     duration = args.duration
     verbose = args.verbose
     exception = args.exception
+    console = args.shared_console
+
     if args.single_mode:
         single = get_scenario(args.single_mode)
     else:
@@ -138,14 +122,12 @@ async def worker(num, loop, args, stream, statsd, delay):
         try:
             options = await setup(num, args)
         except Exception as e:
-            log(e)
-            await stream.put('WORKER_STOPPED')
+            console.print_error(e)
             return
         if options is None:
             options = {}
         elif not isinstance(options, dict):
-            log('The setup function needs to return a dict')
-            await stream.put('WORKER_STOPPED')
+            console.print('The setup function needs to return a dict')
             return
     else:
         options = {}
@@ -153,7 +135,7 @@ async def worker(num, loop, args, stream, statsd, delay):
     ssetup = get_fixture('setup_session')
     steardown = get_fixture('teardown_session')
 
-    async with Session(loop, stream, verbose, statsd, **options) as session:
+    async with Session(loop, console, verbose, statsd, **options) as session:
         session.args = args
         session.worker_id = num
 
@@ -168,7 +150,7 @@ async def worker(num, loop, args, stream, statsd, delay):
             howlong = current_time - start
             session.step = count
             result = await step(num, count, session, quiet, verbose,
-                                stream, single)
+                                console, single)
             if result == 1:
                 _RESULTS['OK'] += 1
                 _RESULTS['MINUTE_OK'] += 1
@@ -176,13 +158,11 @@ async def worker(num, loop, args, stream, statsd, delay):
                 _RESULTS['FAILED'] += 1
                 _RESULTS['MINUTE_FAILED'] += 1
                 if exception:
-                    await stream.put('WORKER_STOPPED')
                     _STOP = True
             elif result == 0:
                 break
 
             if _reached_tolerance(current_time, args):
-                await stream.put('WORKER_STOPPED')
                 _STOP = True
                 os.kill(os.getpid(), signal.SIGINT)
 
@@ -198,23 +178,20 @@ async def worker(num, loop, args, stream, statsd, delay):
                 await steardown(num, session)
             except Exception as e:
                 # we can't stop the teardown process
-                log(e)
-
-    if not _STOP:
-        await stream.put('WORKER_STOPPED')
+                console.print_error(e)
 
 
-def _worker_done(num, future):
+def _worker_done(num, console, future):
     teardown = get_fixture('teardown')
     if teardown is not None:
         try:
             teardown(num)
         except Exception as e:
             # we can't stop the teardown process
-            log(e)
+            console.print_error(e)
 
 
-def _runner(loop, args, stream, statsd):
+def _runner(loop, args, statsd):
     def _prepare():
         tasks = []
         delay = 0
@@ -223,25 +200,33 @@ def _runner(loop, args, stream, statsd):
         else:
             step = 0.
         for i in range(args.workers):
-            f = worker(i, loop, args, stream, statsd, delay)
+            f = worker(i, loop, args, statsd, delay)
             future = asyncio.ensure_future(f)
-            future.add_done_callback(partial(_worker_done, i))
+            future.add_done_callback(partial(_worker_done, i,
+                                             args.shared_console))
             tasks.append(future)
             delay += step
 
         return tasks
+
     if args.quiet:
         return _prepare()
     else:
         msg = 'Preparing {} worker{}'
-        with stream_log(msg.format(args.workers,
-                                   's' if args.workers > 1 else '')):
-            return _prepare()
+        msg = msg.format(args.workers, 's' if args.workers > 1 else '')
+        return args.shared_console.print_block(msg, _prepare)
+
+
+async def _results(console, update_interval):
+    while not _STOP:
+        console.print(display_results(), end='\r')
+        await asyncio.sleep(update_interval)
 
 
 def _process(args):
     global _STOP, _STARTED_AT, _TOLERANCE
     _STARTED_AT = _TOLERANCE = _now()
+    console = args.shared_console
 
     if args.processes > 1:
         signal.signal(signal.SIGINT, _shutdown)
@@ -252,31 +237,30 @@ def _process(args):
         loop = asyncio.get_event_loop()
 
     if args.debug:
-        log('**** RUNNING IN DEBUG MODE == SLOW ****')
+        console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
         loop.set_debug(True)
 
-    stream = asyncio.Queue(loop=loop)
-    co_tasks = []
+    display = asyncio.ensure_future(console.display())
+    co_tasks = [display]
+    if args.original_pid == os.getpid():
+        co_tasks.append(asyncio.ensure_future(_results(console,
+                                              args.console_update)))
 
     if args.statsd:
         statsd = get_statsd_client(args.statsd_address, loop=loop)
     else:
         statsd = None
 
-    consumer = asyncio.ensure_future(consume(stream, args.workers,
-                                             args.verbose))
-    co_tasks.append(consumer)
     _TASKS.extend(co_tasks)
-
     co_tasks = asyncio.gather(*co_tasks, loop=loop, return_exceptions=True)
 
-    workers = _runner(loop, args, stream, statsd)
+    workers = _runner(loop, args, statsd)
     run_task = asyncio.gather(*workers, loop=loop, return_exceptions=True)
-
     _TASKS.extend(workers)
 
     try:
         loop.run_until_complete(run_task)
+        _STOP = True
     except asyncio.CancelledError:
         _STOP = True
         co_tasks.cancel()
@@ -284,6 +268,8 @@ def _process(args):
         run_task.cancel()
         loop.run_until_complete(run_task)
     finally:
+        console.stop()
+        loop.run_until_complete(co_tasks)
         if statsd is not None:
             statsd.close()
         for task in _TASKS:
@@ -300,7 +286,10 @@ def _shutdown(signal, frame):
     _STOP = True
 
     for task in _TASKS:
-        task.cancel()
+        try:
+            task.cancel()
+        except RuntimeError:
+            pass
 
     # send sigterms
     for proc in _PROCESSES:
@@ -310,10 +299,12 @@ def _shutdown(signal, frame):
 def _launch_processes(args):
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
+    console = args.shared_console
+    args.original_pid = os.getpid()
 
     if args.processes > 1:
         if not args.quiet:
-            log('Forking %d processes' % args.processes, pid=False)
+            args.shared_console.print('Forking %d processes' % args.processes)
         loop = asyncio.get_event_loop()
         jobs = []
         for i in range(args.processes):
@@ -324,25 +315,20 @@ def _launch_processes(args):
         for job in jobs:
             _PROCESSES.append(job)
 
-        async def run(loop, quiet):
+        async def run(quiet, console):
             while len(_PROCESSES) > 0:
                 if not quiet:
-                    print(display_results(), end='\r')
+                    console.print(display_results(), end='\r')
                 for job in jobs:
                     if job.exitcode is not None and job in _PROCESSES:
                         _PROCESSES.remove(job)
-                await asyncio.sleep(.2)
+                await asyncio.sleep(args.console_update)
+            console.stop()
 
-        loop.run_until_complete(asyncio.ensure_future(run(loop, args.quiet)))
+        tasks = [asyncio.ensure_future(console.display()),
+                 asyncio.ensure_future(run(args.quiet, console))]
+        loop.run_until_complete(asyncio.gather(*tasks))
     else:
-        loop = asyncio.get_event_loop()
-
-        if not args.quiet:
-            def _display(loop):
-                print(display_results(), end='\r')
-                loop.call_later(_REFRESH, _display, loop)
-
-            loop.call_soon(_display, loop)
         _process(args)
 
     return _RESULTS
@@ -354,7 +340,7 @@ def runner(args):
         try:
             global_setup(args)
         except Exception:
-            log("The global_setup() fixture failed")
+            args.shared_console("The global_setup() fixture failed")
             raise
 
     try:
@@ -366,4 +352,4 @@ def runner(args):
                 global_teardown()
             except Exception as e:
                 # we can't stop the teardown process
-                log(e)
+                args.shared_console.print_error(e)
