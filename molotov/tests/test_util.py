@@ -1,4 +1,5 @@
 from io import StringIO
+from tempfile import mkstemp
 import json
 import unittest
 import os
@@ -47,6 +48,19 @@ class TestUtil(unittest.TestCase):
 
     def test_bad_config(self):
         args = Args()
+        fd, badfile = mkstemp()
+        os.close(fd)
+
+        with open(badfile, 'w') as f:
+            f.write("'1")
+
+        try:
+            self.assertRaises(OptionError, expand_options, badfile, '', args)
+        finally:
+            os.remove(badfile)
+
+        self.assertRaises(OptionError, expand_options, 1, '', args)
+        self.assertRaises(OptionError, expand_options, '', '', args)
 
         bad_data = [({}, 'test'),
                     ({'molotov': {}}, 'test'),

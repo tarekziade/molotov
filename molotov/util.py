@@ -80,7 +80,7 @@ def expand_options(config, scenario, args):
     if not isinstance(config, str):
         try:
             config = json.loads(config.read())
-        except ValueError:
+        except Exception:
             raise OptionError("Can't parse %r" % config)
     else:
         if not os.path.exists(config):
