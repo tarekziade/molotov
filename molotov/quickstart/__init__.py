@@ -18,14 +18,10 @@ def _input(msg):
     return input(msg)
 
 
-def _prompt(text, validator=None, default=None):
+def _prompt(text, default, validator=None):
     while True:
         try:
-            if default:
-                res = _input(_PREFIX + '%s [%s]: ' % (text, default))
-            else:
-                res(_PREFIX + '%s: ' % text)
-
+            res = _input(_PREFIX + '%s [%s]: ' % (text, default))
             if not res and default:
                 res = default
 
@@ -72,8 +68,8 @@ def main():
     print('**** Molotov Quickstart ****')
     print('')
     print('Answer to a few questions to get started...')
-    target_dir = _prompt("Target directory", default='.')
-    create_makefile = _prompt("Create Makefile", default='y', validator=_yes)
+    target_dir = _prompt("Target directory", '.')
+    create_makefile = _prompt("Create Makefile", 'y', validator=_yes)
 
     print('Generating Molotov test...')
     if not os.path.exists(target_dir):

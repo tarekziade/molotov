@@ -11,7 +11,8 @@ class TestQuickStart(TestLoop):
         super(TestQuickStart, self).setUp()
         self._curdir = os.getcwd()
         self.tempdir = tempfile.mkdtemp()
-        self._answers = ['y', 'welp', self.tempdir]
+        self.location = os.path.join(self.tempdir, 'new')
+        self._answers = ['', 'y', self.location]
 
     def tearDown(self):
         os.chdir(self._curdir)
@@ -20,7 +21,7 @@ class TestQuickStart(TestLoop):
 
     def _input(self, text):
         if self._answers == []:
-            self._answers = ['y', 'welp', self.tempdir]
+            self._answers = ['', 'y', self.location]
         answer = self._answers.pop()
         return answer
 
@@ -41,7 +42,7 @@ class TestQuickStart(TestLoop):
         with set_args('molostart'):
             quickstart.main()
 
-        result = os.listdir(self.tempdir)
+        result = os.listdir(self.location)
         result.sort()
         self.assertEqual(result, ['Makefile', 'loadtest.py', 'molotov.json'])
 
@@ -60,11 +61,11 @@ class TestQuickStart(TestLoop):
         with set_args('molostart'):
             quickstart.main()
 
-        result = os.listdir(self.tempdir)
+        result = os.listdir(self.location)
         result.sort()
         self.assertEqual(result, ['Makefile', 'loadtest.py', 'molotov.json'])
 
-        os.chdir(self.tempdir)
+        os.chdir(self.location)
         with set_args('molotov', '-cxv', '--max-runs', '1'):
             try:
                 run.main()
