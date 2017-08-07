@@ -10,7 +10,7 @@ molotov
    :target: https://travis-ci.org/loads/molotov
 
 .. image:: http://readthedocs.org/projects/molotov/badge/?version=latest
-   :target: https://readthedocs.org/projects/molotov
+   :target: https://molotov.readthedocs.io
 
 .. image:: https://img.shields.io/pypi/pyversions/molotov.svg
    :target: https://molotov.readthedocs.io
@@ -19,8 +19,7 @@ molotov
 Simple Python 3.5+ tool to write load tests.
 
 Based on `asyncio <https://docs.python.org/3/library/asyncio.html>`_,
-Built with `aiohttp <http://aiohttp.readthedocs.io>`_ and
-`Urwid <http://urwid.org/>`_ for its curses console.
+Built with `aiohttp <http://aiohttp.readthedocs.io>`_ .
 
 `Full Documentation <https://molotov.readthedocs.io>`_
 
