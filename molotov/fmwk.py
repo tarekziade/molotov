@@ -29,14 +29,6 @@ def _now():
     return int(time.time())
 
 
-def res2key(res):
-    if res == '.':
-        return 'OK'
-    elif res == '-':
-        return 'FAILED'
-    raise NotImplementedError(res)
-
-
 async def step(worker_id, step_id, session, quiet, verbose, console,
                scenario=None):
     """ single scenario call.
@@ -339,8 +331,9 @@ def runner(args):
     if global_setup is not None:
         try:
             global_setup(args)
-        except Exception:
+        except Exception as e:
             args.shared_console("The global_setup() fixture failed")
+            args.shared_console.print_error(e)
             raise
 
     try:

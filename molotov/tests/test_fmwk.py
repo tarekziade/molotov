@@ -9,7 +9,8 @@ from molotov.fmwk import step, worker, runner
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
                          scenario_picker)
-from molotov.tests.support import TestLoop, async_test, dedicatedloop
+from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
+                                   serialize)
 
 
 class TestFmwk(TestLoop):
@@ -90,7 +91,7 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        args = self.get_args()
+        args = self.get_args(console=console)
         statsd = None
 
         await worker(1, loop, args, statsd, delay=0)
@@ -191,7 +192,7 @@ class TestFmwk(TestLoop):
         async def test_two(session):
             pass
 
-        args = self.get_args()
+        args = self.get_args(console=console)
         args.exception = False
         statsd = None
 
@@ -207,7 +208,7 @@ class TestFmwk(TestLoop):
         async def test_failing(session):
             raise ValueError()
 
-        args = self.get_args()
+        args = self.get_args(console=console)
         statsd = None
 
         await worker(1, loop, args, statsd, delay=0)
@@ -255,26 +256,24 @@ class TestFmwk(TestLoop):
         results = runner(args)
         self.assertEqual(results['OK'], 1)
 
-    @dedicatedloop
-    def test_session_shutdown_exception(self):
-        print(fmwk._RESULTS)
-
+    @async_test
+    async def test_session_shutdown_exception(self, loop, console):
         @teardown_session()
         async def _teardown_session(wid, session):
             raise Exception('bleh')
 
-        @global_teardown()
-        def _teardown():
-            raise Exception('bleh')
-
         @scenario(weight=100)
-        async def test_two(session):
-            os.kill(os.getpid(), signal.SIGTERM)
+        async def test_tds(session):
+            pass
 
-        args = self.get_args()
-        results = runner(args)
-        self.assertEqual(results['OK'], 1)
-        print(fmwk._RESULTS)
+        args = self.get_args(console=console)
+        statsd = None
+
+        await worker(1, loop, args, statsd, delay=0)
+
+        output = await serialize(console)
+        self.assertTrue("Exception" in output)
+        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
 
     @dedicatedloop
     def test_setup_exception(self):
@@ -304,6 +303,21 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         self.assertRaises(Exception, runner, args)
+
+    @dedicatedloop
+    def test_teardown_exception(self):
+
+        @teardown()
+        def _teardown(args):
+            raise Exception('bleh')
+
+        @scenario(weight=100)
+        async def test_two(session):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        args = self.get_args()
+        results = runner(args)
+        self.assertEqual(results['FAILED'], 0)
 
     @dedicatedloop
     def test_setup_not_dict(self):

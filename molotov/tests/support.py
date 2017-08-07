@@ -13,6 +13,7 @@ from io import StringIO
 import http.server
 import socketserver
 import pytest
+from queue import Empty
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -27,6 +28,21 @@ HERE = os.path.dirname(__file__)
 skip_pypy = pytest.mark.skipif(PYPY,
                                reason='could not make work on pypy')
 only_pypy = pytest.mark.skipif(not PYPY, reason='only pypy')
+
+if os.environ.get('HAS_JOSH_K_SEAL_OF_APPROVAL', False):
+    _TIMEOUT = 1.
+else:
+    _TIMEOUT = .2
+
+
+async def serialize(console):
+    res = []
+    while True:
+        try:
+            res.append(console._stream.get(block=True, timeout=_TIMEOUT))
+        except Empty:
+            break
+    return ''.join(res)
 
 
 class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
@@ -150,7 +166,7 @@ class TestLoop(unittest.TestCase):
         _FIXTURES.update(self.oldsetup)
         asyncio.set_event_loop_policy(self.policy)
 
-    def get_args(self):
+    def get_args(self, console=None):
         args = namedtuple('args', 'verbose quiet duration exception')
         args.ramp_up = .0
         args.verbose = 1
@@ -168,7 +184,9 @@ class TestLoop(unittest.TestCase):
         args.sizing = False
         args.sizing_tolerance = .0
         args.console_update = 0
-        args.shared_console = SharedConsole(interval=0)
+        if console is None:
+            console = SharedConsole(interval=0)
+        args.shared_console = console
         return args
 
 

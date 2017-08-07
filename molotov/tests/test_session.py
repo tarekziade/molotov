@@ -1,29 +1,10 @@
-import os
 import gzip
-from queue import Empty
-
 from aiohttp.client_reqrep import ClientRequest
 from yarl import URL
 
 from molotov.session import LoggedClientSession
 from molotov.tests.support import coserver, Response
-from molotov.tests.support import TestLoop, async_test
-
-
-if os.environ.get('HAS_JOSH_K_SEAL_OF_APPROVAL', False):
-    _TIMEOUT = 1.
-else:
-    _TIMEOUT = .2
-
-
-async def serialize(console):
-    res = []
-    while True:
-        try:
-            res.append(console._stream.get(block=True, timeout=_TIMEOUT))
-        except Empty:
-            break
-    return ''.join(res)
+from molotov.tests.support import TestLoop, async_test, serialize
 
 
 class TestLoggedClientSession(TestLoop):
