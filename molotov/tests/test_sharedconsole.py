@@ -31,7 +31,7 @@ class TestSharedConsole(unittest.TestCase):
             except Exception as e:
                 console.print_error(e)
                 console.print_error(e, sys.exc_info()[2])
-            await asyncio.sleep(.1)
+            await asyncio.sleep(.2)
             console.stop()
 
         with catch_output() as (stdout, stderr):

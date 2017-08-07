@@ -1,3 +1,4 @@
+import time
 from molotov import __version__
 from molotov.slave import main
 from molotov.tests.support import TestLoop, dedicatedloop, set_args
@@ -11,6 +12,8 @@ class TestSlave(TestLoop):
     def test_main(self):
         with set_args('moloslave', _REPO, 'test') as out:
             main()
+            time.sleep(.2)
+
         output = out[0].read()
         self.assertTrue('Preparing 1 worker...\nOK' in output, output)
 
