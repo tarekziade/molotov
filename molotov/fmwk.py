@@ -332,7 +332,7 @@ def runner(args):
         try:
             global_setup(args)
         except Exception as e:
-            args.shared_console("The global_setup() fixture failed")
+            args.shared_console.print("The global_setup() fixture failed")
             args.shared_console.print_error(e)
             raise
 
