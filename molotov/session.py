@@ -30,14 +30,14 @@ class LoggedClientRequest(ClientRequest):
 
 class LoggedClientSession(ClientSession):
 
-    def __init__(self, loop, stream, verbose=0, statsd=None, **kw):
+    def __init__(self, loop, console, verbose=0, statsd=None, **kw):
         connector = kw.pop('connector', None)
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
         super(LoggedClientSession,
               self).__init__(loop=loop, request_class=LoggedClientRequest,
                              connector=connector,  **kw)
-        self.stream = stream
+        self.console = console
         self.request_class = LoggedClientRequest
         self.request_class.verbose = verbose
         self.verbose = verbose
@@ -83,8 +83,8 @@ class LoggedClientSession(ClientSession):
         if self.verbose < 2:
             return
 
-        await self.stream.put('>' * 45)
-        raw = '\n' + req.method + ' ' + str(req.url)
+        raw = '>' * 45
+        raw += '\n' + req.method + ' ' + str(req.url)
         if len(req.headers) > 0:
             headers = '\n'.join('%s: %s' % (k, v) for k, v in
                                 req.headers.items())
@@ -108,13 +108,14 @@ class LoggedClientSession(ClientSession):
                         body = _UNREADABLE
 
                 raw += '\n\n' + body + '\n'
-        await self.stream.put(raw)
+
+        self.console.print(raw)
 
     async def print_response(self, resp):
         if self.verbose < 2:
             return
-        await self.stream.put('\n' + '=' * 45 + '\n')
-        raw = 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
+        raw = '\n' + '=' * 45 + '\n'
+        raw += 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
         items = resp.headers.items()
         headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
         raw += headers
@@ -132,5 +133,5 @@ class LoggedClientSession(ClientSession):
             else:
                 raw += '\n\n'
 
-        await self.stream.put(raw)
-        await self.stream.put('\n' + '<' * 45 + '\n')
+        raw += '\n' + '<' * 45 + '\n'
+        self.console.print(raw)

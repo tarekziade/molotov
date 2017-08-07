@@ -74,6 +74,9 @@ class TestSharedCounters(unittest.TestCase):
     def test_multiprocess(self):
         # now let's try with several processes
         pool = multiprocessing.Pool(10)
-        inputs = [1] * 3000
-        pool.map(run_worker, inputs)
-        self.assertEqual(_DATA['test'].value, 3000)
+        try:
+            inputs = [1] * 3000
+            pool.map(run_worker, inputs)
+            self.assertEqual(_DATA['test'].value, 3000)
+        finally:
+            pool.close()

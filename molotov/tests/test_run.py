@@ -245,6 +245,7 @@ class TestRunner(TestLoop):
 
         with patch('builtins.__import__', side_effect=import_mock):
             stdout, stderr = self._test_molotov('-cx', '--max-runs', '2',
+                                                '--console-update', '0',
                                                 '-s',
                                                 'here_three', '--uvloop',
                                                 'molotov.tests.test_run')
@@ -263,7 +264,7 @@ class TestRunner(TestLoop):
                                             'here_three', '--uvloop',
                                             'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
-        self.assertTrue(wanted in stdout)
+        self.assertTrue(wanted in stdout, stdout)
 
     @dedicatedloop
     def test_delay(self):
@@ -272,7 +273,8 @@ class TestRunner(TestLoop):
         _original = asyncio.sleep
 
         async def _slept(time):
-            delay.append(time)
+            if time != 0:
+                delay.append(time)
             # forces a context switch
             await _original(0)
 
@@ -283,6 +285,7 @@ class TestRunner(TestLoop):
                 _RES.append(3)
 
             stdout, stderr = self._test_molotov('--delay', '.6',
+                                                '--console-update', '0',
                                                 '-cx', '--max-runs', '2', '-s',
                                                 'here_three',
                                                 'molotov.tests.test_run')
@@ -309,6 +312,7 @@ class TestRunner(TestLoop):
 
             stdout, stderr = self._test_molotov('--ramp-up', '10',
                                                 '--workers', '5',
+                                                '--console-update', '0',
                                                 '-cx', '--max-runs', '2', '-s',
                                                 'here_three',
                                                 'molotov.tests.test_run')
@@ -326,9 +330,12 @@ class TestRunner(TestLoop):
         delay = []
         _RES2['fail'] = 0
         _RES2['succ'] = 0
+        _original = asyncio.sleep
 
         async def _slept(time):
-            delay.append(time)
+            if time > 0:
+                delay.append(time)
+            await _original(0)
 
         with patch('asyncio.sleep', _slept):
 
@@ -341,8 +348,9 @@ class TestRunner(TestLoop):
                     _RES2['succ'] += 1
 
             stdout, stderr = self._test_molotov('--sizing',
+                                                '--console-update', '0',
                                                 '--sizing-tolerance', '5',
-                                                '-cs', 'sizer',
+                                                '-s', 'sizer',
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
@@ -357,7 +365,7 @@ class TestRunner(TestLoop):
         _original = asyncio.sleep
 
         async def _slept(time):
-            _original(0)
+            await _original(0)
 
         with patch('asyncio.sleep', _slept):
             @scenario()
@@ -370,6 +378,7 @@ class TestRunner(TestLoop):
 
             stdout, stderr = self._test_molotov('--sizing', '-p', '2',
                                                 '--sizing-tolerance', '5',
+                                                '--console-update', '0',
                                                 '-s', 'sizer',
                                                 'molotov.tests.test_run')
             ratio = (float(counters['FAILED'].value) /
@@ -423,6 +432,7 @@ class TestRunner(TestLoop):
 
             stdout, stderr = self._test_molotov('--sizing',
                                                 '--sizing-tolerance', '5',
+                                                '--console-update', '0',
                                                 '-cs', 'sizer',
                                                 'molotov.tests.test_run')
 

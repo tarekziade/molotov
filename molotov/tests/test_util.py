@@ -1,9 +1,10 @@
 from io import StringIO
+from tempfile import mkstemp
 import json
 import unittest
 import os
 from molotov.util import (resolve, expand_options, OptionError, set_var,
-                          get_var)
+                          get_var, _VARS)
 
 _HERE = os.path.dirname(__file__)
 config = os.path.join(_HERE, '..', '..', 'molotov.json')
@@ -14,6 +15,10 @@ class Args:
 
 
 class TestUtil(unittest.TestCase):
+    def setUp(self):
+        super(TestUtil, self).setUp()
+        _VARS.clear()
+
     def test_resolve(self):
 
         urls = [('http://localhost:80/blah', 'http://127.0.0.1:80/blah'),
@@ -43,6 +48,19 @@ class TestUtil(unittest.TestCase):
 
     def test_bad_config(self):
         args = Args()
+        fd, badfile = mkstemp()
+        os.close(fd)
+
+        with open(badfile, 'w') as f:
+            f.write("'1")
+
+        try:
+            self.assertRaises(OptionError, expand_options, badfile, '', args)
+        finally:
+            os.remove(badfile)
+
+        self.assertRaises(OptionError, expand_options, 1, '', args)
+        self.assertRaises(OptionError, expand_options, '', '', args)
 
         bad_data = [({}, 'test'),
                     ({'molotov': {}}, 'test'),
