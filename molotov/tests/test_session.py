@@ -1,18 +1,22 @@
 import gzip
 from aiohttp.client_reqrep import ClientRequest
 from yarl import URL
+from unittest.mock import patch
 
-from molotov.session import LoggedClientSession
+import molotov.session
 from molotov.tests.support import coserver, Response
 from molotov.tests.support import TestLoop, async_test, serialize
 
 
 class TestLoggedClientSession(TestLoop):
 
+    def _get_session(self, *args, **kw):
+        return molotov.session.LoggedClientSession(*args, **kw)
+
     @async_test
     async def test_empty_response(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             binary_body = b''
             response = Response(body=binary_body)
             await session.print_response(response)
@@ -21,8 +25,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_encoding(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             binary_body = b'MZ\x90\x00\x03\x00\x00\x00\x04\x00'
             response = Response(body=binary_body)
             await session.print_response(response)
@@ -34,8 +38,8 @@ class TestLoggedClientSession(TestLoop):
     @async_test
     async def test_request(self, loop, console):
         with coserver():
-            async with LoggedClientSession(loop, console,
-                                           verbose=2) as session:
+            async with self._get_session(loop, console,
+                                         verbose=2) as session:
                 async with session.get('http://localhost:8888') as resp:
                     self.assertEqual(resp.status, 200)
 
@@ -44,8 +48,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_not_verbose(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=1) as session:
+        async with self._get_session(loop, console,
+                                     verbose=1) as session:
             req = ClientRequest('GET', URL('http://example.com'))
             await session.print_request(req)
 
@@ -57,8 +61,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_gzipped_request(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             req = ClientRequest('GET', URL('http://example.com'),
                                 data=binary_body)
@@ -70,8 +74,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_file_request(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             with open(__file__) as f:
                 req = ClientRequest('POST', URL('http://example.com'),
                                     data=f)
@@ -83,8 +87,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_binary_file_request(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             with open(__file__, 'rb') as f:
                 req = ClientRequest('POST', URL('http://example.com'),
                                     data=f)
@@ -96,8 +100,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_gzipped_response(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             response = Response(body=binary_body)
             response.headers['Content-Encoding'] = 'gzip'
@@ -108,8 +112,8 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_cantread_request(self, loop, console):
-        async with LoggedClientSession(loop, console,
-                                       verbose=2) as session:
+        async with self._get_session(loop, console,
+                                     verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
             req = ClientRequest('GET', URL('http://example.com'),
                                 data=binary_body)
@@ -117,3 +121,25 @@ class TestLoggedClientSession(TestLoop):
 
         res = await serialize(console)
         self.assertTrue("display this body" in res, res)
+
+    @async_test
+    async def test_old_request_version(self, loop, console):
+
+        orig_import = __import__
+
+        def import_mock(name, *args, **kw):
+            if name == 'aiohttp.payload':
+                raise ImportError()
+            return orig_import(name, *args, **kw)
+
+        with patch('builtins.__import__', side_effect=import_mock):
+            async with self._get_session(loop, console,
+                                         verbose=2) as session:
+                body = "ok man"
+                req = ClientRequest('GET', URL('http://example.com'),
+                                    data=body)
+                req.body = req.body._value
+                await session.print_request(req)
+
+        res = await serialize(console)
+        self.assertTrue("ok man" in res, res)

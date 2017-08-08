@@ -4,10 +4,6 @@ from urllib.parse import urlparse
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
 from aiohttp import TCPConnector
-try:
-    from aiohttp.payload import Payload
-except ImportError:
-    Payload = None
 from molotov.util import resolve
 
 
@@ -79,6 +75,26 @@ class LoggedClientSession(ClientSession):
         await self.print_response(resp)
         return resp
 
+    def _body2str(self, body):
+        try:
+            from aiohttp.payload import Payload
+        except ImportError:
+            Payload = None
+
+        if Payload is not None and isinstance(body, Payload):
+            body = body._value
+
+        if isinstance(body, io.IOBase):
+            return _FILE
+
+        if not isinstance(body, str):
+            try:
+                body = str(body, 'utf8')
+            except UnicodeDecodeError:
+                return _UNREADABLE
+
+        return body
+
     async def print_request(self, req):
         if self.verbose < 2:
             return
@@ -93,21 +109,7 @@ class LoggedClientSession(ClientSession):
         if req.headers.get('Content-Encoding') in _COMPRESSED:
             raw += '\n\n' + _BINARY + '\n'
         elif req.body:
-            if Payload is not None and isinstance(req.body, Payload):
-                body = req.body._value
-            else:
-                body = req.body
-
-            if isinstance(body, io.IOBase):
-                raw += '\n\n' + _FILE + '\n'
-            else:
-                if not isinstance(body, str):
-                    try:
-                        body = str(body, 'utf8')
-                    except UnicodeDecodeError:
-                        body = _UNREADABLE
-
-                raw += '\n\n' + body + '\n'
+            raw += '\n\n' + self._body2str(req.body) + '\n'
 
         self.console.print(raw)
 
