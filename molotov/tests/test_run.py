@@ -444,29 +444,24 @@ class TestRunner(TestLoop):
     def test_sizing_multiprocess_interrupted(self):
 
         counters = SharedCounters('OK', 'FAILED')
-        _original = asyncio.sleep
 
-        async def _slept(time):
-            await _original(0)
+        @scenario()
+        async def sizer(session):
+            if random.randint(0, 10) == 1:
+                counters['FAILED'] += 1
+                raise AssertionError()
+            else:
+                counters['OK'] += 1
 
-        with patch('asyncio.sleep', _slept):
-            @scenario()
-            async def sizer(session):
-                if random.randint(0, 10) == 1:
-                    counters['FAILED'] += 1
-                    raise AssertionError()
-                else:
-                    counters['OK'] += 1
+        async def _stop():
+            await asyncio.sleep(2.)
+            os.kill(os.getpid(), signal.SIGINT)
 
-            async def _stop():
-                await asyncio.sleep(1.)
-                os.kill(os.getpid(), signal.SIGINT)
-
-            asyncio.ensure_future(_stop())
-            stdout, stderr = self._test_molotov('--sizing', '-p', '15',
-                                                '--sizing-tolerance', '50',
-                                                '--console-update', '0',
-                                                '-s', 'sizer',
-                                                'molotov.tests.test_run')
-            self.assertTrue(fmwk._RESULTS['REACHED'] == 0)
-            self.assertTrue("Sizing was not finished" in stdout)
+        asyncio.ensure_future(_stop())
+        stdout, stderr = self._test_molotov('--sizing', '-p', '3',
+                                            '--sizing-tolerance', '90',
+                                            '--console-update', '0',
+                                            '-s', 'sizer',
+                                            'molotov.tests.test_run')
+        self.assertTrue(fmwk._RESULTS['REACHED'] == 0)
+        self.assertTrue("Sizing was not finished" in stdout)
