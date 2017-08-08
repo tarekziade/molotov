@@ -459,7 +459,7 @@ class TestRunner(TestLoop):
                     counters['OK'] += 1
 
             async def _stop():
-                await asyncio.sleep(.1)
+                await asyncio.sleep(1.)
                 os.kill(os.getpid(), signal.SIGINT)
 
             asyncio.ensure_future(_stop())
