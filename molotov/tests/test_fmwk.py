@@ -1,7 +1,6 @@
 import asyncio
 import os
 import signal
-from unittest.mock import patch
 
 from molotov.session import LoggedClientSession
 from molotov import fmwk
@@ -10,7 +9,7 @@ from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
                          scenario_picker)
 from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
-                                   serialize)
+                                   serialize, catch_sleep)
 
 
 class TestFmwk(TestLoop):
@@ -30,7 +29,7 @@ class TestFmwk(TestLoop):
         async def _slept(time):
             res.append(time)
 
-        with patch('asyncio.sleep', _slept):
+        with catch_sleep(res):
             stream = asyncio.Queue()
             async with LoggedClientSession(loop, stream) as session:
                 result = await step(0, 0, session, False, False, stream)

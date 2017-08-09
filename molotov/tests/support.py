@@ -14,6 +14,7 @@ import http.server
 import socketserver
 import pytest
 from queue import Empty
+from unittest.mock import patch
 
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
@@ -251,3 +252,19 @@ def set_args(*args):
         sys.stderr.seek(0)
         sys.argv[:] = old
         sys.stdout, sys.stderr = oldout, olderr
+
+
+@contextmanager
+def catch_sleep(calls=None):
+    original = asyncio.sleep
+    if calls is None:
+        calls = []
+
+    async def _slept(delay, result=None, *, loop=None):
+        if delay != 0:
+            calls.append(delay)
+        # forces a context switch
+        await original(0)
+
+    with patch('asyncio.sleep', _slept):
+        yield calls
