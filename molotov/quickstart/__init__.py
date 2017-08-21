@@ -15,7 +15,7 @@ class ValidationError(Exception):
 
 
 def _input(msg):
-    return input(msg)
+    return input(msg)		# pragma: no cover
 
 
 def _prompt(text, default, validator=None):
