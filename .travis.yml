@@ -8,10 +8,7 @@ matrix:
       - TOX_ENV=py36
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
     packages:
-        - g++-4.9
         - pypy-dev
         - liblapack-dev
 env:
