@@ -12,7 +12,7 @@ class TestSlave(TestLoop):
     def test_main(self):
         with set_args('moloslave', _REPO, 'test') as out:
             main()
-            time.sleep(.4)
+            time.sleep(.6)
 
         output = out[0].read()
         self.assertTrue('Preparing 1 worker...' in output, output)
