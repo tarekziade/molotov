@@ -1,4 +1,4 @@
-from functools import partial
+from contextlib import suppress
 import signal
 import multiprocessing
 import asyncio
@@ -9,6 +9,7 @@ from molotov.session import LoggedClientSession as Session
 from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
+from molotov.util import cancellable_sleep
 
 
 _STOP = False
@@ -41,7 +42,7 @@ async def step(worker_id, step_id, session, quiet, verbose, console,
     try:
         await scenario['func'](session, *scenario['args'], **scenario['kw'])
         if scenario['delay'] > 0.:
-            await asyncio.sleep(scenario['delay'])
+            await cancellable_sleep(scenario['delay'])
         return 1
     except asyncio.CancelledError:
         return 0
@@ -58,7 +59,7 @@ def _reached_tolerance(current_time, args):
 
     global _TOLERANCE
 
-    if _RESULTS['REACHED'] == 1:
+    if _RESULTS['REACHED'] == 1 or _STOP:
         return True
 
     if current_time - _TOLERANCE > 60:
@@ -86,12 +87,16 @@ def _reached_tolerance(current_time, args):
 
 async def worker(num, loop, args, statsd, delay):
     if delay > 0.:
-        await asyncio.sleep(delay)
+        await cancellable_sleep(delay)
+    if _STOP:
+        return
     _RESULTS['WORKER'] += 1
     try:
-        return await _worker(num, loop, args, statsd, delay)
+        res = await _worker(num, loop, args, statsd, delay)
     finally:
+        await _worker_done(num, args.shared_console)
         _RESULTS['WORKER'] -= 1
+    return res
 
 
 async def _worker(num, loop, args, statsd, delay):
@@ -154,13 +159,14 @@ async def _worker(num, loop, args, statsd, delay):
             elif result == 0:
                 break
 
-            if _reached_tolerance(current_time, args):
+            if not _STOP and _reached_tolerance(current_time, args):
                 _STOP = True
-                os.kill(os.getpid(), signal.SIGINT)
+                cancellable_sleep.cancel_all()
+                break
 
             count += 1
             if args.delay > 0.:
-                await asyncio.sleep(args.delay)
+                await cancellable_sleep(args.delay)
             else:
                 # forces a context switch
                 await asyncio.sleep(0)
@@ -173,7 +179,7 @@ async def _worker(num, loop, args, statsd, delay):
                 console.print_error(e)
 
 
-def _worker_done(num, console, future):
+async def _worker_done(num, console):
     teardown = get_fixture('teardown')
     if teardown is not None:
         try:
@@ -191,12 +197,10 @@ def _runner(loop, args, statsd):
             step = args.ramp_up / args.workers
         else:
             step = 0.
+
         for i in range(args.workers):
-            f = worker(i, loop, args, statsd, delay)
-            future = asyncio.ensure_future(f)
-            future.add_done_callback(partial(_worker_done, i,
-                                             args.shared_console))
-            tasks.append(future)
+            f = asyncio.ensure_future(worker(i, loop, args, statsd, delay))
+            tasks.append(f)
             delay += step
 
         return tasks
@@ -212,7 +216,7 @@ def _runner(loop, args, statsd):
 async def _results(console, update_interval):
     while not _STOP:
         console.print(display_results(), end='\r')
-        await asyncio.sleep(update_interval)
+        await cancellable_sleep(update_interval)
 
 
 def _process(args):
@@ -245,27 +249,22 @@ def _process(args):
 
     _TASKS.extend(co_tasks)
     co_tasks = asyncio.gather(*co_tasks, loop=loop, return_exceptions=True)
-
     workers = _runner(loop, args, statsd)
     run_task = asyncio.gather(*workers, loop=loop, return_exceptions=True)
     _TASKS.extend(workers)
 
     try:
         loop.run_until_complete(run_task)
-        _STOP = True
-    except asyncio.CancelledError:
-        _STOP = True
-        co_tasks.cancel()
-        loop.run_until_complete(co_tasks)
-        run_task.cancel()
-        loop.run_until_complete(run_task)
+    except RuntimeError:
+        if not (_STOP and len(_TASKS) == 0):
+            # we were not properly shutdown
+            raise
     finally:
+        _STOP = True
         console.stop()
-        loop.run_until_complete(co_tasks)
+        _kill_tasks()
         if statsd is not None:
             statsd.close()
-        for task in _TASKS:
-            del task
         loop.close()
 
 
@@ -273,17 +272,26 @@ _PROCESSES = []
 _TASKS = []
 
 
+def _kill_tasks():
+    loop = asyncio.get_event_loop()
+    cancellable_sleep.cancel_all()
+
+    for task in _TASKS:
+        with suppress(RuntimeError, asyncio.CancelledError):
+            task.cancel()
+            loop.run_until_complete(task)
+            del task
+
+    _TASKS[:] = []
+
+
 def _shutdown(signal, frame):
     global _STOP
     _STOP = True
 
-    for task in _TASKS:
-        try:
-            task.cancel()
-        except RuntimeError:
-            pass
-
+    _kill_tasks()
     # send sigterms
+
     for proc in _PROCESSES:
         proc.terminate()
 
@@ -314,7 +322,7 @@ def _launch_processes(args):
                 for job in jobs:
                     if job.exitcode is not None and job in _PROCESSES:
                         _PROCESSES.remove(job)
-                await asyncio.sleep(args.console_update)
+                await cancellable_sleep(args.console_update)
             console.stop()
 
         tasks = [asyncio.ensure_future(console.display()),

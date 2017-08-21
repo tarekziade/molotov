@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
-                                   skip_pypy, only_pypy)
+                                   skip_pypy, only_pypy, catch_sleep)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
 from molotov import fmwk
@@ -269,18 +269,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_delay(self):
-
-        delay = []
-        _original = asyncio.sleep
-
-        async def _slept(time):
-            if time != 0:
-                delay.append(time)
-            # forces a context switch
-            await _original(0)
-
-        with patch('asyncio.sleep', _slept):
-
+        with catch_sleep() as delay:
             @scenario(weight=10, delay=.1)
             async def here_three(session):
                 _RES.append(3)
@@ -296,17 +285,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_rampup(self):
-        delay = []
-
-        _original = asyncio.sleep
-
-        async def _slept(time):
-            delay.append(time)
-            # forces a context switch
-            await _original(0)
-
-        with patch('asyncio.sleep', _slept):
-
+        with catch_sleep() as delay:
             @scenario(weight=10)
             async def here_three(session):
                 _RES.append(3)
@@ -328,18 +307,10 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_sizing(self):
-        delay = []
         _RES2['fail'] = 0
         _RES2['succ'] = 0
-        _original = asyncio.sleep
 
-        async def _slept(time):
-            if time > 0:
-                delay.append(time)
-            await _original(0)
-
-        with patch('asyncio.sleep', _slept):
-
+        with catch_sleep():
             @scenario()
             async def sizer(session):
                 if random.randint(0, 20) == 1:
@@ -357,18 +328,13 @@ class TestRunner(TestLoop):
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
             self.assertTrue(fmwk._RESULTS['REACHED'] == 1)
             self.assertEqual(int(ratio*100), fmwk._RESULTS['RATIO'].value)
-            self.assertTrue(ratio < 10. and ratio > 5.)
+            self.assertTrue(ratio < 10. and ratio >= 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess(self):
-
         counters = SharedCounters('OK', 'FAILED')
-        _original = asyncio.sleep
 
-        async def _slept(time):
-            await _original(0)
-
-        with patch('asyncio.sleep', _slept):
+        with catch_sleep():
             @scenario()
             async def sizer(session):
                 if random.randint(0, 10) == 1:
@@ -389,23 +355,15 @@ class TestRunner(TestLoop):
                              fmwk._RESULTS['FAILED'].value)
             self.assertEqual(counters['OK'].value,
                              fmwk._RESULTS['OK'].value)
-            self.assertTrue(ratio > 5., ratio)
+            self.assertTrue(ratio >= 5., ratio)
 
     @dedicatedloop
     def test_timed_sizing(self):
-        delay = []
         _RES2['fail'] = 0
         _RES2['succ'] = 0
         _RES2['messed'] = False
-        _original = asyncio.sleep
 
-        async def _slept(time):
-            delay.append(time)
-            # forces a context switch
-            await _original(0)
-
-        with patch('asyncio.sleep', _slept):
-
+        with catch_sleep():
             @scenario()
             async def sizer(session):
                 if session.worker_id == 200 and not _RES2['messed']:
@@ -438,7 +396,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(ratio < 15. and ratio > 5.)
+            self.assertTrue(ratio < 15. and ratio > 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess_interrupted(self):
