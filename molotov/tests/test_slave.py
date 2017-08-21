@@ -15,7 +15,8 @@ class TestSlave(TestLoop):
             time.sleep(.2)
 
         output = out[0].read()
-        self.assertTrue('Preparing 1 worker...\nOK' in output, output)
+        self.assertTrue('Preparing 1 worker...' in output, output)
+        self.assertTrue('OK' in output, output)
 
     @dedicatedloop
     def test_fail(self):
