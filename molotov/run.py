@@ -6,7 +6,7 @@ import platform
 from importlib import import_module
 from importlib.util import spec_from_file_location, module_from_spec
 
-from molotov.fmwk import runner
+from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import expand_options, OptionError
@@ -109,8 +109,8 @@ def main():
 
     if args.uvloop:
         if PYPY:
-            print("You can't use uvloop with PyPy")
-            sys.exit(0)
+            print("You can't use uvloop with PyPy")     # pragma: no cover
+            sys.exit(0)                                 # pragma: no cover
 
         try:
             import uvloop
@@ -176,7 +176,7 @@ def run(args):
             print("Can't find %r in registered scenarii" % args.single_mode)
             sys.exit(1)
 
-    res = runner(args)
+    res = Runner(args)()
 
     def _dict(counters):
         res = {}

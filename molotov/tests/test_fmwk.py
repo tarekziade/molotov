@@ -1,10 +1,8 @@
-import asyncio
 import os
 import signal
-
 from molotov.session import LoggedClientSession
-from molotov import fmwk
-from molotov.fmwk import step, worker, runner
+from molotov.runner import Runner
+from molotov.worker import Worker
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
                          scenario_picker)
@@ -13,9 +11,16 @@ from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
 
 
 class TestFmwk(TestLoop):
+    def get_worker(self, console, results, loop=None, args=None):
+        statsd = None
+        delay = 0
+        if args is None:
+            args = self.get_args(console=console)
+        return Worker(1, results, console, args, statsd=statsd,
+                      delay=delay, loop=loop)
 
     @async_test
-    async def test_step(self, loop, console):
+    async def test_step(self, loop, console, results):
         res = []
 
         @scenario(weight=0)
@@ -29,16 +34,17 @@ class TestFmwk(TestLoop):
         async def _slept(time):
             res.append(time)
 
+        w = self.get_worker(console, results, loop=loop)
+
         with catch_sleep(res):
-            stream = asyncio.Queue()
-            async with LoggedClientSession(loop, stream) as session:
-                result = await step(0, 0, session, False, False, stream)
+            async with LoggedClientSession(loop, console) as session:
+                result = await w.step(0, session)
                 self.assertTrue(result, 1)
                 self.assertEqual(len(res), 2)
                 self.assertEqual(res[1], 1.5)
 
     @async_test
-    async def test_picker(self, loop, console):
+    async def test_picker(self, loop, console, results):
         res = []
 
         @scenario_picker()
@@ -54,27 +60,28 @@ class TestFmwk(TestLoop):
         async def _two(session):
             res.append('2')
 
-        stream = asyncio.Queue()
+        w = self.get_worker(console, results, loop=loop)
+
         for i in range(4):
-            async with LoggedClientSession(loop, stream) as session:
-                await step(0, i, session, False, False, stream)
+            async with LoggedClientSession(loop, console) as session:
+                await w.step(i, session)
 
         self.assertEqual(res, ['1', '2', '2', '1'])
 
     @async_test
-    async def test_failing_step(self, loop, console):
+    async def test_failing_step(self, loop, console, results):
 
         @scenario(weight=100)
         async def test_two(session):
             raise ValueError()
 
-        stream = asyncio.Queue()
-        async with LoggedClientSession(loop, stream) as session:
-            result = await step(0, 0, session, False, False, stream)
+        w = self.get_worker(console, results, loop=loop)
+        async with LoggedClientSession(loop, console) as session:
+            result = await w.step(0, session)
             self.assertTrue(result, -1)
 
     @async_test
-    async def test_aworker(self, loop, console):
+    async def test_aworker(self, loop, console, results):
 
         res = []
 
@@ -91,12 +98,11 @@ class TestFmwk(TestLoop):
             pass
 
         args = self.get_args(console=console)
-        statsd = None
+        w = self.get_worker(console, results, loop=loop, args=args)
+        await w.run()
 
-        await worker(1, loop, args, statsd, delay=0)
-
-        self.assertTrue(fmwk._RESULTS['OK'] > 0)
-        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
+        self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     def _runner(self, console, screen=None):
@@ -131,7 +137,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         args.console = console
         args.verbose = 1
-        results = runner(args)
+        results = Runner(args)()
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
@@ -165,7 +171,7 @@ class TestFmwk(TestLoop):
         args.processes = 2
         args.workers = 5
         args.console = console
-        results = runner(args)
+        results = Runner(args)()
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
 
@@ -175,7 +181,7 @@ class TestFmwk(TestLoop):
         self._multiprocess(console=False, nosetup=True)
 
     @async_test
-    async def test_aworker_noexc(self, loop, console):
+    async def test_aworker_noexc(self, loop, console, results):
 
         res = []
 
@@ -193,26 +199,26 @@ class TestFmwk(TestLoop):
 
         args = self.get_args(console=console)
         args.exception = False
-        statsd = None
+        w = self.get_worker(console, results, loop=loop, args=args)
+        await w.run()
 
-        await worker(1, loop, args, statsd, delay=0)
-        self.assertTrue(fmwk._RESULTS['OK'] > 0)
-        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
+        self.assertTrue(results['OK'] > 0)
+        self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
 
     @async_test
-    async def test_failure(self, loop, console):
+    async def test_failure(self, loop, console, results):
 
         @scenario(weight=100)
         async def test_failing(session):
             raise ValueError()
 
         args = self.get_args(console=console)
-        statsd = None
+        w = self.get_worker(console, results, loop=loop, args=args)
+        await w.run()
 
-        await worker(1, loop, args, statsd, delay=0)
-        self.assertTrue(fmwk._RESULTS['OK'] == 0)
-        self.assertTrue(fmwk._RESULTS['FAILED'] > 0)
+        self.assertTrue(results['OK'] == 0)
+        self.assertTrue(results['FAILED'] > 0)
 
     @dedicatedloop
     def test_shutdown(self):
@@ -231,7 +237,7 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        results = runner(args)
+        results = Runner(args)()
 
         self.assertEqual(results['OK'], 1)
         self.assertEqual(results['FAILED'], 0)
@@ -252,11 +258,11 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        results = runner(args)
+        results = Runner(args)()
         self.assertEqual(results['OK'], 1)
 
     @async_test
-    async def test_session_shutdown_exception(self, loop, console):
+    async def test_session_shutdown_exception(self, loop, console, results):
         @teardown_session()
         async def _teardown_session(wid, session):
             raise Exception('bleh')
@@ -266,13 +272,12 @@ class TestFmwk(TestLoop):
             pass
 
         args = self.get_args(console=console)
-        statsd = None
-
-        await worker(1, loop, args, statsd, delay=0)
+        w = self.get_worker(console, results, loop=loop, args=args)
+        await w.run()
 
         output = await serialize(console)
-        self.assertTrue("Exception" in output)
-        self.assertEqual(fmwk._RESULTS['FAILED'], 0)
+        self.assertTrue("Exception" in output, output)
+        self.assertEqual(results['FAILED'], 0)
 
     @dedicatedloop
     def test_setup_exception(self):
@@ -286,7 +291,7 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        results = runner(args)
+        results = Runner(args)()
         self.assertEqual(results['OK'], 0)
 
     @dedicatedloop
@@ -301,7 +306,8 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        self.assertRaises(Exception, runner, args)
+        runner = Runner(args)
+        self.assertRaises(Exception, runner)
 
     @dedicatedloop
     def test_teardown_exception(self):
@@ -315,7 +321,7 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        results = runner(args)
+        results = Runner(args)()
         self.assertEqual(results['FAILED'], 0)
 
     @dedicatedloop
@@ -330,5 +336,5 @@ class TestFmwk(TestLoop):
             os.kill(os.getpid(), signal.SIGTERM)
 
         args = self.get_args()
-        results = runner(args)
+        results = Runner(args)()
         self.assertEqual(results['OK'], 0)

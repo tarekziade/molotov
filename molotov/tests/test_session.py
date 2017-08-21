@@ -14,7 +14,7 @@ class TestLoggedClientSession(TestLoop):
         return molotov.session.LoggedClientSession(*args, **kw)
 
     @async_test
-    async def test_empty_response(self, loop, console):
+    async def test_empty_response(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             binary_body = b''
@@ -24,7 +24,7 @@ class TestLoggedClientSession(TestLoop):
         await serialize(console)
 
     @async_test
-    async def test_encoding(self, loop, console):
+    async def test_encoding(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             binary_body = b'MZ\x90\x00\x03\x00\x00\x00\x04\x00'
@@ -36,7 +36,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue(wanted in res)
 
     @async_test
-    async def test_request(self, loop, console):
+    async def test_request(self, loop, console, results):
         with coserver():
             async with self._get_session(loop, console,
                                          verbose=2) as session:
@@ -47,7 +47,7 @@ class TestLoggedClientSession(TestLoop):
             self.assertTrue('GET http://127.0.0.1:8888' in res)
 
     @async_test
-    async def test_not_verbose(self, loop, console):
+    async def test_not_verbose(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=1) as session:
             req = ClientRequest('GET', URL('http://example.com'))
@@ -60,7 +60,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertEqual(res, '')
 
     @async_test
-    async def test_gzipped_request(self, loop, console):
+    async def test_gzipped_request(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
@@ -73,7 +73,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("Binary" in res, res)
 
     @async_test
-    async def test_file_request(self, loop, console):
+    async def test_file_request(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             with open(__file__) as f:
@@ -86,7 +86,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("File" in res, res)
 
     @async_test
-    async def test_binary_file_request(self, loop, console):
+    async def test_binary_file_request(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             with open(__file__, 'rb') as f:
@@ -99,7 +99,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("File" in res, res)
 
     @async_test
-    async def test_gzipped_response(self, loop, console):
+    async def test_gzipped_response(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
@@ -111,7 +111,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("Binary" in res, res)
 
     @async_test
-    async def test_cantread_request(self, loop, console):
+    async def test_cantread_request(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             binary_body = gzip.compress(b'some gzipped data')
@@ -123,7 +123,7 @@ class TestLoggedClientSession(TestLoop):
         self.assertTrue("display this body" in res, res)
 
     @async_test
-    async def test_old_request_version(self, loop, console):
+    async def test_old_request_version(self, loop, console, results):
 
         orig_import = __import__
 
