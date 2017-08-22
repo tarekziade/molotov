@@ -15,6 +15,8 @@ _COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 
 class LoggedClientRequest(ClientRequest):
+    """Printable Request.
+    """
     session = None
 
     def send(self, *args, **kw):
@@ -25,7 +27,8 @@ class LoggedClientRequest(ClientRequest):
 
 
 class LoggedClientSession(ClientSession):
-
+    """Session with printable requests and responses.
+    """
     def __init__(self, loop, console, verbose=0, statsd=None, **kw):
         connector = kw.pop('connector', None)
         if connector is None:

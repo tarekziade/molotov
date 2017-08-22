@@ -19,9 +19,10 @@ from unittest.mock import patch
 from aiohttp.client_reqrep import ClientResponse, URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
-from molotov import fmwk
+from molotov import util
 from molotov.run import PYPY
 from molotov.sharedconsole import SharedConsole
+from molotov.sharedcounter import SharedCounters
 
 
 HERE = os.path.dirname(__file__)
@@ -153,12 +154,8 @@ class TestLoop(unittest.TestCase):
     def setUp(self):
         self.old = dict(_SCENARIO)
         self.oldsetup = dict(_FIXTURES)
-        for key in fmwk._RESULTS:
-            fmwk._RESULTS[key] = 0
-        fmwk._STOP = False
-        fmwk._STARTED_AT = fmwk._TOLERANCE = None
-        fmwk._HOWLONG = 0
-        fmwk._REFRESH = .3
+        util._STOP = False
+        util._TIMER = None
         self.policy = asyncio.get_event_loop_policy()
 
     def tearDown(self):
@@ -199,9 +196,12 @@ def async_test(func):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
-        console = SharedConsole(loop=loop, interval=0)
+        console = SharedConsole(interval=0)
+        results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
+                                 'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
         kw['loop'] = loop
         kw['console'] = console
+        kw['results'] = results
         try:
             loop.run_until_complete(cofunc(*args, **kw))
         finally:

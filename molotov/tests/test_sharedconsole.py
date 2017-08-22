@@ -20,7 +20,7 @@ class TestSharedConsole(unittest.TestCase):
     @dedicatedloop
     def test_simple_usage(self):
         test_loop = asyncio.get_event_loop()
-        console = SharedConsole(loop=test_loop, interval=0.)
+        console = SharedConsole(interval=0.)
 
         async def add_lines():
             console.print("one")

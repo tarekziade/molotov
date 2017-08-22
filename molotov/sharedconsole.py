@@ -8,19 +8,28 @@ from queue import Empty
 
 
 class SharedConsole(object):
-    def __init__(self, loop=None, interval=.1, max_lines_displayed=20):
+    """Multi-process compatible stdout console.
+    """
+    def __init__(self, interval=.1, max_lines_displayed=20):
         self._stream = multiprocessing.Queue()
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        self.loop = loop
-        self._stop = False
+        self._stop = self._flush = False
         self._max_lines_displayed = max_lines_displayed
 
     def stop(self):
         self._stop = True
+        while True:
+            try:
+                sys.stdout.write(self._stream.get_nowait())
+            except Empty:
+                break
+        sys.stdout.flush()
+
+    async def flush(self):
+        sys.stdout.flush()
+        await asyncio.sleep(0)
 
     async def display(self):
         if os.getpid() != self._creator:
@@ -41,6 +50,7 @@ class SharedConsole(object):
                     await asyncio.sleep(0)
 
             sys.stdout.flush()
+            self._flush = False
             await asyncio.sleep(self._interval)
 
     def print(self, line, end='\n'):

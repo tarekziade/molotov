@@ -9,9 +9,8 @@ from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
                                    skip_pypy, only_pypy, catch_sleep)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
-from molotov import fmwk
 from molotov.sharedcounter import SharedCounters
-from molotov.util import request, json_request
+from molotov.util import request, json_request, set_timer
 from molotov import __version__
 
 
@@ -326,8 +325,6 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(fmwk._RESULTS['REACHED'] == 1)
-            self.assertEqual(int(ratio*100), fmwk._RESULTS['RATIO'].value)
             self.assertTrue(ratio < 10. and ratio >= 5., ratio)
 
     @dedicatedloop
@@ -350,11 +347,6 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
             ratio = (float(counters['FAILED'].value) /
                      float(counters['OK'].value) * 100.)
-            self.assertTrue(fmwk._RESULTS['REACHED'] == 1)
-            self.assertEqual(counters['FAILED'].value,
-                             fmwk._RESULTS['FAILED'].value)
-            self.assertEqual(counters['OK'].value,
-                             fmwk._RESULTS['OK'].value)
             self.assertTrue(ratio >= 5., ratio)
 
     @dedicatedloop
@@ -367,14 +359,13 @@ class TestRunner(TestLoop):
             @scenario()
             async def sizer(session):
                 if session.worker_id == 200 and not _RES2['messed']:
-                    # worker 2 will mess with fmwk._TOLERANCE
-                    # so we can test a _TOLERANCE reset
+                    # worker 2 will mess with the timer
                     # since we're faking all timers, the current
                     # time in the test is always around 0
-                    # so to have now() - _TOLERANCE > 60
+                    # so to have now() - get_timer() > 60
                     # we need to set a negative value here
                     # to trick it
-                    fmwk._TOLERANCE = - 61
+                    set_timer(-61)
                     _RES2['messed'] = True
                     _RES2['fail'] = _RES2['succ'] = 0
 
@@ -421,5 +412,4 @@ class TestRunner(TestLoop):
                                             '--console-update', '0',
                                             '-s', 'sizer',
                                             'molotov.tests.test_run')
-        self.assertTrue(fmwk._RESULTS['REACHED'] == 0)
         self.assertTrue("Sizing was not finished" in stdout)

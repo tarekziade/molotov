@@ -3,12 +3,35 @@ import json
 import socket
 import os
 import asyncio
+import time
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
 from aiohttp import ClientSession
 
 
 _DNS_CACHE = {}
+_STOP = False
+_TIMER = None
+
+
+def get_timer():
+    return _TIMER
+
+
+def set_timer(value=None):
+    global _TIMER
+    if value is None:
+        value = int(time.time())
+    _TIMER = value
+
+
+def stop():
+    global _STOP
+    _STOP = True
+
+
+def is_stopped():
+    return _STOP
 
 
 def resolve(url):
