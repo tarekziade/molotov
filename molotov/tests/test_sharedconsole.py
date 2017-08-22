@@ -32,7 +32,7 @@ class TestSharedConsole(unittest.TestCase):
                 console.print_error(e)
                 console.print_error(e, sys.exc_info()[2])
             await asyncio.sleep(.2)
-            console.stop()
+            await console.stop()
 
         with catch_output() as (stdout, stderr):
             adder = asyncio.ensure_future(add_lines())

@@ -6,6 +6,8 @@ import multiprocessing
 import os
 from queue import Empty
 
+from molotov.util import cancellable_sleep
+
 
 class SharedConsole(object):
     """Multi-process compatible stdout console.
@@ -15,10 +17,10 @@ class SharedConsole(object):
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
-        self._stop = self._flush = False
+        self._stop = False
         self._max_lines_displayed = max_lines_displayed
 
-    def stop(self):
+    async def stop(self):
         self._stop = True
         while True:
             try:
@@ -44,14 +46,13 @@ class SharedConsole(object):
                     lines_displayed += 1
                 except Empty:
                     break
-                if lines_displayed > self._max_lines_displayed:
+                if self._stop or lines_displayed > self._max_lines_displayed:
                     break
                 else:
                     await asyncio.sleep(0)
-
             sys.stdout.flush()
-            self._flush = False
-            await asyncio.sleep(self._interval)
+            if not self._stop:
+                await cancellable_sleep(self._interval)
 
     def print(self, line, end='\n'):
         if os.getpid() != self._creator:

@@ -78,7 +78,7 @@ class Runner(object):
                         if job.exitcode is not None and job in self._procs:
                             self._procs.remove(job)
                     await cancellable_sleep(args.console_update)
-                self.console.stop()
+                await self.console.stop()
 
             tasks = [asyncio.ensure_future(self.console.display()),
                      asyncio.ensure_future(run(args.quiet, self.console))]
@@ -135,11 +135,11 @@ class Runner(object):
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
 
-        display = asyncio.ensure_future(self.console.display())
-        co_tasks = [display]
+        co_tasks = []
         if self.args.original_pid == os.getpid():
             fut = self._display_results(self.args.console_update)
             co_tasks.append(asyncio.ensure_future(fut))
+            co_tasks.append(asyncio.ensure_future(self.console.display()))
 
         self._tasks.extend(co_tasks)
         co_tasks = gather(*co_tasks)
@@ -155,7 +155,6 @@ class Runner(object):
                 raise
         finally:
             stop()
-            self.console.stop()
             self._kill_tasks()
             if self.statsd is not None:
                 self.statsd.close()
@@ -163,11 +162,14 @@ class Runner(object):
 
     def _kill_tasks(self):
         cancellable_sleep.cancel_all()
-        for task in self._tasks:
-            with suppress(RuntimeError, asyncio.CancelledError):
+
+        for task in reversed(self._tasks):
+            with suppress(asyncio.CancelledError):
                 task.cancel()
-                self.loop.run_until_complete(task)
-                del task
+
+        for task in self._tasks:
+            del task
+
         self._tasks[:] = []
 
     def display_results(self):
@@ -180,3 +182,4 @@ class Runner(object):
         while not is_stopped():
             self.console.print(self.display_results(), end='\r')
             await cancellable_sleep(update_interval)
+        await self.console.stop()
