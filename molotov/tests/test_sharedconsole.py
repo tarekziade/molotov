@@ -1,7 +1,9 @@
 import unittest
 import asyncio
 import sys
+import os
 import re
+import multiprocessing
 
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
@@ -13,6 +15,30 @@ two
 3
 TypeError\("unsupported operand type(.*)?
 TypeError\("unsupported operand type.*"""
+
+
+# pre-forked variable
+_CONSOLE = SharedConsole(interval=0.)
+_PROC = []
+
+
+def run_worker(input):
+    if os.getpid() not in _PROC:
+        _PROC.append(os.getpid())
+    _CONSOLE.print("hello")
+    try:
+        3 + ""
+    except Exception:
+        _CONSOLE.print_error("meh")
+
+    with catch_output() as (stdout, stderr):
+        loop = asyncio.new_event_loop()
+        fut = asyncio.ensure_future(_CONSOLE.display(), loop=loop)
+        loop.run_until_complete(fut)
+        loop.close()
+
+    stdout = stdout.read()
+    assert stdout == '', stdout
 
 
 class TestSharedConsole(unittest.TestCase):
@@ -43,3 +69,29 @@ class TestSharedConsole(unittest.TestCase):
         test_loop.close()
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None,
                         output)
+
+    @dedicatedloop
+    def test_multiprocess(self):
+        test_loop = asyncio.get_event_loop()
+
+        # now let's try with several processes
+        pool = multiprocessing.Pool(3)
+        try:
+            inputs = [1] * 3
+            pool.map(run_worker, inputs)
+        finally:
+            pool.close()
+
+        async def stop():
+            await asyncio.sleep(1)
+            await _CONSOLE.stop()
+
+        with catch_output() as (stdout, stderr):
+            stop = asyncio.ensure_future(stop())
+            display = asyncio.ensure_future(_CONSOLE.display())
+            test_loop.run_until_complete(asyncio.gather(stop, display))
+
+        output = stdout.read()
+        for pid in _PROC:
+            self.assertTrue("[%d]" % pid in output)
+        test_loop.close()
