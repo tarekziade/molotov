@@ -54,11 +54,13 @@ class Worker(object):
                 options = await setup(self.wid, self.args)
             except Exception as e:
                 self.console.print_error(e)
+                stop()
                 return
             if options is None:
                 options = {}
             elif not isinstance(options, dict):
                 self.console.print('The setup function needs to return a dict')
+                stop()
                 return
         else:
             options = {}

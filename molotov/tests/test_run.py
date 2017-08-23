@@ -302,7 +302,7 @@ class TestRunner(TestLoop):
             delay = [d for d in delay if d != 0]
             self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
             wanted = "SUCCESSES: 10"
-            self.assertTrue(wanted in stdout)
+            self.assertTrue(wanted in stdout, stdout)
 
     @dedicatedloop
     def test_sizing(self):

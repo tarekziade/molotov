@@ -3,7 +3,6 @@ import signal
 import multiprocessing
 import asyncio
 import os
-from functools import partial
 
 from molotov.api import get_fixture
 from molotov.stats import get_statsd_client
@@ -30,6 +29,12 @@ class Runner(object):
         self._procs = []
         self._results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
                                        'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
+
+    def gather(self, *futures):
+        return asyncio.gather(*futures, loop=self.loop, return_exceptions=True)
+
+    def ensure_future(self, coro):
+        return asyncio.ensure_future(coro, loop=self.loop)
 
     def __call__(self):
         global_setup = get_fixture('global_setup')
@@ -80,9 +85,9 @@ class Runner(object):
                     await cancellable_sleep(args.console_update)
                 await self.console.stop()
 
-            tasks = [asyncio.ensure_future(self.console.display()),
-                     asyncio.ensure_future(run(args.quiet, self.console))]
-            self.loop.run_until_complete(asyncio.gather(*tasks))
+            tasks = [self.ensure_future(self.console.display()),
+                     self.ensure_future(run(args.quiet, self.console))]
+            self.loop.run_until_complete(self.gather(*tasks))
         else:
             self._process()
 
@@ -108,7 +113,7 @@ class Runner(object):
             for i in range(self.args.workers):
                 worker = Worker(i, self._results, self.console, self.args,
                                 self.statsd, delay, self.loop)
-                f = asyncio.ensure_future(worker.run())
+                f = self.ensure_future(worker.run())
                 tasks.append(f)
                 delay += step
             return tasks
@@ -128,33 +133,24 @@ class Runner(object):
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
-        gather = partial(asyncio.gather, loop=self.loop,
-                         return_exceptions=True)
-
         if self.args.debug:
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
 
-        co_tasks = []
         if self.args.original_pid == os.getpid():
             fut = self._display_results(self.args.console_update)
-            co_tasks.append(asyncio.ensure_future(fut))
-            co_tasks.append(asyncio.ensure_future(self.console.display()))
+            update = self.ensure_future(fut)
+            display = self.ensure_future(self.console.display())
+            display = self.gather(update, display)
+            self._tasks.append(display)
 
-        self._tasks.extend(co_tasks)
-        co_tasks = gather(*co_tasks)
-        workers = self._runner()
-        run_task = gather(*workers)
-        self._tasks.extend(workers)
+        workers = self.gather(*self._runner())
+        workers.add_done_callback(lambda fut: stop())
+        self._tasks.append(workers)
 
         try:
-            self.loop.run_until_complete(run_task)
-        except RuntimeError:
-            if not (is_stopped() and len(self._tasks) == 0):
-                # we were not properly shutdown
-                raise
+            self.loop.run_until_complete(self.gather(*self._tasks))
         finally:
-            stop()
             self._kill_tasks()
             if self.statsd is not None:
                 self.statsd.close()
@@ -162,14 +158,11 @@ class Runner(object):
 
     def _kill_tasks(self):
         cancellable_sleep.cancel_all()
-
         for task in reversed(self._tasks):
             with suppress(asyncio.CancelledError):
                 task.cancel()
-
         for task in self._tasks:
             del task
-
         self._tasks[:] = []
 
     def display_results(self):

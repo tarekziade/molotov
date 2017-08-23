@@ -220,7 +220,7 @@ def get_var(name, factory=None):
 def _make_sleep():
     async def sleep(delay, result=None, *, loop=None):
         coro = asyncio.sleep(delay, result=result, loop=loop)
-        task = asyncio.ensure_future(coro)
+        task = asyncio.ensure_future(coro, loop=loop)
         sleep.tasks.add(task)
         try:
             return await task
