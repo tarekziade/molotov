@@ -9,8 +9,9 @@ _COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 class BaseListener(object):
     async def __call__(self, session, event, **options):
-        attr = getattr(self, 'on_' + event)
-        await attr(**options)
+        attr = getattr(self, 'on_' + event, None)
+        if attr is not None:
+            await attr(**options)
 
 
 class StdoutListener(BaseListener):

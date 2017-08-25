@@ -1,3 +1,6 @@
+from io import StringIO
+import traceback
+import sys
 import functools
 import json
 import socket
@@ -235,3 +238,15 @@ def _make_sleep():
 
 
 cancellable_sleep = _make_sleep()
+
+
+def printable_error(error, tb=None):
+    printable = [repr(error)]
+    if tb is None:
+        tb = sys.exc_info()[2]
+    printed = StringIO()
+    traceback.print_tb(tb, file=printed)
+    printed.seek(0)
+    for line in printed.readlines():
+        printable.append(line.rstrip('\n'))
+    return printable
