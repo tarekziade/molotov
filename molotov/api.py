@@ -206,7 +206,7 @@ def teardown_session():
 
 
 def session_events():
-    """Called everytime a request or a response is sent or received
+    """Called everytime a session sends an event
 
     Arguments received by the decorated function:
 
