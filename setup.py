@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from molotov import __version__
 
 
-install_requires = ['aiohttp']
+install_requires = ['aiohttp', 'aiomeasures']
 description = ''
 
 for file_ in ('README', 'CHANGELOG'):
