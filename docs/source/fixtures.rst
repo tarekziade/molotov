@@ -21,11 +21,17 @@ test fixtures can be used to run functions at various stages.
 .. image:: _static/lifecycle.jpg
 
 
+Notice that the :func:`session_events` decorator is not displayed on the
+diagram. This particular decorator receives events emited by the session.
+
+
 .. autofunction:: molotov.global_setup
 
 .. autofunction:: molotov.setup
 
 .. autofunction:: molotov.setup_session
+
+.. autofunction:: molotov.session_events
 
 .. autofunction:: molotov.teardown_session
 

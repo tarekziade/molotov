@@ -165,7 +165,7 @@ def teardown():
 
 
 def global_teardown():
-    """Called when everythin is done.
+    """Called when everything is done.
 
     *The decorated function should not be a coroutine.*
     """
@@ -203,3 +203,22 @@ def teardown_session():
     *The decorated function should be a coroutine.*
     """
     return _fixture('teardown_session')
+
+
+def session_events():
+    """Called everytime a request or a response is sent or received
+
+    Arguments received by the decorated function:
+
+    - **session** the :class:`aoihttp.ClienSession` instance
+    - **event** Name of the event
+    - + extra argument(s) specific to the event
+
+    Current supported events and their extra arguments:
+    - sending_request, request
+    - response_received, response
+
+    *The decorated function should be a coroutine.*
+    *IMPORTANT This function will directly impact the load test performances*
+    """
+    return _fixture('session_events')

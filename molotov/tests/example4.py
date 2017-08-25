@@ -2,13 +2,18 @@ import molotov
 
 
 class SomeObject(object):
-    """Does something smart in real lif with the async loop.
+    """Does something smart in real life with the async loop.
     """
     def __init__(self, loop):
         self.loop = loop
 
     def cleanup(self):
         pass
+
+
+@molotov.session_events()
+async def event(session, event, **data):
+    print(event)
 
 
 @molotov.global_setup()
