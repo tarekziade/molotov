@@ -2,8 +2,15 @@ import molotov
 
 
 @molotov.events()
-async def event(event, **info):
-    print(event, info)
+async def print_request(event, **info):
+    if event == 'sending_request':
+        print("=>")
+
+
+@molotov.events()
+async def print_response(event, **info):
+    if event == 'response_received':
+        print('<=')
 
 
 @molotov.scenario(100)

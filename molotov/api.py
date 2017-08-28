@@ -106,7 +106,7 @@ def _fixture(name, coroutine=True, multiple=False):
             raise ValueError("You can't have two %r functions" % name)
         if multiple:
             if name in _FIXTURES:
-                _FIXTURES[name] += func
+                _FIXTURES[name].append(func)
             else:
                 _FIXTURES[name] = [func]
         else:
