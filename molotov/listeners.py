@@ -8,7 +8,7 @@ _COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 
 class BaseListener(object):
-    async def __call__(self, session, event, **options):
+    async def __call__(self, event, **options):
         attr = getattr(self, 'on_' + event, None)
         if attr is not None:
             await attr(**options)
@@ -39,7 +39,7 @@ class StdoutListener(BaseListener):
 
         return body
 
-    async def on_sending_request(self, request):
+    async def on_sending_request(self, session, request):
         if self.verbose < 2:
             return
         raw = '>' * 45
@@ -55,7 +55,7 @@ class StdoutListener(BaseListener):
 
         self.console.print(raw)
 
-    async def on_response_received(self, response):
+    async def on_response_received(self, session, response):
         if self.verbose < 2:
             return
         raw = '\n' + '=' * 45 + '\n'
@@ -85,5 +85,5 @@ class CustomListener(object):
     def __init__(self, fixture):
         self.fixture = fixture
 
-    async def __call__(self, session, event, **options):
-        await self.fixture(session, event, **options)
+    async def __call__(self, event, **options):
+        await self.fixture(event, **options)

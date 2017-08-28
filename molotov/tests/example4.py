@@ -11,11 +11,6 @@ class SomeObject(object):
         pass
 
 
-@molotov.session_events()
-async def event(session, event, **data):
-    print(event)
-
-
 @molotov.global_setup()
 def init_test(args):
     molotov.set_var('SomeHeader', '1')

@@ -5,7 +5,7 @@ from molotov.runner import Runner
 from molotov.worker import Worker
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
-                         scenario_picker, session_events)
+                         scenario_picker, events)
 from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
                                    serialize, catch_sleep, coserver)
 
@@ -107,11 +107,11 @@ class TestFmwk(TestLoop):
 
     def _runner(self, console, screen=None):
         res = []
-        events = []
+        _events = []
 
-        @session_events()
-        async def _events(session, event, **data):
-            events.append(event)
+        @events()
+        async def _event(event, **data):
+            _events.append(event)
 
         @global_setup()
         def init(args):
@@ -148,7 +148,7 @@ class TestFmwk(TestLoop):
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
-        self.assertTrue(len(events) > 0)
+        self.assertTrue(len(_events) > 0)
 
     @dedicatedloop
     def test_runner(self):

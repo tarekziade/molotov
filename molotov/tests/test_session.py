@@ -17,7 +17,7 @@ class TestLoggedClientSession(TestLoop):
     @async_test
     async def test_add_buggy_listener(self, loop, console, results):
         class MyListener(BaseListener):
-            def on_response_received(self, response):
+            def on_response_received(self, **options):
                 raise Exception("Bam")
 
         l = MyListener()
@@ -37,8 +37,8 @@ class TestLoggedClientSession(TestLoop):
             def __init__(self):
                 self.responses = []
 
-            def on_response_received(self, response):
-                self.responses.append(response)
+            def on_response_received(self, **options):
+                self.responses.append(options['response'])
 
         l = MyListener()
         async with self._get_session(loop, console,

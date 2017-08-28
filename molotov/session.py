@@ -42,9 +42,10 @@ class LoggedClientSession(ClientSession):
         self.statsd = statsd
         self.listeners = [StdoutListener(verbose=self.verbose,
                                          console=self.console)]
-        session_events = get_fixture('session_events')
-        if session_events is not None:
-            self.add_listener(CustomListener(session_events))
+        listeners = get_fixture('events')
+        if listeners is not None:
+            for listener in listeners:
+                self.add_listener(CustomListener(listener))
 
     def add_listener(self, listener):
         self.listeners.append(listener)
@@ -52,7 +53,7 @@ class LoggedClientSession(ClientSession):
     async def send_event(self, event, **options):
         for listener in self.listeners:
             try:
-                await listener(self, event, **options)
+                await listener(event, session=self, **options)
             except Exception as e:
                 self.console.print_error(e)
 

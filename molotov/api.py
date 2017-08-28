@@ -98,13 +98,19 @@ def get_fixture(name):
     return _FIXTURES.get(name)
 
 
-def _fixture(name, coroutine=True):
+def _fixture(name, coroutine=True, multiple=False):
     def __fixture(func, *args, **kw):
         if coroutine:
             _check_coroutine(func)
-        if name in _FIXTURES:
+        if name in _FIXTURES and not multiple:
             raise ValueError("You can't have two %r functions" % name)
-        _FIXTURES[name] = func
+        if multiple:
+            if name in _FIXTURES:
+                _FIXTURES[name] += func
+            else:
+                _FIXTURES[name] = [func]
+        else:
+            _FIXTURES[name] = func
 
         @functools.wraps(func)
         def ___fixture(*args, **kw):
@@ -205,20 +211,15 @@ def teardown_session():
     return _fixture('teardown_session')
 
 
-def session_events():
-    """Called everytime a session sends an event
+def events():
+    """Called everytime Molotov sends an event
 
     Arguments received by the decorated function:
 
-    - **session** the :class:`aoihttp.ClienSession` instance
     - **event** Name of the event
     - + extra argument(s) specific to the event
-
-    Current supported events and their extra arguments:
-    - sending_request, request
-    - response_received, response
 
     *The decorated function should be a coroutine.*
     *IMPORTANT This function will directly impact the load test performances*
     """
-    return _fixture('session_events')
+    return _fixture('events', multiple=True)
