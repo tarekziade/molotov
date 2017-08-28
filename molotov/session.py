@@ -1,17 +1,15 @@
-import io
 import socket
 from urllib.parse import urlparse
 import asyncio
 from aiohttp.client import ClientSession, ClientRequest
 from aiohttp import TCPConnector
+
 from molotov.util import resolve
+from molotov.listeners import StdoutListener, CustomListener
+from molotov.api import get_fixture
 
 
 _HOST = socket.gethostname()
-_UNREADABLE = "***WARNING: Molotov can't display this body***"
-_BINARY = "**** Binary content ****"
-_FILE = "**** File content ****"
-_COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
 
 
 class LoggedClientRequest(ClientRequest):
@@ -20,9 +18,9 @@ class LoggedClientRequest(ClientRequest):
     session = None
 
     def send(self, *args, **kw):
-        if self.session and self.verbose > 1:
-            info = self.session.print_request(self)
-            asyncio.ensure_future(info)
+        if self.session:
+            event = self.session.send_event('sending_request', request=self)
+            asyncio.ensure_future(event)
         return super(LoggedClientRequest, self).send(*args, **kw)
 
 
@@ -42,6 +40,22 @@ class LoggedClientSession(ClientSession):
         self.verbose = verbose
         self.request_class.session = self
         self.statsd = statsd
+        self.listeners = [StdoutListener(verbose=self.verbose,
+                                         console=self.console)]
+        listeners = get_fixture('events')
+        if listeners is not None:
+            for listener in listeners:
+                self.add_listener(CustomListener(listener))
+
+    def add_listener(self, listener):
+        self.listeners.append(listener)
+
+    async def send_event(self, event, **options):
+        for listener in self.listeners:
+            try:
+                await listener(event, session=self, **options)
+            except Exception as e:
+                self.console.print_error(e)
 
     def _dns_lookup(self, url):
         return resolve(url)[0]
@@ -75,68 +89,5 @@ class LoggedClientSession(ClientSession):
         else:
             resp = await req(*args, **kw)
 
-        await self.print_response(resp)
+        await self.send_event('response_received', response=resp)
         return resp
-
-    def _body2str(self, body):
-        try:
-            from aiohttp.payload import Payload
-        except ImportError:
-            Payload = None
-
-        if Payload is not None and isinstance(body, Payload):
-            body = body._value
-
-        if isinstance(body, io.IOBase):
-            return _FILE
-
-        if not isinstance(body, str):
-            try:
-                body = str(body, 'utf8')
-            except UnicodeDecodeError:
-                return _UNREADABLE
-
-        return body
-
-    async def print_request(self, req):
-        if self.verbose < 2:
-            return
-
-        raw = '>' * 45
-        raw += '\n' + req.method + ' ' + str(req.url)
-        if len(req.headers) > 0:
-            headers = '\n'.join('%s: %s' % (k, v) for k, v in
-                                req.headers.items())
-            raw += '\n' + headers
-
-        if req.headers.get('Content-Encoding') in _COMPRESSED:
-            raw += '\n\n' + _BINARY + '\n'
-        elif req.body:
-            raw += '\n\n' + self._body2str(req.body) + '\n'
-
-        self.console.print(raw)
-
-    async def print_response(self, resp):
-        if self.verbose < 2:
-            return
-        raw = '\n' + '=' * 45 + '\n'
-        raw += 'HTTP/1.1 %d %s\n' % (resp.status, resp.reason)
-        items = resp.headers.items()
-        headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
-        raw += headers
-        if resp.headers.get('Content-Encoding') in _COMPRESSED:
-            raw += '\n\n' + _BINARY
-        elif resp.content:
-            content = await resp.content.read()
-            if len(content) > 0:
-                # put back the data in the content
-                resp.content.unread_data(content)
-                try:
-                    raw += '\n\n' + content.decode()
-                except UnicodeDecodeError:
-                    raw += '\n\n' + _UNREADABLE
-            else:
-                raw += '\n\n'
-
-        raw += '\n' + '<' * 45 + '\n'
-        self.console.print(raw)

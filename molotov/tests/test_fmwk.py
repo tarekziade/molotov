@@ -5,9 +5,9 @@ from molotov.runner import Runner
 from molotov.worker import Worker
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
-                         scenario_picker)
+                         scenario_picker, events)
 from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
-                                   serialize, catch_sleep)
+                                   serialize, catch_sleep, coserver)
 
 
 class TestFmwk(TestLoop):
@@ -107,6 +107,11 @@ class TestFmwk(TestLoop):
 
     def _runner(self, console, screen=None):
         res = []
+        _events = []
+
+        @events()
+        async def _event(event, **data):
+            _events.append(event)
 
         @global_setup()
         def init(args):
@@ -123,11 +128,13 @@ class TestFmwk(TestLoop):
 
         @scenario(weight=50)
         async def test_one(session):
-            pass
+            async with session.get('http://localhost:8888') as resp:
+                await resp.text()
 
         @scenario(weight=100)
         async def test_two(session):
-            pass
+            async with session.get('http://localhost:8888') as resp:
+                await resp.text()
 
         @teardown_session()
         async def _teardown_session(wid, session):
@@ -141,14 +148,17 @@ class TestFmwk(TestLoop):
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
+        self.assertTrue(len(_events) > 0)
 
     @dedicatedloop
     def test_runner(self):
-        return self._runner(console=False)
+        with coserver():
+            return self._runner(console=False)
 
     @dedicatedloop
     def test_runner_console(self):
-        return self._runner(console=True)
+        with coserver():
+            return self._runner(console=True)
 
     @dedicatedloop
     def _multiprocess(self, console, nosetup=False):

@@ -9,7 +9,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
-from molotov.util import expand_options, OptionError
+from molotov.util import expand_options, OptionError, printable_error
 from molotov.sharedconsole import SharedConsole
 
 
@@ -86,6 +86,11 @@ def _parser():
 
     parser.add_argument('--uvloop', help='Use uvloop', default=False,
                         action='store_true')
+
+    parser.add_argument('--use-extension',
+                        help='Imports a module containing Molotov extensions',
+                        default=None, type=str, nargs='+')
+
     return parser
 
 
@@ -148,8 +153,24 @@ HELLO = '**** Molotov v%s. Happy breaking! ****' % __version__
 
 def run(args):
     args.shared_console = SharedConsole(interval=args.console_update)
+
     if not args.quiet:
-        args.shared_console.print(HELLO)
+        print(HELLO)
+
+    if args.use_extension:
+        for extension in args.use_extension:
+            print("Loading extension %r" % extension)
+            if os.path.exists(extension):
+                spec = spec_from_file_location("extension", extension)
+                module = module_from_spec(spec)
+                spec.loader.exec_module(module)
+            else:
+                try:
+                    import_module(extension)
+                except (ImportError, ValueError) as e:
+                    print('Cannot import %r' % extension)
+                    print('\n'.join(printable_error(e)))
+                    sys.exit(1)
 
     if os.path.exists(args.scenario):
         spec = spec_from_file_location("loadtest", args.scenario)
@@ -158,8 +179,9 @@ def run(args):
     else:
         try:
             import_module(args.scenario)
-        except (ImportError, ValueError):
+        except (ImportError, ValueError) as e:
             print('Cannot import %r' % args.scenario)
+            print('\n'.join(printable_error(e)))
             sys.exit(1)
 
     if len(get_scenarios()) == 0:

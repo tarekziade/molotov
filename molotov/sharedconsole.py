@@ -1,12 +1,10 @@
 import sys
-import traceback
-from io import StringIO
 import asyncio
 import multiprocessing
 import os
 from queue import Empty
 
-from molotov.util import cancellable_sleep
+from molotov.util import cancellable_sleep, printable_error
 
 
 class SharedConsole(object):
@@ -61,14 +59,8 @@ class SharedConsole(object):
         self._stream.put_nowait(line)
 
     def print_error(self, error, tb=None):
-        self.print(repr(error))
-        if tb is None:
-            tb = sys.exc_info()[2]
-        printed = StringIO()
-        traceback.print_tb(tb, file=printed)
-        printed.seek(0)
-        for line in printed.readlines():
-            self.print(line, end='')
+        for line in printable_error(error, tb):
+            self.print(line)
 
     def print_block(self, start, callable, end='OK'):
         if os.getpid() != self._creator:

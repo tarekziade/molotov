@@ -182,6 +182,8 @@ class TestLoop(unittest.TestCase):
         args.sizing = False
         args.sizing_tolerance = .0
         args.console_update = 0
+        args.use_extension = []
+
         if console is None:
             console = SharedConsole(interval=0)
         args.shared_console = console

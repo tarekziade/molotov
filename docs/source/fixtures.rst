@@ -37,4 +37,3 @@ test fixtures can be used to run functions at various stages.
 Here's a full example, in order of calls:
 
 .. literalinclude:: ../../molotov/tests/example4.py
-

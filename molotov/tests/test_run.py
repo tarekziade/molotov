@@ -14,7 +14,8 @@ from molotov.util import request, json_request, set_timer
 from molotov import __version__
 
 
-_CONFIG = os.path.join(os.path.dirname(__file__), 'molotov.json')
+_HERE = os.path.dirname(__file__)
+_CONFIG = os.path.join(_HERE, 'molotov.json')
 _RES = []
 _RES2 = {}
 
@@ -325,7 +326,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(ratio < 10. and ratio >= 5., ratio)
+            self.assertTrue(ratio < 15. and ratio >= 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess(self):
@@ -387,7 +388,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(ratio < 15. and ratio > 5., ratio)
+            self.assertTrue(ratio < 20. and ratio > 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess_interrupted(self):
@@ -413,3 +414,73 @@ class TestRunner(TestLoop):
                                             '-s', 'sizer',
                                             'molotov.tests.test_run')
         self.assertTrue("Sizing was not finished" in stdout)
+
+    @dedicatedloop
+    def test_use_extension(self):
+        ext = os.path.join(_HERE, 'example5.py')
+
+        @scenario(weight=10)
+        async def simpletest(session):
+            async with session.get('http://localhost:8888') as resp:
+                assert resp.status == 200
+
+        with coserver():
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
+                                                '--use-extension=' + ext,
+                                                '-s',
+                                                'simpletest',
+                                                'molotov.tests.test_run')
+        self.assertTrue("=>" in stdout)
+        self.assertTrue("<=" in stdout)
+
+    @dedicatedloop
+    def test_use_extension_fail(self):
+        ext = os.path.join(_HERE, 'exampleIDONTEXIST.py')
+
+        @scenario(weight=10)
+        async def simpletest(session):
+            async with session.get('http://localhost:8888') as resp:
+                assert resp.status == 200
+
+        with coserver():
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
+                                                '--use-extension=' + ext,
+                                                '-s',
+                                                'simpletest',
+                                                'molotov.tests.test_run')
+        self.assertTrue("Cannot import" in stdout)
+
+    @dedicatedloop
+    def test_use_extension_module_name(self):
+        ext = 'molotov.tests.example5'
+
+        @scenario(weight=10)
+        async def simpletest(session):
+            async with session.get('http://localhost:8888') as resp:
+                assert resp.status == 200
+
+        with coserver():
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
+                                                '--use-extension=' + ext,
+                                                '-s',
+                                                'simpletest',
+                                                'molotov.tests.test_run')
+        self.assertTrue("=>" in stdout)
+        self.assertTrue("<=" in stdout)
+
+    @dedicatedloop
+    def test_use_extension_module_name_fail(self):
+        ext = 'IDONTEXTSIST'
+
+        @scenario(weight=10)
+        async def simpletest(session):
+            async with session.get('http://localhost:8888') as resp:
+                assert resp.status == 200
+
+        with coserver():
+            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
+                                                '--use-extension=' + ext,
+                                                '-s',
+                                                'simpletest',
+                                                'molotov.tests.test_run')
+        self.assertTrue("Cannot import" in stdout)
