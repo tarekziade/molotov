@@ -27,7 +27,9 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         resp = await serialize(console)
         self.assertTrue("Bam" in resp)
@@ -48,7 +50,9 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         await serialize(console)
         self.assertEqual(l.responses, [response])
@@ -60,7 +64,9 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         await serialize(console)
 
@@ -71,7 +77,9 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b'MZ\x90\x00\x03\x00\x00\x00\x04\x00'
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         res = await serialize(console)
         wanted = "can't display this body"
@@ -97,7 +105,9 @@ class TestLoggedClientSession(TestLoop):
 
             response = Response(body='')
             request = Request()
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         res = await serialize(console)
         self.assertEqual(res, '')
@@ -149,7 +159,9 @@ class TestLoggedClientSession(TestLoop):
             binary_body = gzip.compress(b'some gzipped data')
             response = Response(body=binary_body)
             response.headers['Content-Encoding'] = 'gzip'
-            await session.send_event('response_received', response=response, request=request)
+            await session.send_event('response_received',
+                                     response=response,
+                                     request=request)
 
         res = await serialize(console)
         self.assertTrue("Binary" in res, res)

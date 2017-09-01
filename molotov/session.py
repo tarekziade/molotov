@@ -98,5 +98,7 @@ class LoggedClientSession(ClientSession):
         else:
             resp = await req(*args, **kw)
 
-        await self.send_event('response_received', response=resp, request=resp.request)
+        await self.send_event('response_received',
+                              response=resp,
+                              request=resp.request)
         return resp
