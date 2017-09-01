@@ -21,7 +21,9 @@ class LoggedClientRequest(ClientRequest):
         if self.session:
             event = self.session.send_event('sending_request', request=self)
             asyncio.ensure_future(event)
-        return super(LoggedClientRequest, self).send(*args, **kw)
+        response = super(LoggedClientRequest, self).send(*args, **kw)
+        response.request = self
+        return response
 
 
 class LoggedClientSession(ClientSession):
@@ -89,5 +91,5 @@ class LoggedClientSession(ClientSession):
         else:
             resp = await req(*args, **kw)
 
-        await self.send_event('response_received', response=resp)
+        await self.send_event('response_received', response=resp, request=resp.request)
         return resp

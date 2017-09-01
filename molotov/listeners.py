@@ -55,7 +55,7 @@ class StdoutListener(BaseListener):
 
         self.console.print(raw)
 
-    async def on_response_received(self, session, response):
+    async def on_response_received(self, session, response, request):
         if self.verbose < 2:
             return
         raw = '\n' + '=' * 45 + '\n'
