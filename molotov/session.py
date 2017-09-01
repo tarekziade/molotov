@@ -1,7 +1,7 @@
 import socket
 from urllib.parse import urlparse
 import asyncio
-from aiohttp.client import ClientSession, ClientRequest
+from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector
 
 from molotov.util import resolve
@@ -26,6 +26,10 @@ class LoggedClientRequest(ClientRequest):
         return response
 
 
+class LoggedClientResponse(ClientResponse):
+    request = None
+
+
 class LoggedClientSession(ClientSession):
     """Session with printable requests and responses.
     """
@@ -34,13 +38,16 @@ class LoggedClientSession(ClientSession):
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
         super(LoggedClientSession,
-              self).__init__(loop=loop, request_class=LoggedClientRequest,
+              self).__init__(loop=loop,
+                             request_class=LoggedClientRequest,
+                             response_class=LoggedClientResponse,
                              connector=connector,  **kw)
         self.console = console
         self.request_class = LoggedClientRequest
         self.request_class.verbose = verbose
         self.verbose = verbose
         self.request_class.session = self
+        self.request_class.response_class = LoggedClientResponse
         self.statsd = statsd
         self.listeners = [StdoutListener(verbose=self.verbose,
                                          console=self.console)]
