@@ -16,11 +16,12 @@ import pytest
 from queue import Empty
 from unittest.mock import patch
 
-from aiohttp.client_reqrep import ClientResponse, URL
+from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
 from molotov import util
 from molotov.run import PYPY
+from molotov.session import LoggedClientRequest, LoggedClientResponse
 from molotov.sharedconsole import SharedConsole
 from molotov.sharedcounter import SharedCounters
 
@@ -125,7 +126,7 @@ def coserver(port=8888):
 
 
 def Response(method='GET', status=200, body=b'***'):
-    response = ClientResponse(method, URL('/'))
+    response = LoggedClientResponse(method, URL('/'))
     response.status = status
     response.reason = ''
     response.code = status
@@ -148,6 +149,12 @@ def Response(method='GET', status=200, body=b'***'):
     response._content = body
 
     return response
+
+
+def Request(url="http://127.0.0.1/", method='GET', body=b'***'):
+    request = LoggedClientRequest(method, URL(url))
+    request.body = body
+    return request
 
 
 class TestLoop(unittest.TestCase):

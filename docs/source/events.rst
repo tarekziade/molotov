@@ -12,7 +12,7 @@ with the :func:`molotov.events` fixture described below:
 Current supported events and their keyword arguments:
 
 - **sending_request**: session, request
-- **response_received**: session, response
+- **response_received**: session, response, request
 
 The framework will gradually get more events triggered from
 every step in the load test cycle.
