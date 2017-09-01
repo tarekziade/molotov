@@ -21,6 +21,7 @@ from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
 from molotov import util
 from molotov.run import PYPY
+from molotov.session import LoggedClientRequest
 from molotov.sharedconsole import SharedConsole
 from molotov.sharedcounter import SharedCounters
 
@@ -148,6 +149,12 @@ def Response(method='GET', status=200, body=b'***'):
     response._content = body
 
     return response
+
+
+def Request(url="http://127.0.0.1/", method='GET', body=b'***'):
+    request = LoggedClientRequest(method, URL(url))
+    request.body = body
+    return request
 
 
 class TestLoop(unittest.TestCase):

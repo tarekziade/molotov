@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from molotov.listeners import BaseListener
 import molotov.session
-from molotov.tests.support import coserver, Response
+from molotov.tests.support import coserver, Response, Request
 from molotov.tests.support import TestLoop, async_test, serialize
 
 
@@ -24,9 +24,10 @@ class TestLoggedClientSession(TestLoop):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             session.add_listener(l)
+            request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response)
+            await session.send_event('response_received', response=response, request=request)
 
         resp = await serialize(console)
         self.assertTrue("Bam" in resp)
@@ -44,9 +45,10 @@ class TestLoggedClientSession(TestLoop):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
             session.add_listener(l)
+            request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response)
+            await session.send_event('response_received', response=response, request=request)
 
         await serialize(console)
         self.assertEqual(l.responses, [response])
@@ -55,9 +57,10 @@ class TestLoggedClientSession(TestLoop):
     async def test_empty_response(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
+            request = Request()
             binary_body = b''
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response)
+            await session.send_event('response_received', response=response, request=request)
 
         await serialize(console)
 
@@ -65,9 +68,10 @@ class TestLoggedClientSession(TestLoop):
     async def test_encoding(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
+            request = Request()
             binary_body = b'MZ\x90\x00\x03\x00\x00\x00\x04\x00'
             response = Response(body=binary_body)
-            await session.send_event('response_received', response=response)
+            await session.send_event('response_received', response=response, request=request)
 
         res = await serialize(console)
         wanted = "can't display this body"
@@ -92,7 +96,8 @@ class TestLoggedClientSession(TestLoop):
             await session.send_event('sending_request', request=req)
 
             response = Response(body='')
-            await session.send_event('response_received', response=response)
+            request = Request()
+            await session.send_event('response_received', response=response, request=request)
 
         res = await serialize(console)
         self.assertEqual(res, '')
@@ -140,10 +145,11 @@ class TestLoggedClientSession(TestLoop):
     async def test_gzipped_response(self, loop, console, results):
         async with self._get_session(loop, console,
                                      verbose=2) as session:
+            request = Request()
             binary_body = gzip.compress(b'some gzipped data')
             response = Response(body=binary_body)
             response.headers['Content-Encoding'] = 'gzip'
-            await session.send_event('response_received', response=response)
+            await session.send_event('response_received', response=response, request=request)
 
         res = await serialize(console)
         self.assertTrue("Binary" in res, res)
