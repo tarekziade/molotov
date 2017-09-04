@@ -10,7 +10,7 @@ async def print_request(event, **info):
 @molotov.events()
 async def print_response(event, **info):
     if event == 'response_received':
-        print('<=')
+        print("<=")
 
 
 @molotov.scenario(100)

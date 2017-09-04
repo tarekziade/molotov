@@ -217,9 +217,10 @@ def events():
     Arguments received by the decorated function:
 
     - **event** Name of the event
-    - + extra argument(s) specific to the event
+    - extra argument(s) specific to the event
 
     *The decorated function should be a coroutine.*
+
     *IMPORTANT This function will directly impact the load test performances*
     """
     return _fixture('events', multiple=True)

@@ -63,6 +63,7 @@ Check out the detailed documentation:
    fixtures
    helpers
    events
+   extending
    cli
    slave
    docker
