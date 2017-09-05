@@ -20,7 +20,7 @@ classifiers = ["Programming Language :: Python",
 
 setup(name='molotov',
       version=__version__,
-      url='https://github.com/loads/molotov',
+      url='https://molotov.readthedocs.io',
       packages=find_packages(),
       long_description=description.strip(),
       description=("Spiffy load testing tool."),
