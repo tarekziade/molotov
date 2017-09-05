@@ -2,20 +2,23 @@ import molotov
 import time
 
 
-_RECORDER = {}
+_T = {}
+
+
+def _now():
+    return time.time() * 1000
 
 
 @molotov.events()
 async def record_time(event, **info):
+    req = info.get('request')
     if event == 'sending_request':
-        _RECORDER[info['request']] = time.time()
+        _T[req] = _now()
     elif event == 'response_received':
-        req = info['request']
-        _RECORDER[req] = time.time() - _RECORDER[req]
+        _T[req] = _now() - _T[req]
 
 
 @molotov.global_teardown()
 def display_average():
-    total = sum([float(t) for t in _RECORDER.values()])
-    average = float(total) / float(len(_RECORDER))
-    print("Average response time %.4f" % average)
+    average = sum(_T.values()) / len(_T)
+    print("\nAverage response time %dms" % average)
