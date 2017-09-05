@@ -2,16 +2,20 @@ Extending Molotov
 =================
 
 Molotov has a **--use-extension** option that can be used to load
-one or several arbitrary Python module that contains some fixtures
-and/or an event listener.
+one or several arbitrary Python modules that contains some fixtures
+or event listeners.
 
-For example, you can have a module that is displaying the
-request time at the end of the run:
+Using extensions is useful when you want to implement a behavior
+that can be reused with arbitrary load tests.
+
+In the example below :func:`record_time` is used to calculate the
+average response time of the load test:
 
 .. literalinclude:: ../../molotov/tests/example6.py
 
-When a Molotov test uses this extension, it will display the
-average response time of the requests made on the server:
+When a Molotov test uses this extension, the function will collect
+execution times and print out the average response time of
+all requests made by Molotov:
 
 .. code-block:: bash
 
