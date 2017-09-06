@@ -137,13 +137,12 @@ class Runner(object):
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
 
-        if self.args.original_pid == os.getpid():
-            if not self.args.quiet:
-                fut = self._display_results(self.args.console_update)
-                update = self.ensure_future(fut)
-                display = self.ensure_future(self.console.display())
-                display = self.gather(update, display)
-                self._tasks.append(display)
+        if self.args.original_pid == os.getpid() and not self.args.quiet:
+            fut = self._display_results(self.args.console_update)
+            update = self.ensure_future(fut)
+            display = self.ensure_future(self.console.display())
+            display = self.gather(update, display)
+            self._tasks.append(display)
 
         workers = self.gather(*self._runner())
         workers.add_done_callback(lambda fut: stop())
