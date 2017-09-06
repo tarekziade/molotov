@@ -137,7 +137,7 @@ class Runner(object):
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
 
-        if self.args.original_pid == os.getpid():
+        if self.args.original_pid == os.getpid() and not self.args.quiet:
             fut = self._display_results(self.args.console_update)
             update = self.ensure_future(fut)
             display = self.ensure_future(self.console.display())

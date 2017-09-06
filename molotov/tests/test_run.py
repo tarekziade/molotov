@@ -484,3 +484,17 @@ class TestRunner(TestLoop):
                                                 'simpletest',
                                                 'molotov.tests.test_run')
         self.assertTrue("Cannot import" in stdout)
+
+    @dedicatedloop
+    def test_quiet(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        stdout, stderr = self._test_molotov('-cx', '--max-runs', '1', '-q',
+                                            '-s',
+                                            'here_three',
+                                            'molotov.tests.test_run')
+        self.assertEqual(stdout, '')
+        self.assertEqual(stderr, '')

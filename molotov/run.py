@@ -159,7 +159,8 @@ def run(args):
 
     if args.use_extension:
         for extension in args.use_extension:
-            print("Loading extension %r" % extension)
+            if not args.quiet:
+                print("Loading extension %r" % extension)
             if os.path.exists(extension):
                 spec = spec_from_file_location("extension", extension)
                 module = module_from_spec(spec)
