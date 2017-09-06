@@ -1,5 +1,7 @@
 import asyncio
 import time
+
+from molotov.listeners import EventSender
 from molotov.session import LoggedClientSession as Session
 from molotov.api import get_fixture, pick_scenario, get_scenario
 from molotov.util import (cancellable_sleep, is_stopped, set_timer, get_timer,
@@ -22,6 +24,10 @@ class Worker(object):
         self.args = args
         self.statsd = statsd
         self.delay = delay
+        self.eventer = EventSender(console)
+
+    async def send_event(self, event, **options):
+        await self.eventer.send_event(event, wid=self.wid, **options)
 
     async def run(self):
         if self.delay > 0.:
@@ -158,10 +164,16 @@ class Worker(object):
         try:
             await scenario['func'](session, *scenario['args'],
                                    **scenario['kw'])
+
+            await self.send_event('scenario_success', scenario=scenario)
+
             if scenario['delay'] > 0.:
                 await cancellable_sleep(scenario['delay'])
             return 1
         except Exception as exc:
+            await self.send_event('scenario_failure',
+                                  scenario=scenario,
+                                  exception=exc)
             if self.args.verbose > 0:
                 self.console.print_error(exc)
                 await self.console.flush()

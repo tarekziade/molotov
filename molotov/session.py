@@ -5,8 +5,7 @@ from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector
 
 from molotov.util import resolve
-from molotov.listeners import StdoutListener, CustomListener
-from molotov.api import get_fixture
+from molotov.listeners import StdoutListener, EventSender
 
 
 _HOST = socket.gethostname()
@@ -49,22 +48,12 @@ class LoggedClientSession(ClientSession):
         self.request_class.session = self
         self.request_class.response_class = LoggedClientResponse
         self.statsd = statsd
-        self.listeners = [StdoutListener(verbose=self.verbose,
-                                         console=self.console)]
-        listeners = get_fixture('events')
-        if listeners is not None:
-            for listener in listeners:
-                self.add_listener(CustomListener(listener))
-
-    def add_listener(self, listener):
-        self.listeners.append(listener)
+        self.eventer = EventSender(console,
+                                   [StdoutListener(verbose=self.verbose,
+                                                   console=self.console)])
 
     async def send_event(self, event, **options):
-        for listener in self.listeners:
-            try:
-                await listener(event, session=self, **options)
-            except Exception as e:
-                self.console.print_error(e)
+        await self.eventer.send_event(event, session=self, **options)
 
     def _dns_lookup(self, url):
         return resolve(url)[0]

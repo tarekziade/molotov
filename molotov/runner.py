@@ -5,6 +5,7 @@ import asyncio
 import os
 
 from molotov.api import get_fixture
+from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
 from molotov.util import cancellable_sleep, stop, is_stopped, set_timer
@@ -29,6 +30,7 @@ class Runner(object):
         self._procs = []
         self._results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
                                        'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
+        self.eventer = EventSender(self.console)
 
     def gather(self, *futures):
         return asyncio.gather(*futures, loop=self.loop, return_exceptions=True)
@@ -84,8 +86,10 @@ class Runner(object):
                             self._procs.remove(job)
                     await cancellable_sleep(args.console_update)
                 await self.console.stop()
+                await self.eventer.stop()
 
             tasks = [self.ensure_future(self.console.display()),
+                     self.ensure_future(self._send_workers_event(1)),
                      self.ensure_future(run(args.quiet, self.console))]
             self.loop.run_until_complete(self.gather(*tasks))
         else:
@@ -137,12 +141,14 @@ class Runner(object):
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
 
-        if self.args.original_pid == os.getpid() and not self.args.quiet:
-            fut = self._display_results(self.args.console_update)
-            update = self.ensure_future(fut)
-            display = self.ensure_future(self.console.display())
-            display = self.gather(update, display)
-            self._tasks.append(display)
+        if self.args.original_pid == os.getpid():
+            self._tasks.append(self.ensure_future(self._send_workers_event(1)))
+            if not self.args.quiet:
+                fut = self._display_results(self.args.console_update)
+                update = self.ensure_future(fut)
+                display = self.ensure_future(self.console.display())
+                display = self.gather(update, display)
+                self._tasks.append(display)
 
         workers = self.gather(*self._runner())
         workers.add_done_callback(lambda fut: stop())
@@ -176,3 +182,9 @@ class Runner(object):
             self.console.print(self.display_results(), end='\r')
             await cancellable_sleep(update_interval)
         await self.console.stop()
+
+    async def _send_workers_event(self, update_interval):
+        while not self.eventer.stopped() and not is_stopped():
+            workers = self._results['WORKER'].value
+            await self.eventer.send_event('current_workers', workers=workers)
+            await cancellable_sleep(update_interval)
