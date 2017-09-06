@@ -492,7 +492,8 @@ class TestRunner(TestLoop):
         async def here_three(session):
             _RES.append(3)
 
-        stdout, stderr = self._test_molotov('-cx', '--max-runs', '1', '-q', '-s',
+        stdout, stderr = self._test_molotov('-cx', '--max-runs', '1', '-s',
+                                            '-q',
                                             'here_three',
                                             'molotov.tests.test_run')
         self.assertEqual(stdout, '')
