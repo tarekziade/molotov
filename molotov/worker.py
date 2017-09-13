@@ -125,9 +125,6 @@ class Worker(object):
         if not self.args.sizing:
             return False
 
-        if self.results['REACHED'] == 1 or is_stopped():
-            return True
-
         if current_time - get_timer() > 60:
             # we need to reset the tolerance counters
             set_timer(current_time)
@@ -145,8 +142,8 @@ class Worker(object):
         current_ratio = float(FAILED) / float(OK) * 100.
         reached = current_ratio > self.args.sizing_tolerance
         if reached:
-            self.results['REACHED'] = 1
-            self.results['RATIO'] = int(current_ratio * 100)
+            self.results['REACHED'].value = 1
+            self.results['RATIO'].value = int(current_ratio * 100)
 
         return reached
 
