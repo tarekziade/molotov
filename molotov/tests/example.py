@@ -1,3 +1,13 @@
+"""
+
+This Molotov script has:
+
+- a global setup fixture that sets a global headers dict
+- an init worker fixture that sets the session headers
+- 3 scenario
+- 2 tear downs fixtures
+
+"""
 import json
 from molotov import scenario, setup, global_setup, global_teardown, teardown
 

@@ -1,3 +1,9 @@
+"""
+
+This Molotov script demonstrates how to hook events.
+
+"""
+
 import molotov
 
 

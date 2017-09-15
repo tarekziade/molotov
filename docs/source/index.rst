@@ -60,11 +60,12 @@ Check out the detailed documentation:
    :maxdepth: 2
 
    installation
+   cli
    fixtures
    helpers
    events
    extending
-   cli
    slave
    docker
    tutorial
+   examples

@@ -1,3 +1,8 @@
+"""
+
+This Molotov script uses events to generate a success/failure output
+
+"""
 import molotov
 import time
 

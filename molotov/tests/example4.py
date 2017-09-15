@@ -1,3 +1,14 @@
+"""
+
+This Molotov script has:
+
+- a global setup fixture that sets variables
+- an init worker fixture that sets the session headers
+- an init session that attachs an object to the current session
+- 1 scenario
+- 2 tear downs fixtures
+
+"""
 import molotov
 
 
