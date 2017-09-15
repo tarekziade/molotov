@@ -13,6 +13,9 @@ Current supported events and their keyword arguments:
 
 - **sending_request**: session, request
 - **response_received**: session, response, request
+- **current_workers**: workers
+- **scenario_success**: scenario
+- **scenario_failure**: scenario, exception
 
 The framework will gradually get more events triggered from
 every step in the load test cycle.
