@@ -281,7 +281,7 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay, [.1, .6] * 2)
+            self.assertEqual(delay, [1, .1, 1, .6, 1, .1, 1, .6, 1])
 
     @dedicatedloop
     def test_rampup(self):
@@ -301,7 +301,7 @@ class TestRunner(TestLoop):
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
             delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
+            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
@@ -341,11 +341,18 @@ class TestRunner(TestLoop):
                 else:
                     counters['OK'] += 1
 
-            stdout, stderr = self._test_molotov('--sizing', '-p', '2',
-                                                '--sizing-tolerance', '5',
-                                                '--console-update', '0',
-                                                '-s', 'sizer',
-                                                'molotov.tests.test_run')
+            with set_args('molotov', '--sizing', '-p', '2',
+                          '--sizing-tolerance', '5',
+                          '--console-update', '0',
+                          '-s', 'sizer',
+                          'molotov.tests.test_run') as (stdout, stderr):
+                try:
+                    main()
+                except SystemExit:
+                    pass
+            stdout, stderr = stdout.read().strip(), stderr.read().strip()
+
+            # stdout, stderr = self._test_molotov()
             ratio = (float(counters['FAILED'].value) /
                      float(counters['OK'].value) * 100.)
             self.assertTrue(ratio >= 5., ratio)

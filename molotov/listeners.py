@@ -1,5 +1,6 @@
 import io
 
+from molotov.api import get_fixture
 
 _UNREADABLE = "***WARNING: Molotov can't display this body***"
 _BINARY = "**** Binary content ****"
@@ -87,3 +88,33 @@ class CustomListener(object):
 
     async def __call__(self, event, **options):
         await self.fixture(event, **options)
+
+
+class EventSender(object):
+    def __init__(self, console, listeners=None):
+        self.console = console
+        if listeners is None:
+            listeners = []
+        self._listeners = listeners
+        self._stopped = False
+
+        fixture_listeners = get_fixture('events')
+        if fixture_listeners is not None:
+            for listener in fixture_listeners:
+                self.add_listener(CustomListener(listener))
+
+    def add_listener(self, listener):
+        self._listeners.append(listener)
+
+    async def stop(self):
+        self._stopped = True
+
+    def stopped(self):
+        return self._stopped
+
+    async def send_event(self, event, **options):
+        for listener in self._listeners:
+            try:
+                await listener(event, **options)
+            except Exception as e:
+                self.console.print_error(e)

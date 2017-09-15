@@ -15,26 +15,6 @@ class TestLoggedClientSession(TestLoop):
         return molotov.session.LoggedClientSession(*args, **kw)
 
     @async_test
-    async def test_add_buggy_listener(self, loop, console, results):
-        class MyListener(BaseListener):
-            def on_response_received(self, **options):
-                raise Exception("Bam")
-
-        l = MyListener()
-        async with self._get_session(loop, console,
-                                     verbose=2) as session:
-            session.add_listener(l)
-            request = Request()
-            binary_body = b''
-            response = Response(body=binary_body)
-            await session.send_event('response_received',
-                                     response=response,
-                                     request=request)
-
-        resp = await serialize(console)
-        self.assertTrue("Bam" in resp)
-
-    @async_test
     async def test_add_listener(self, loop, console, results):
         class MyListener(BaseListener):
             def __init__(self):
@@ -46,7 +26,7 @@ class TestLoggedClientSession(TestLoop):
         l = MyListener()
         async with self._get_session(loop, console,
                                      verbose=2) as session:
-            session.add_listener(l)
+            session.eventer.add_listener(l)
             request = Request()
             binary_body = b''
             response = Response(body=binary_body)
