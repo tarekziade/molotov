@@ -162,6 +162,8 @@ class Worker(object):
         if scenario is None:
             scenario = pick_scenario(self.wid, step_id)
         try:
+            await self.send_event('scenario_start', scenario=scenario)
+
             await scenario['func'](session, *scenario['args'],
                                    **scenario['kw'])
 
