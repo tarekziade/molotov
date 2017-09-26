@@ -1,2 +1,2 @@
-aiohttp
-aiomeasures
+aiohttp==2.2.5
+aiomeasures==0.5.14
