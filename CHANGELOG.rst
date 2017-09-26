@@ -1,10 +1,19 @@
 CHANGELOG
 =========
 
-1.4 - XXX
----------
+1.4 - 2017-09-26
+----------------
 
-XXX
+- statsd: moved from aiostatsd to aiomeasures
+- Added --sizing and --sizing-tolerance (#72)
+- Refactored shared counters
+- Implemented a shared console (#42)
+- Improved shutdown process (#67)
+- Refactored fmwk.py (#25)
+- Add a way to record requests and responses (#80)
+- added --use-extension
+- added events
+- published tests/examples*.py to the docs (#90)
 
 
 1.3 - 2017-07-28
