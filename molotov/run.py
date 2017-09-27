@@ -94,9 +94,10 @@ def _parser():
     return parser
 
 
-def main():
-    parser = _parser()
-    args = parser.parse_args()
+def main(args=None):
+    if args is None:
+        parser = _parser()
+        args = parser.parse_args()
 
     if args.version:
         print(__version__)

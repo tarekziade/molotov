@@ -9,7 +9,7 @@ import site
 import pkg_resources
 
 from molotov import __version__
-from molotov.run import run, _parser
+from molotov.run import main as run, _parser
 
 
 def clone_repo(github):
