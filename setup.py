@@ -1,6 +1,11 @@
+import sys
 from setuptools import setup, find_packages
-from molotov import __version__
 
+PY = sys.version_info
+if not (PY[0] == 3 and PY[1] >= 5):
+    raise ValueError("Requires Python 3.5 or superior")
+
+from molotov import __version__     # NOQA
 
 install_requires = ['aiohttp', 'aiomeasures']
 description = ''
