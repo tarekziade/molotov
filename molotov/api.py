@@ -37,7 +37,7 @@ def scenario(weight=1, delay=0.0, name=None):
     - **name** name of the scenario. If not provided, will use the
       function __name___ attribute.
 
-    The decorated function receives an :class:`aoihttp.ClienSession` instance.
+    The decorated function receives an :class:`aoihttp.ClientSession` instance.
     """
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
@@ -184,7 +184,7 @@ def setup_session():
     Arguments received by the decorated function:
 
     - **worker_id** the worker number
-    - **session** the :class:`aoihttp.ClienSession` instance created
+    - **session** the :class:`aoihttp.ClientSession` instance created
 
     The function can attach extra attributes to the session and use
     **session.loop** if needed.
@@ -204,7 +204,7 @@ def teardown_session():
     Arguments received by the decorated function:
 
     - **worker_id** the worker number
-    - **session** the :class:`aoihttp.ClienSession` instance
+    - **session** the :class:`aoihttp.ClientSession` instance
 
     *The decorated function should be a coroutine.*
     """
