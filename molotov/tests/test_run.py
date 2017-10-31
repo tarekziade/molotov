@@ -358,6 +358,52 @@ class TestRunner(TestLoop):
             self.assertTrue(ratio >= 5., ratio)
 
     @dedicatedloop
+    def test_statsd_multiprocess(self):
+        test_loop = asyncio.get_event_loop()
+        test_loop.set_debug(True)
+        test_loop._close = test_loop.close
+        test_loop.close = lambda: None
+
+        @scenario()
+        async def staty(session):
+            session.statsd.incr('yopla')
+
+        server = UDPServer('127.0.0.1', 9999, loop=test_loop)
+        _stop = asyncio.Future()
+
+        async def stop():
+            await _stop
+            await server.stop()
+
+        server_task = asyncio.ensure_future(server.run())
+        stop_task = asyncio.ensure_future(stop())
+        args = self._get_args()
+        args.verbose = 2
+        args.processes = 2
+        args.max_runs = 5
+        args.statsd = True
+        args.statsd_address = 'udp://127.0.0.1:9999'
+        args.single_mode = 'staty'
+        args.scenario = 'molotov.tests.test_run'
+
+        run(args)
+
+        _stop.set_result(True)
+        test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
+        udp = server.flush()
+
+        incrs = 0
+        for line in udp:
+            for el in line.split(b'\n'):
+                if el.strip() == b'':
+                    continue
+                incrs += 1
+
+        # two processes making 5 run each
+        self.assertEqual(incrs, 10)
+        test_loop._close()
+
+    @dedicatedloop
     def test_timed_sizing(self):
         _RES2['fail'] = 0
         _RES2['succ'] = 0

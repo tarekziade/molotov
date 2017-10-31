@@ -21,16 +21,21 @@ class Runner(object):
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
-        if self.args.statsd:
-            self.statsd = get_statsd_client(args.statsd_address,
-                                            loop=self.loop)
-        else:
-            self.statsd = None
+        # the stastd client gets initialized after we fork
+        # processes in case -p was used
+        self.statsd = None
         self._tasks = []
         self._procs = []
         self._results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
                                        'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
         self.eventer = EventSender(self.console)
+
+    def _set_statsd(self):
+        if self.args.statsd:
+            self.statsd = get_statsd_client(self.args.statsd_address,
+                                            loop=self.loop)
+        else:
+            self.statsd = None
 
     def gather(self, *futures):
         return asyncio.gather(*futures, loop=self.loop, return_exceptions=True)
@@ -140,6 +145,8 @@ class Runner(object):
         if self.args.debug:
             self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
             self.loop.set_debug(True)
+
+        self._set_statsd()
 
         if self.args.original_pid == os.getpid():
             self._tasks.append(self.ensure_future(self._send_workers_event(1)))
