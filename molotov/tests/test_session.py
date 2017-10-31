@@ -23,10 +23,10 @@ class TestLoggedClientSession(TestLoop):
             def on_response_received(self, **options):
                 self.responses.append(options['response'])
 
-        l = MyListener()
+        lis = MyListener()
         async with self._get_session(loop, console,
                                      verbose=2) as session:
-            session.eventer.add_listener(l)
+            session.eventer.add_listener(lis)
             request = Request()
             binary_body = b''
             response = Response(body=binary_body)
@@ -35,7 +35,7 @@ class TestLoggedClientSession(TestLoop):
                                      request=request)
 
         await serialize(console)
-        self.assertEqual(l.responses, [response])
+        self.assertEqual(lis.responses, [response])
 
     @async_test
     async def test_empty_response(self, loop, console, results):
