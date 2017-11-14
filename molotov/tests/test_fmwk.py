@@ -3,6 +3,7 @@ import signal
 from molotov.session import LoggedClientSession
 from molotov.runner import Runner
 from molotov.worker import Worker
+from molotov.util import json_request, request
 from molotov.api import (scenario, setup, global_setup, teardown,
                          global_teardown, setup_session, teardown_session,
                          scenario_picker, events)
@@ -215,6 +216,43 @@ class TestFmwk(TestLoop):
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)
         self.assertEqual(len(res), 1)
+
+    @async_test
+    async def test_setup_session_failure(self, loop, console, results):
+
+        @setup_session()
+        async def _setup_session(wid, session):
+            json_request("http://NOPE")
+
+        @scenario(weight=100)
+        async def test_working(session):
+            pass
+
+        args = self.get_args(console=console)
+        w = self.get_worker(console, results, loop=loop, args=args)
+
+        await w.run()
+        output = await serialize(console)
+        self.assertTrue("Cannot connect to host nope" in output)
+
+    @async_test
+    async def test_setup_session_fresh_loop(self, loop, console, results):
+        content = []
+
+        @setup_session()
+        async def _setup_session(wid, session):
+            with coserver():
+                html = str(request("http://localhost:8888"))
+                content.append(html)
+
+        @scenario(weight=100)
+        async def test_working(session):
+            pass
+
+        args = self.get_args(console=console)
+        w = self.get_worker(console, results, loop=loop, args=args)
+        await w.run()
+        self.assertTrue("Directory listing" in content[0])
 
     @async_test
     async def test_failure(self, loop, console, results):

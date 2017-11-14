@@ -80,7 +80,12 @@ class Worker(object):
             session.worker_id = self.wid
 
             if ssetup is not None:
-                await ssetup(self.wid, session)
+                try:
+                    await ssetup(self.wid, session)
+                except Exception as e:
+                    self.console.print_error(e)
+                    stop()
+                    return
 
             while (howlong < duration and not is_stopped() and
                    not self.results['REACHED'] == 1):

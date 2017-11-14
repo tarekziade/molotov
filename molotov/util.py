@@ -7,6 +7,7 @@ import socket
 import os
 import asyncio
 import time
+import threading
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
 from aiohttp import ClientSession
@@ -130,15 +131,29 @@ def expand_options(config, scenario, args):
     _expand_args(args, config['molotov']['tests'][scenario])
 
 
-def _run_in_fresh_loop(coro):
-    loop = asyncio.new_event_loop()
-    res = None
-    try:
-        task = loop.create_task(coro(loop=loop))
-        res = loop.run_until_complete(task)
-    finally:
-        loop.close()
-    return res
+def _run_in_fresh_loop(coro, timeout=30):
+    thres = []
+    thexc = []
+
+    def run():
+        loop = asyncio.new_event_loop()
+        try:
+            task = loop.create_task(coro(loop=loop))
+            thres.append(loop.run_until_complete(task))
+        except Exception as e:
+            thexc.append(e)
+        finally:
+            loop.close()
+
+    th = threading.Thread(target=run)
+    th.start()
+    th.join(timeout=timeout)
+
+    # re-raise a thread exception
+    if len(thexc) > 0:
+        raise thexc[0]
+
+    return thres[0]
 
 
 async def _request(endpoint, verb='GET', session_options=None,
