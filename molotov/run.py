@@ -74,6 +74,9 @@ def _parser():
                         default=False,
                         help='Stop on first failure.')
 
+    parser.add_argument('-f', '--fail', type=int, default=None,
+                        help='Number of failures required to fail')
+
     parser.add_argument('-c', '--console', action='store_true',
                         default=True,
                         help='Use simple console for feedback')
@@ -222,3 +225,5 @@ def run(args):
         else:
             print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
         print('*** Bye ***')
+        if args.fail is not None and res['FAILED'] >= args.fail:
+            sys.exit(1)

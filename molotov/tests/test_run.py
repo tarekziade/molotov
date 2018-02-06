@@ -122,44 +122,47 @@ class TestRunner(TestLoop):
             main()
 
     def _test_molotov(self, *args):
+        rc = None
         with set_args('molotov', *args) as (stdout, stderr):
             try:
                 main()
-            except SystemExit:
-                pass
-        return stdout.read().strip(), stderr.read().strip()
+            except SystemExit as e:
+                rc = e.code
+        return stdout.read().strip(), stderr.read().strip(), rc
 
     @dedicatedloop
     def test_version(self):
-        stdout, stderr = self._test_molotov('--version')
+        stdout, stderr, rc = self._test_molotov('--version')
         self.assertEqual(stdout, __version__)
 
     @dedicatedloop
     def test_empty_scenario(self):
-        stdout, stderr = self._test_molotov('')
+        stdout, stderr, rc = self._test_molotov('')
         self.assertTrue('Cannot import' in stdout)
 
     @dedicatedloop
     def test_no_scenario(self):
-        stdout, stderr = self._test_molotov()
+        stdout, stderr, rc = self._test_molotov()
         self.assertTrue('Cannot import' in stdout)
 
     @dedicatedloop
     def test_config_no_scenario(self):
-        stdout, stderr = self._test_molotov('-c', '--config', _CONFIG,
-                                            'DONTEXIST')
+        stdout, stderr, rc = self._test_molotov('-c', '--config', _CONFIG,
+                                                'DONTEXIST')
         wanted = "Can't find 'DONTEXIST' in the config"
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
     def test_config_verbose_quiet(self):
-        stdout, stderr = self._test_molotov('-qv', '--config', _CONFIG)
+        stdout, stderr, rc = self._test_molotov(
+            '-qv', '--config', _CONFIG)
         wanted = "You can't"
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
     def test_config_no_scenario_found(self):
-        stdout, stderr = self._test_molotov('-c', 'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov(
+            '-c', 'molotov.tests.test_run')
         wanted = "No scenario was found"
         self.assertTrue(wanted in stdout)
 
@@ -170,8 +173,8 @@ class TestRunner(TestLoop):
         async def not_me(session):
             _RES.append(3)
 
-        stdout, stderr = self._test_molotov('-c', '-s', 'blah',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('-c', '-s', 'blah',
+                                                'molotov.tests.test_run')
         wanted = "Can't find"
         self.assertTrue(wanted in stdout)
 
@@ -186,9 +189,8 @@ class TestRunner(TestLoop):
         async def here_four(session):
             _RES.append(4)
 
-        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
-                                            'me',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                                'me', 'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
         self.assertTrue(_RES, [4, 4])
@@ -200,11 +202,37 @@ class TestRunner(TestLoop):
         async def here_three(session):
             _RES.append(3)
 
-        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
-                                            'here_three',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                                'here_three',
+                                                'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
+
+    @dedicatedloop
+    def test_fail_mode_pass(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            _RES.append(3)
+
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2',
+                                                '--fail', '1', 'here_three',
+                                                'molotov.tests.test_run')
+        wanted = "SUCCESSES: 2"
+        self.assertTrue(wanted in stdout)
+        self.assertEqual(rc, 0)
+
+    @dedicatedloop
+    def test_fail_mode_fail(self):
+
+        @scenario(weight=10)
+        async def here_three(session):
+            assert False
+
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2',
+                                                '--fail', '1', 'here_three',
+                                                'molotov.tests.test_run')
+        self.assertEqual(rc, 1)
 
     @only_pypy
     @dedicatedloop
@@ -222,10 +250,10 @@ class TestRunner(TestLoop):
             return orig_import(name, *args)
 
         with patch('builtins.__import__', side_effect=import_mock):
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '2',
-                                                '-s',
-                                                'here_three', '--uvloop',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2',
+                                                    '-s',
+                                                    'here_three', '--uvloop',
+                                                    'molotov.tests.test_run')
         wanted = "You can't use uvloop"
         self.assertTrue(wanted in stdout)
 
@@ -245,11 +273,11 @@ class TestRunner(TestLoop):
             return orig_import(name, *args)
 
         with patch('builtins.__import__', side_effect=import_mock):
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '2',
-                                                '--console-update', '0',
-                                                '-s',
-                                                'here_three', '--uvloop',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2',
+                                                    '--console-update', '0',
+                                                    '-s',
+                                                    'here_three', '--uvloop',
+                                                    'molotov.tests.test_run')
         wanted = "You need to install uvloop"
         self.assertTrue(wanted in stdout)
 
@@ -261,9 +289,9 @@ class TestRunner(TestLoop):
         async def here_three(session):
             _RES.append(3)
 
-        stdout, stderr = self._test_molotov('-cx', '--max-runs', '2', '-s',
-                                            'here_three', '--uvloop',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '2', '-s',
+                                                'here_three', '--uvloop',
+                                                'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout, stdout)
 
@@ -274,11 +302,11 @@ class TestRunner(TestLoop):
             async def here_three(session):
                 _RES.append(3)
 
-            stdout, stderr = self._test_molotov('--delay', '.6',
-                                                '--console-update', '0',
-                                                '-cx', '--max-runs', '2', '-s',
-                                                'here_three',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('--delay', '.6',
+                                                    '--console-update', '0',
+                                                    '-cx', '--max-runs', '2',
+                                                    '-s', 'here_three',
+                                                    'molotov.tests.test_run')
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout, stdout)
             self.assertEqual(delay, [1, .1, 1, .6, 1, .1, 1, .6, 1])
@@ -290,12 +318,12 @@ class TestRunner(TestLoop):
             async def here_three(session):
                 _RES.append(3)
 
-            stdout, stderr = self._test_molotov('--ramp-up', '10',
-                                                '--workers', '5',
-                                                '--console-update', '0',
-                                                '-cx', '--max-runs', '2', '-s',
-                                                'here_three',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('--ramp-up', '10',
+                                                    '--workers', '5',
+                                                    '--console-update', '0',
+                                                    '-cx', '--max-runs', '2',
+                                                    '-s', 'here_three',
+                                                    'molotov.tests.test_run')
             # workers should start every 2 seconds since
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
@@ -319,11 +347,11 @@ class TestRunner(TestLoop):
                 else:
                     _RES2['succ'] += 1
 
-            stdout, stderr = self._test_molotov('--sizing',
-                                                '--console-update', '0',
-                                                '--sizing-tolerance', '5',
-                                                '-s', 'sizer',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('--sizing',
+                                                    '--console-update', '0',
+                                                    '--sizing-tolerance', '5',
+                                                    '-s', 'sizer',
+                                                    'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
             self.assertTrue(ratio < 15. and ratio >= 5., ratio)
@@ -352,7 +380,7 @@ class TestRunner(TestLoop):
                     pass
             stdout, stderr = stdout.read().strip(), stderr.read().strip()
 
-            # stdout, stderr = self._test_molotov()
+            # stdout, stderr, rc = self._test_molotov()
             ratio = (float(counters['FAILED'].value) /
                      float(counters['OK'].value) * 100.)
             self.assertTrue(ratio >= 5., ratio)
@@ -434,11 +462,11 @@ class TestRunner(TestLoop):
                 # forces a switch
                 await asyncio.sleep(0)
 
-            stdout, stderr = self._test_molotov('--sizing',
-                                                '--sizing-tolerance', '5',
-                                                '--console-update', '0',
-                                                '-cs', 'sizer',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('--sizing',
+                                                    '--sizing-tolerance', '5',
+                                                    '--console-update', '0',
+                                                    '-cs', 'sizer',
+                                                    'molotov.tests.test_run')
 
             ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
             self.assertTrue(ratio < 20. and ratio > 5., ratio)
@@ -461,11 +489,11 @@ class TestRunner(TestLoop):
             os.kill(os.getpid(), signal.SIGINT)
 
         asyncio.ensure_future(_stop())
-        stdout, stderr = self._test_molotov('--sizing', '-p', '3',
-                                            '--sizing-tolerance', '90',
-                                            '--console-update', '0',
-                                            '-s', 'sizer',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('--sizing', '-p', '3',
+                                                '--sizing-tolerance', '90',
+                                                '--console-update', '0',
+                                                '-s', 'sizer',
+                                                'molotov.tests.test_run')
         self.assertTrue("Sizing was not finished" in stdout)
 
     @dedicatedloop
@@ -478,11 +506,11 @@ class TestRunner(TestLoop):
                 assert resp.status == 200
 
         with coserver():
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
-                                                '--use-extension=' + ext,
-                                                '-s',
-                                                'simpletest',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '1',
+                                                    '--use-extension=' + ext,
+                                                    '-s',
+                                                    'simpletest',
+                                                    'molotov.tests.test_run')
         self.assertTrue("=>" in stdout)
         self.assertTrue("<=" in stdout)
 
@@ -496,11 +524,11 @@ class TestRunner(TestLoop):
                 assert resp.status == 200
 
         with coserver():
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
-                                                '--use-extension=' + ext,
-                                                '-s',
-                                                'simpletest',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '1',
+                                                    '--use-extension=' + ext,
+                                                    '-s',
+                                                    'simpletest',
+                                                    'molotov.tests.test_run')
         self.assertTrue("Cannot import" in stdout)
 
     @dedicatedloop
@@ -513,11 +541,10 @@ class TestRunner(TestLoop):
                 assert resp.status == 200
 
         with coserver():
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
-                                                '--use-extension=' + ext,
-                                                '-s',
-                                                'simpletest',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '1',
+                                                    '--use-extension=' + ext,
+                                                    '-s', 'simpletest',
+                                                    'molotov.tests.test_run')
         self.assertTrue("=>" in stdout)
         self.assertTrue("<=" in stdout)
 
@@ -531,11 +558,10 @@ class TestRunner(TestLoop):
                 assert resp.status == 200
 
         with coserver():
-            stdout, stderr = self._test_molotov('-cx', '--max-runs', '1',
-                                                '--use-extension=' + ext,
-                                                '-s',
-                                                'simpletest',
-                                                'molotov.tests.test_run')
+            stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '1',
+                                                    '--use-extension=' + ext,
+                                                    '-s', 'simpletest',
+                                                    'molotov.tests.test_run')
         self.assertTrue("Cannot import" in stdout)
 
     @dedicatedloop
@@ -545,9 +571,8 @@ class TestRunner(TestLoop):
         async def here_three(session):
             _RES.append(3)
 
-        stdout, stderr = self._test_molotov('-cx', '--max-runs', '1', '-q',
-                                            '-s',
-                                            'here_three',
-                                            'molotov.tests.test_run')
+        stdout, stderr, rc = self._test_molotov('-cx', '--max-runs', '1', '-q',
+                                                '-s', 'here_three',
+                                                'molotov.tests.test_run')
         self.assertEqual(stdout, '')
         self.assertEqual(stderr, '')
