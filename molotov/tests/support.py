@@ -190,6 +190,7 @@ class TestLoop(unittest.TestCase):
         args.sizing_tolerance = .0
         args.console_update = 0
         args.use_extension = []
+        args.fail = None
 
         if console is None:
             console = SharedConsole(interval=0)
