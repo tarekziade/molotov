@@ -145,6 +145,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         args.console = console
         args.verbose = 1
+        args.max_runs = 3
         results = Runner(args)()
         self.assertTrue(results['OK'] > 0)
         self.assertEqual(results['FAILED'], 0)

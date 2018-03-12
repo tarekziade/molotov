@@ -1,3 +1,4 @@
+import time
 import random
 import os
 import signal
@@ -206,7 +207,7 @@ class TestRunner(TestLoop):
                                                 'here_three',
                                                 'molotov.tests.test_run')
         wanted = "SUCCESSES: 2"
-        self.assertTrue(wanted in stdout)
+        self.assertTrue(wanted in stdout, stdout)
 
     @dedicatedloop
     def test_fail_mode_pass(self):
@@ -299,7 +300,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_delay(self):
-        with catch_sleep() as delay:
+        with catch_sleep(exceptions=[0.5]) as delay:
             @scenario(weight=10, delay=.1)
             async def here_three(session):
                 _RES.append(3)
@@ -308,14 +309,16 @@ class TestRunner(TestLoop):
                                                     '--console-update', '0',
                                                     '-cx', '--max-runs', '2',
                                                     '-s', 'here_three',
+                                                    '--event-update-interval',
+                                                    '0',
                                                     'molotov.tests.test_run')
-            wanted = "SUCCESSES: 2"
-            self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay, [1, .1, 1, .6, 1, .1, 1, .6, 1])
+        wanted = "SUCCESSES: 2"
+        self.assertTrue(wanted in stdout, stdout)
+        self.assertEqual(delay, [.1, .6, .1, .6])
 
     @dedicatedloop
     def test_rampup(self):
-        with catch_sleep() as delay:
+        with catch_sleep(exceptions=[0.5]) as delay:
             @scenario(weight=10)
             async def here_three(session):
                 _RES.append(3)
@@ -323,6 +326,8 @@ class TestRunner(TestLoop):
             stdout, stderr, rc = self._test_molotov('--ramp-up', '10',
                                                     '--workers', '5',
                                                     '--console-update', '0',
+                                                    '--event-update-interval',
+                                                    '0',
                                                     '-cx', '--max-runs', '2',
                                                     '-s', 'here_three',
                                                     'molotov.tests.test_run')
@@ -331,7 +336,7 @@ class TestRunner(TestLoop):
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
             delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1])
+            self.assertEqual(delay, [2.0, 4.0, 6.0, 8.0])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
@@ -578,3 +583,22 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
         self.assertEqual(stdout, '')
         self.assertEqual(stderr, '')
+
+    @dedicatedloop
+    def test_duration_limit(self):
+
+        @scenario(weight=10)
+        async def here_d(session):
+            async with session.get('http://localhost:8888/slow') as resp:
+                await resp.text()
+                assert resp.status == 200
+
+        # we want the test to last 2 seconds even if some queries
+        # are not finished.
+        start = time.time()
+        with coserver():
+            stdout, stderr, rc = self._test_molotov('--duration', '2',
+                                                    '-s', 'here_d',
+                                                    'molotov.tests.test_run')
+        end = time.time() - start
+        self.assertTrue(end < 4, end)

@@ -24,6 +24,8 @@ class Worker(object):
         self.args = args
         self.statsd = statsd
         self.delay = delay
+        self.step_start = self.worker_start = 0
+        self.count = 0
         self.eventer = EventSender(console)
 
     async def send_event(self, event, **options):
@@ -42,8 +44,32 @@ class Worker(object):
             self.results['WORKER'] -= 1
         return res
 
+    def _may_run(self):
+        # we stop if the flag is set, or if..
+        if is_stopped():
+            return False
+        # ..we reached the maximum number of runs
+        if self.args.max_runs and self.count > self.args.max_runs:
+            return False
+        # ..we reach the maximum duration
+        if _now() - self.worker_start > self.args.duration:
+            return False
+        # the REACHED flag is set
+        return not self.results['REACHED'] == 1
+
+    async def check_session_duration(self, session):
+        # will force-close the session socket when the duration is over
+        # and end the test
+        while self._may_run():
+            if time.time() - self.worker_start > self.args.duration:
+                if session.connector:
+                    session.connector.close()
+                stop()
+                break
+            else:
+                await cancellable_sleep(0.5)
+
     async def _run(self):
-        duration = self.args.duration
         verbose = self.args.verbose
         exception = self.args.exception
 
@@ -51,9 +77,8 @@ class Worker(object):
             single = get_scenario(self.args.single_mode)
         else:
             single = None
-        count = 1
-        start = _now()
-        howlong = 0
+        self.count = 1
+        self.worker_start = _now()
         setup = get_fixture('setup')
         if setup is not None:
             try:
@@ -74,6 +99,8 @@ class Worker(object):
         ssetup = get_fixture('setup_session')
         steardown = get_fixture('teardown_session')
 
+        # creating a ClientSession instance that will be used in
+        # this worker
         async with Session(self.loop, self.console, verbose, self.statsd,
                            **options) as session:
             session.args = self.args
@@ -87,14 +114,18 @@ class Worker(object):
                     stop()
                     return
 
-            while (howlong < duration and not is_stopped() and
-                   not self.results['REACHED'] == 1):
-                if self.args.max_runs and count > self.args.max_runs:
-                    break
-                current_time = _now()
-                howlong = current_time - start
-                session.step = count
-                result = await self.step(count, session, scenario=single)
+            # will force-close the session socket when the duration is over
+            ender = asyncio.ensure_future(self.check_session_duration(session))
+
+            # let's run some tests until the worker is stopped or has ended
+            while self._may_run():
+                self.step_start = _now()
+                session.step = self.count
+
+                # trigger one test
+                result = await self.step(self.count, session, scenario=single)
+
+                # store the result
                 if result == 1:
                     self.results['OK'] += 1
                     self.results['MINUTE_OK'] += 1
@@ -104,17 +135,21 @@ class Worker(object):
                     if exception:
                         stop()
 
-                if not is_stopped() and self._reached_tolerance(current_time):
+                if (not is_stopped()
+                        and self._reached_tolerance(self.step_start)):
                     stop()
                     cancellable_sleep.cancel_all()
                     break
 
-                count += 1
-                if self.args.delay > 0.:
-                    await cancellable_sleep(self.args.delay)
-                else:
-                    # forces a context switch
-                    await asyncio.sleep(0)
+                # increment the counter and get ready for the next run
+                self.count += 1
+
+                # may wait until we run the next one
+                # when delay is 0, it's still useful as it forces a
+                # context switch
+                await cancellable_sleep(self.args.delay)
+
+            await ender
 
             if steardown is not None:
                 try:
@@ -135,7 +170,6 @@ class Worker(object):
     def _reached_tolerance(self, current_time):
         if not self.args.sizing:
             return False
-
         if current_time - get_timer() > 60:
             # we need to reset the tolerance counters
             set_timer(current_time)
@@ -168,10 +202,8 @@ class Worker(object):
             scenario = pick_scenario(self.wid, step_id)
         try:
             await self.send_event('scenario_start', scenario=scenario)
-
             await scenario['func'](session, *scenario['args'],
                                    **scenario['kw'])
-
             await self.send_event('scenario_success', scenario=scenario)
 
             if scenario['delay'] > 0.:
