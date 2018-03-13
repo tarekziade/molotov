@@ -94,9 +94,6 @@ def _parser():
                         help='Imports a module containing Molotov extensions',
                         default=None, type=str, nargs='+')
 
-    parser.add_argument('--event-update-interval',
-                        help="update interval for sending events around",
-                        type=int, default=1)
     return parser
 
 

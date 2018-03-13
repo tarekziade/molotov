@@ -55,11 +55,6 @@ class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
             self.send_header('Location', '/')
             self.end_headers()
             return
-        if self.path == "/slow":
-            time.sleep(10.)
-            self.send_response(200)
-            self.end_headers()
-            return
         return super(HandlerRedirect, self).do_GET()
 
 
@@ -196,7 +191,6 @@ class TestLoop(unittest.TestCase):
         args.console_update = 0
         args.use_extension = []
         args.fail = None
-        args.event_update_interval = 0
 
         if console is None:
             console = SharedConsole(interval=0)
@@ -271,21 +265,16 @@ def set_args(*args):
 
 
 @contextmanager
-def catch_sleep(calls=None, exceptions=None):
+def catch_sleep(calls=None):
     original = asyncio.sleep
     if calls is None:
         calls = []
-    if exceptions is None:
-        exceptions = []
 
     async def _slept(delay, result=None, *, loop=None):
+        if delay != 0:
+            calls.append(delay)
         # forces a context switch
-        if delay not in exceptions:
-            await original(0)
-            if delay > 0:
-                calls.append(delay)
-        else:
-            await original(delay)
+        await original(0)
 
     with patch('asyncio.sleep', _slept):
         yield calls

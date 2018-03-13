@@ -29,7 +29,6 @@ class Runner(object):
         self._results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
                                        'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
         self.eventer = EventSender(self.console)
-        self.event_update_interval = args.event_update_interval
 
     def _set_statsd(self):
         if self.args.statsd:
@@ -95,7 +94,7 @@ class Runner(object):
                 await self.eventer.stop()
 
             tasks = [self.ensure_future(self.console.display()),
-                     self.ensure_future(self._send_workers_event()),
+                     self.ensure_future(self._send_workers_event(1)),
                      self.ensure_future(run(args.quiet, self.console))]
             self.loop.run_until_complete(self.gather(*tasks))
         else:
@@ -150,7 +149,7 @@ class Runner(object):
         self._set_statsd()
 
         if self.args.original_pid == os.getpid():
-            self._tasks.append(self.ensure_future(self._send_workers_event()))
+            self._tasks.append(self.ensure_future(self._send_workers_event(1)))
             if not self.args.quiet:
                 fut = self._display_results(self.args.console_update)
                 update = self.ensure_future(fut)
@@ -191,8 +190,8 @@ class Runner(object):
             await cancellable_sleep(update_interval)
         await self.console.stop()
 
-    async def _send_workers_event(self):
+    async def _send_workers_event(self, update_interval):
         while not self.eventer.stopped() and not is_stopped():
             workers = self._results['WORKER'].value
             await self.eventer.send_event('current_workers', workers=workers)
-            await cancellable_sleep(self.event_update_interval)
+            await cancellable_sleep(update_interval)
