@@ -143,7 +143,7 @@ class Runner(object):
                 cancelled = object()
                 res = await cancellable_sleep(self.args.duration,
                                               result=cancelled)
-                if res == cancelled or (res and not res.canceled()):
+                if res is cancelled or (res and not res.canceled()):
                     self._shutdown(None, None)
             _duration_killer = self.ensure_future(_duration_killer())
         else:
