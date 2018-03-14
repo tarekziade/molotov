@@ -225,8 +225,6 @@ def run(args):
             if res['REACHED'] == 1:
                 print(_SIZING % res)
             else:
-                print(str(args))
-                print(str(res))
                 print('Sizing was not finished. (interrupted)')
         else:
             print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)
