@@ -94,6 +94,10 @@ def _parser():
                         help='Imports a module containing Molotov extensions',
                         default=None, type=str, nargs='+')
 
+    parser.add_argument('--graceful-shutdown',
+                        help='Wait for pending workers to finish',
+                        default=False, action='store_true')
+
     return parser
 
 
@@ -221,6 +225,8 @@ def run(args):
             if res['REACHED'] == 1:
                 print(_SIZING % res)
             else:
+                print(str(args))
+                print(str(res))
                 print('Sizing was not finished. (interrupted)')
         else:
             print('SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r' % res)

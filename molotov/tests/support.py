@@ -55,6 +55,11 @@ class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
             self.send_header('Location', '/')
             self.end_headers()
             return
+        if self.path == "/slow":
+            time.sleep(5)
+            self.send_response(200)
+            self.end_headers()
+            return
         return super(HandlerRedirect, self).do_GET()
 
 
@@ -173,10 +178,11 @@ class TestLoop(unittest.TestCase):
 
     def get_args(self, console=None):
         args = namedtuple('args', 'verbose quiet duration exception')
+        args.graceful_shutdown = False
         args.ramp_up = .0
         args.verbose = 1
         args.quiet = False
-        args.duration = 1
+        args.duration = 5
         args.exception = True
         args.processes = 1
         args.debug = True
@@ -237,6 +243,23 @@ def dedicatedloop(func):
     return _loop
 
 
+def dedicatedloop_noclose(func):
+    @functools.wraps(func)
+    def _loop(*args, **kw):
+        old_loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        loop.set_debug(True)
+        loop._close = loop.close
+        loop.close = lambda: None
+        asyncio.set_event_loop(loop)
+        try:
+            return func(*args, **kw)
+        finally:
+            loop._close()
+            asyncio.set_event_loop(old_loop)
+    return _loop
+
+
 @contextmanager
 def catch_output():
     oldout, olderr = sys.stdout, sys.stderr
@@ -271,7 +294,8 @@ def catch_sleep(calls=None):
         calls = []
 
     async def _slept(delay, result=None, *, loop=None):
-        if delay != 0:
+        # 86400 is the duration timer
+        if delay not in (0, 86400):
             calls.append(delay)
         # forces a context switch
         await original(0)

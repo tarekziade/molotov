@@ -136,6 +136,19 @@ class Runner(object):
 
     def _process(self):
         set_timer()
+
+        # coroutine that will kill everything when duration is up
+        if self.args.duration and not self.args.graceful_shutdown:
+            async def _duration_killer():
+                cancelled = object()
+                res = await cancellable_sleep(self.args.duration,
+                                              result=cancelled)
+                if res == cancelled or (res and not res.canceled()):
+                    self._shutdown(None, None)
+            _duration_killer = self.ensure_future(_duration_killer())
+        else:
+            _duration_killer = None
+
         if self.args.processes > 1:
             signal.signal(signal.SIGINT, self._shutdown)
             signal.signal(signal.SIGTERM, self._shutdown)
@@ -158,7 +171,13 @@ class Runner(object):
                 self._tasks.append(display)
 
         workers = self.gather(*self._runner())
-        workers.add_done_callback(lambda fut: stop())
+
+        def _stop(cb):
+            if _duration_killer is not None:
+                _duration_killer.cancel()
+            stop()
+
+        workers.add_done_callback(_stop)
         self._tasks.append(workers)
 
         try:
@@ -167,6 +186,7 @@ class Runner(object):
             self._kill_tasks()
             if self.statsd is not None:
                 self.statsd.close()
+            self.loop.run_until_complete(self.ensure_future(asyncio.sleep(0)))
             self.loop.close()
 
     def _kill_tasks(self):

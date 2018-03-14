@@ -1,3 +1,4 @@
+import time
 import random
 import os
 import signal
@@ -6,7 +7,8 @@ from unittest.mock import patch
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import (TestLoop, coserver, dedicatedloop, set_args,
-                                   skip_pypy, only_pypy, catch_sleep)
+                                   skip_pypy, only_pypy, catch_sleep,
+                                   dedicatedloop_noclose)
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
 from molotov.sharedcounter import SharedCounters
@@ -33,13 +35,8 @@ class TestRunner(TestLoop):
         args.scenario = 'molotov.tests.test_run'
         return args
 
-    @dedicatedloop
+    @dedicatedloop_noclose
     def test_redirect(self):
-        test_loop = asyncio.get_event_loop()
-        test_loop.set_debug(True)
-        test_loop._close = test_loop.close
-        test_loop.close = lambda: None
-
         @scenario(weight=10)
         async def _one(session):
             # redirected
@@ -65,14 +62,10 @@ class TestRunner(TestLoop):
             run(args)
 
         self.assertTrue(len(_RES) > 0)
-        test_loop._close()
 
-    @dedicatedloop
+    @dedicatedloop_noclose
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
-        test_loop.set_debug(True)
-        test_loop._close = test_loop.close
-        test_loop.close = lambda: None
 
         @global_setup()
         def something_sync(args):
@@ -114,7 +107,6 @@ class TestRunner(TestLoop):
 
         udp = server.flush()
         self.assertTrue(len(udp) > 0)
-        test_loop._close()
 
     @dedicatedloop
     def test_main(self):
@@ -355,8 +347,8 @@ class TestRunner(TestLoop):
                                                     '-s', 'sizer',
                                                     'molotov.tests.test_run')
 
-            ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(ratio < 15. and ratio >= 5., ratio)
+        ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
+        self.assertTrue(ratio < 15. and ratio >= 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess(self):
@@ -387,12 +379,9 @@ class TestRunner(TestLoop):
                      float(counters['OK'].value) * 100.)
             self.assertTrue(ratio >= 5., ratio)
 
-    @dedicatedloop
+    @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
         test_loop = asyncio.get_event_loop()
-        test_loop.set_debug(True)
-        test_loop._close = test_loop.close
-        test_loop.close = lambda: None
 
         @scenario()
         async def staty(session):
@@ -411,6 +400,7 @@ class TestRunner(TestLoop):
         args.verbose = 2
         args.processes = 2
         args.max_runs = 5
+        args.duration = 1000
         args.statsd = True
         args.statsd_address = 'udp://127.0.0.1:9999'
         args.single_mode = 'staty'
@@ -431,7 +421,6 @@ class TestRunner(TestLoop):
 
         # two processes making 5 run each
         self.assertEqual(incrs, 10)
-        test_loop._close()
 
     @dedicatedloop
     def test_timed_sizing(self):
@@ -470,8 +459,8 @@ class TestRunner(TestLoop):
                                                     '-cs', 'sizer',
                                                     'molotov.tests.test_run')
 
-            ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
-            self.assertTrue(ratio < 20. and ratio > 5., ratio)
+        ratio = float(_RES2['fail']) / float(_RES2['succ']) * 100.
+        self.assertTrue(ratio < 20. and ratio > 5., ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess_interrupted(self):
@@ -578,3 +567,48 @@ class TestRunner(TestLoop):
                                                 'molotov.tests.test_run')
         self.assertEqual(stdout, '')
         self.assertEqual(stderr, '')
+
+    @dedicatedloop_noclose
+    def test_slow_server(self):
+        @scenario(weight=10)
+        async def _one(session):
+            async with session.get('http://localhost:8888/slow') as resp:
+                assert resp.status == 200
+                _RES.append(1)
+
+        args = self._get_args()
+        args.duration = 2
+        args.verbose = 2
+        args.max_runs = 1
+        start = time.time()
+        with coserver():
+            run(args)
+
+        # makes sure the test is stopped even if the server
+        # hangs a socket
+        self.assertTrue(time.time() - start < 4)
+        self.assertTrue(len(_RES) == 0)
+
+    @dedicatedloop_noclose
+    def test_slow_server_graceful(self):
+        @scenario(weight=10)
+        async def _one(session):
+            async with session.get('http://localhost:8888/slow') as resp:
+                assert resp.status == 200
+                _RES.append(1)
+
+        args = self._get_args()
+        args.duration = 2
+        args.verbose = 2
+        args.max_runs = 1
+        # graceful shutdown on the other hand will wait
+        # for the worker completion
+        args.graceful_shutdown = True
+
+        start = time.time()
+        with coserver():
+            run(args)
+
+        # makes sure the test finishes
+        self.assertTrue(time.time() - start > 5)
+        self.assertTrue(len(_RES) == 1)
