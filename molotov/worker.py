@@ -191,4 +191,5 @@ class Worker(object):
             if self.args.verbose > 0:
                 self.console.print_error(exc)
                 await self.console.flush()
+
         return -1

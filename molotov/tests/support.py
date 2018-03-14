@@ -56,9 +56,12 @@ class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             return
         if self.path == "/slow":
-            time.sleep(5)
-            self.send_response(200)
-            self.end_headers()
+            try:
+                time.sleep(5)
+                self.send_response(200)
+                self.end_headers()
+            except SystemExit:
+                pass
             return
         return super(HandlerRedirect, self).do_GET()
 
@@ -127,6 +130,7 @@ def coserver(port=8888):
         if _CO['clients'] == 0:
             os.kill(_CO['server'].pid, signal.SIGTERM)
             _CO['server'].join(timeout=1.)
+            _CO['server'].terminate()
             _CO['server'] = None
 
 

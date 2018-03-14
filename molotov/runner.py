@@ -145,6 +145,8 @@ class Runner(object):
                                               result=cancelled)
                 if res is cancelled or (res and not res.canceled()):
                     self._shutdown(None, None)
+                    await asyncio.sleep(0)
+
             _duration_killer = self.ensure_future(_duration_killer())
         else:
             _duration_killer = None
@@ -174,7 +176,8 @@ class Runner(object):
 
         def _stop(cb):
             if _duration_killer is not None:
-                _duration_killer.cancel()
+                if not _duration_killer.done():
+                    _duration_killer.cancel()
             stop()
 
         workers.add_done_callback(_stop)

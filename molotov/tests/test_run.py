@@ -58,6 +58,7 @@ class TestRunner(TestLoop):
 
         args = self._get_args()
         args.verbose = 2
+        args.max_runs = 2
         with coserver():
             run(args)
 
@@ -96,6 +97,7 @@ class TestRunner(TestLoop):
 
         server_task = asyncio.ensure_future(server.run())
         stop_task = asyncio.ensure_future(stop())
+        args.max_runs = 3
 
         with coserver():
             run(args)
@@ -114,6 +116,8 @@ class TestRunner(TestLoop):
             main()
 
     def _test_molotov(self, *args):
+        if '--duration' not in args and '-d' not in args:
+            args = list(args) + ['--duration', '10']
         rc = 0
         with set_args('molotov', *args) as (stdout, stderr):
             try:
@@ -303,7 +307,7 @@ class TestRunner(TestLoop):
                                                     'molotov.tests.test_run')
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay, [1, .1, 1, .6, 1, .1, 1, .6, 1])
+            self.assertEqual(delay, [10, 1, .1, 1, .6, 1, .1, 1, .6, 1])
 
     @dedicatedloop
     def test_rampup(self):
@@ -323,7 +327,7 @@ class TestRunner(TestLoop):
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
             delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1])
+            self.assertEqual(delay, [10, 1, 2.0, 4.0, 6.0, 8.0, 1, 1])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
