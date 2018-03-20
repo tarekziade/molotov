@@ -37,7 +37,7 @@ def scenario(weight=1, delay=0.0, name=None):
     - **name** name of the scenario. If not provided, will use the
       function __name___ attribute.
 
-    The decorated function receives an :class:`aoihttp.ClientSession` instance.
+    The decorated function receives an :class:`aiohttp.ClientSession` instance.
     """
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
