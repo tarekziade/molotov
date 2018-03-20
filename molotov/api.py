@@ -129,7 +129,7 @@ def setup():
     - **args** arguments used to start Molotov.
 
     The decorated function can send back a dict.
-    This dict will be passed to the :class:`aoihttp.ClientSession` class
+    This dict will be passed to the :class:`aiohttp.ClientSession` class
     as keywords when it's created.
 
     This is useful when you need to set up session-wide options
@@ -184,7 +184,7 @@ def setup_session():
     Arguments received by the decorated function:
 
     - **worker_id** the worker number
-    - **session** the :class:`aoihttp.ClientSession` instance created
+    - **session** the :class:`aiohttp.ClientSession` instance created
 
     The function can attach extra attributes to the session and use
     **session.loop** if needed.
@@ -204,7 +204,7 @@ def teardown_session():
     Arguments received by the decorated function:
 
     - **worker_id** the worker number
-    - **session** the :class:`aoihttp.ClientSession` instance
+    - **session** the :class:`aiohttp.ClientSession` instance
 
     *The decorated function should be a coroutine.*
     """
