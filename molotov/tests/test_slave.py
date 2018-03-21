@@ -1,18 +1,20 @@
 import os
+import pytest
 from molotov import __version__
 from molotov.slave import main
 from molotov.tests.support import TestLoop, dedicatedloop, set_args
 
 
 _REPO = 'https://github.com/loads/molotov'
+NO_INTERNET = os.environ.get("NO_INTERNET") is not None
 
 
+@pytest.mark.skipif(NO_INTERNET, reason="This test requires internet access")
 class TestSlave(TestLoop):
     @dedicatedloop
     def test_main(self):
         with set_args('moloslave', _REPO, 'test') as out:
             main()
-
         if os.environ.get("TRAVIS") is not None:
             return
         output = out[0].read()
