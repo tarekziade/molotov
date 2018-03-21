@@ -201,6 +201,7 @@ class TestLoop(unittest.TestCase):
         args.console_update = 0
         args.use_extension = []
         args.fail = None
+        args.force_reconnection = False
 
         if console is None:
             console = SharedConsole(interval=0)
