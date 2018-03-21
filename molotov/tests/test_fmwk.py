@@ -235,7 +235,7 @@ class TestFmwk(TestLoop):
 
         await w.run()
         output = await serialize(console)
-        self.assertTrue("Cannot connect to host nope" in output)
+        self.assertTrue("nodename nor servname provided" in output)
 
     @async_test
     async def test_setup_session_fresh_loop(self, loop, console, results):
