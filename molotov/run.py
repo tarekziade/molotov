@@ -98,10 +98,6 @@ def _parser():
                         help='Wait for pending workers to finish',
                         default=False, action='store_true')
 
-    parser.add_argument('--force-reconnection',
-                        help='Force session reconnection',
-                        default=False, action='store_true')
-
     return parser
 
 

@@ -55,14 +55,6 @@ class Worker(object):
             return False
         return True
 
-    def _create_session(self, **options):
-        session = Session(self.loop, self.console, self.args.verbose,
-                          self.statsd, **options)
-
-        session.args = self.args
-        session.worker_id = self.wid
-        return session
-
     async def _run(self):
         verbose = self.args.verbose
         exception = self.args.exception
@@ -93,7 +85,11 @@ class Worker(object):
         ssetup = get_fixture('setup_session')
         steardown = get_fixture('teardown_session')
 
-        async with self._create_session(**options) as session:
+        async with Session(self.loop, self.console, verbose, self.statsd,
+                           **options) as session:
+            session.args = self.args
+            session.worker_id = self.wid
+
             if ssetup is not None:
                 try:
                     await ssetup(self.wid, session)
@@ -126,12 +122,6 @@ class Worker(object):
                 else:
                     # forces a context switch
                     await asyncio.sleep(0)
-
-                # if the session was closed by the server
-                # we recreate it when the option is activated
-                if session.connector.closed and self.args.force_reconnection:
-                    session.close()
-                    session = self._create_session(**options)
 
             if steardown is not None:
                 try:
