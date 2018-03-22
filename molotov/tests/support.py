@@ -16,6 +16,7 @@ import pytest
 from queue import Empty
 from unittest.mock import patch
 
+from aiohttp.helpers import TimerNoop
 from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
@@ -134,8 +135,19 @@ def coserver(port=8888):
             _CO['server'] = None
 
 
+def _respkw():
+    return {'request_info': None,
+            'writer': None,
+            'continue100': None,
+            'timer': TimerNoop(),
+            'auto_decompress': True,
+            'traces': [],
+            'loop': asyncio.get_event_loop(),
+            'session': None}
+
+
 def Response(method='GET', status=200, body=b'***'):
-    response = LoggedClientResponse(method, URL('/'))
+    response = LoggedClientResponse(method, URL('/'), **_respkw())
     response.status = status
     response.reason = ''
     response.code = status
@@ -201,6 +213,7 @@ class TestLoop(unittest.TestCase):
         args.console_update = 0
         args.use_extension = []
         args.fail = None
+        args.force_reconnection = False
 
         if console is None:
             console = SharedConsole(interval=0)

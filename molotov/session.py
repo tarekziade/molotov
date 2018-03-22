@@ -16,11 +16,11 @@ class LoggedClientRequest(ClientRequest):
     """
     session = None
 
-    def send(self, *args, **kw):
+    async def send(self, *args, **kw):
         if self.session:
             event = self.session.send_event('sending_request', request=self)
             asyncio.ensure_future(event)
-        response = super(LoggedClientRequest, self).send(*args, **kw)
+        response = await super(LoggedClientRequest, self).send(*args, **kw)
         response.request = self
         return response
 
