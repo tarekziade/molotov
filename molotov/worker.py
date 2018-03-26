@@ -8,6 +8,10 @@ from molotov.util import (cancellable_sleep, is_stopped, set_timer, get_timer,
                           stop)
 
 
+class FixtureError(Exception):
+    pass
+
+
 def _now():
     return int(time.time())
 
@@ -27,6 +31,11 @@ class Worker(object):
         self.count = 0
         self.worker_start = 0
         self.eventer = EventSender(console)
+        # fixtures
+        self._session_setup = get_fixture('setup_session')
+        self._session_teardown = get_fixture('teardown_session')
+        self._setup = get_fixture('setup')
+        self._teardown = get_fixture('teardown')
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, wid=self.wid, **options)
@@ -40,7 +49,7 @@ class Worker(object):
         try:
             res = await self._run()
         finally:
-            await self.done()
+            self.teardown()
             self.results['WORKER'] -= 1
         return res
 
@@ -55,6 +64,42 @@ class Worker(object):
             return False
         return True
 
+    async def setup(self):
+        if self._setup is None:
+            return {}
+        try:
+            options = await self._setup(self.wid, self.args)
+        except Exception as e:
+            self.console.print_error(e)
+            raise FixtureError(str(e))
+
+        if options is None:
+            options = {}
+        elif not isinstance(options, dict):
+            msg = 'The setup function needs to return a dict'
+            self.console.print(msg)
+            raise FixtureError(msg)
+
+        return options
+
+    async def session_setup(self, session):
+        if self._session_setup is None:
+            return
+        try:
+            await self._session_setup(self.wid, session)
+        except Exception as e:
+            self.console.print_error(e)
+            raise FixtureError(str(e))
+
+    async def session_teardown(self, session):
+        if self._session_teardown is None:
+            return
+        try:
+            await self._session_teardown(self.wid, session)
+        except Exception as e:
+            # we can't stop the teardown process
+            self.console.print_error(e)
+
     async def _run(self):
         verbose = self.args.verbose
         exception = self.args.exception
@@ -63,40 +108,26 @@ class Worker(object):
             single = get_scenario(self.args.single_mode)
         else:
             single = None
+
         self.count = 1
         self.worker_start = _now()
-        setup = get_fixture('setup')
-        if setup is not None:
-            try:
-                options = await setup(self.wid, self.args)
-            except Exception as e:
-                self.console.print_error(e)
-                stop()
-                return
-            if options is None:
-                options = {}
-            elif not isinstance(options, dict):
-                self.console.print('The setup function needs to return a dict')
-                stop()
-                return
-        else:
-            options = {}
 
-        ssetup = get_fixture('setup_session')
-        steardown = get_fixture('teardown_session')
+        try:
+            options = await self.setup()
+        except FixtureError:
+            stop()
+            return
 
         async with Session(self.loop, self.console, verbose, self.statsd,
                            **options) as session:
             session.args = self.args
             session.worker_id = self.wid
 
-            if ssetup is not None:
-                try:
-                    await ssetup(self.wid, session)
-                except Exception as e:
-                    self.console.print_error(e)
-                    stop()
-                    return
+            try:
+                await self.session_setup(session)
+            except FixtureError:
+                stop()
+                return
 
             while self._may_run():
                 step_start = _now()
@@ -123,21 +154,16 @@ class Worker(object):
                     # forces a context switch
                     await asyncio.sleep(0)
 
-            if steardown is not None:
-                try:
-                    await steardown(self.wid, session)
-                except Exception as e:
-                    # we can't stop the teardown process
-                    self.console.print_error(e)
+            await self.session_teardown(session)
 
-    async def done(self):
-        teardown = get_fixture('teardown')
-        if teardown is not None:
-            try:
-                teardown(self.wid)
-            except Exception as e:
-                # we can't stop the teardown process
-                self.console.print_error(e)
+    def teardown(self):
+        if self._teardown is None:
+            return
+        try:
+            self._teardown(self.wid)
+        except Exception as e:
+            # we can't stop the teardown process
+            self.console.print_error(e)
 
     def _reached_tolerance(self, current_time):
         if not self.args.sizing:
