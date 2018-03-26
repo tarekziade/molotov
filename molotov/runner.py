@@ -138,7 +138,7 @@ class Runner(object):
         set_timer()
 
         # coroutine that will kill everything when duration is up
-        if self.args.duration and not self.args.graceful_shutdown:
+        if self.args.duration and self.args.force_shutdown:
             async def _duration_killer():
                 cancelled = object()
                 res = await cancellable_sleep(self.args.duration,

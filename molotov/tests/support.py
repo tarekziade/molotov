@@ -194,7 +194,7 @@ class TestLoop(unittest.TestCase):
 
     def get_args(self, console=None):
         args = namedtuple('args', 'verbose quiet duration exception')
-        args.graceful_shutdown = False
+        args.force_shutdown = False
         args.ramp_up = .0
         args.verbose = 1
         args.quiet = False

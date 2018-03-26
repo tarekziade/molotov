@@ -307,7 +307,7 @@ class TestRunner(TestLoop):
                                                     'molotov.tests.test_run')
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay, [10, 1, .1, 1, .6, 1, .1, 1, .6, 1])
+            self.assertEqual(delay, [1, .1, 1, .6, 1, .1, 1, .6, 1])
 
     @dedicatedloop
     def test_rampup(self):
@@ -327,7 +327,7 @@ class TestRunner(TestLoop):
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
             delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [10, 1, 2.0, 4.0, 6.0, 8.0, 1, 1])
+            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
@@ -573,7 +573,7 @@ class TestRunner(TestLoop):
         self.assertEqual(stderr, '')
 
     @dedicatedloop_noclose
-    def test_slow_server(self):
+    def test_slow_server_force_shutdown(self):
         @scenario(weight=10)
         async def _one(session):
             async with session.get('http://localhost:8888/slow') as resp:
@@ -584,6 +584,7 @@ class TestRunner(TestLoop):
         args.duration = 2
         args.verbose = 2
         args.max_runs = 1
+        args.force_shutdown = True
         start = time.time()
         with coserver():
             run(args)

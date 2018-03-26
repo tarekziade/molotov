@@ -94,8 +94,8 @@ def _parser():
                         help='Imports a module containing Molotov extensions',
                         default=None, type=str, nargs='+')
 
-    parser.add_argument('--graceful-shutdown',
-                        help='Wait for pending workers to finish',
+    parser.add_argument('--force-shutdown',
+                        help='Cancel all pending workers on shutdown',
                         default=False, action='store_true')
 
     return parser
