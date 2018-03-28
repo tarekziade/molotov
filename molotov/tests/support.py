@@ -9,8 +9,6 @@ import functools
 from collections import namedtuple
 from http.client import HTTPConnection
 from io import StringIO
-import http.server
-import socketserver
 import pytest
 from queue import Empty
 from unittest.mock import patch
@@ -23,7 +21,7 @@ from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
 from molotov.sharedconsole import SharedConsole
 from molotov.sharedcounter import SharedCounters
-
+from molotov.tests.server import run as _run_server
 
 HERE = os.path.dirname(__file__)
 
@@ -46,69 +44,19 @@ async def serialize(console):
     return "".join(res)
 
 
-class RequestHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == "/redirect":
-            self.send_response(302)
-            self.send_header("Location", "/")
-            self.end_headers()
-            return
-        if self.path == "/slow":
-            try:
-                time.sleep(5)
-                self.send_response(200)
-                self.end_headers()
-            except SystemExit:
-                pass
-            return
-        return super(RequestHandler, self).do_GET()
-
-    def do_POST(self):
-        content_length = int(self.headers["Content-Length"])
-        body = self.rfile.read(content_length)
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(body)
-
-
-def _run(port):
-    os.chdir(HERE)
-    socketserver.TCPServer.allow_reuse_address = True
-    attempts = 0
-    httpd = None
-    error = None
-
-    while attempts < 3:
-        try:
-            httpd = socketserver.TCPServer(("", port), RequestHandler)
-            break
-        except Exception as e:
-            error = e
-            attempts += 1
-            time.sleep(0.1)
-
-    if httpd is None:
-        raise OSError("Could not start the coserver: %s" % str(error))
-
-    def _shutdown(*args, **kw):
-        httpd.server_close()
-        sys.exit(0)
-
-    signal.signal(signal.SIGTERM, _shutdown)
-    signal.signal(signal.SIGINT, _shutdown)
-    httpd.serve_forever()
-
-
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
-    p = util.multiprocessing.Process(target=functools.partial(_run, port))
+    def _run():
+        os.chdir(HERE)
+        _run_server(port)
+
+    p = multiprocessing.Process(target=_run)
     p.start()
     start = time.time()
     connected = False
 
-    while time.time() - start < 5 and not connected:
+    while time.time() - start < 10 and not connected:
         try:
             conn = HTTPConnection("localhost", 8888)
             conn.request("GET", "/")
@@ -116,6 +64,7 @@ def run_server(port=8888):
             connected = True
         except Exception:
             time.sleep(0.1)
+
     if not connected:
         os.kill(p.pid, signal.SIGTERM)
         p.join(timeout=1.0)
