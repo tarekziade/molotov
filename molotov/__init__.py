@@ -8,4 +8,4 @@ try:
 except ImportError:
     pass   # first import
 
-__version__ = '1.5'
+__version__ = '1.6'
