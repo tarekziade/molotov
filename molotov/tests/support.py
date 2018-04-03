@@ -63,7 +63,7 @@ def run_server(port=8888):
             conn.getresponse()
             connected = True
         except Exception:
-            time.sleep(0.1)
+            time.sleep(.1)
 
     if not connected:
         os.kill(p.pid, signal.SIGTERM)
