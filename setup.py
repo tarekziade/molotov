@@ -1,8 +1,8 @@
 import sys
 from setuptools import setup, find_packages
 
-if sys.version_info < (3, 5):
-    raise ValueError("Requires Python 3.5 or superior")
+if sys.version_info < (3, 5, 3):
+    raise ValueError("Requires Python 3.5.3 or superior")
 
 from molotov import __version__     # NOQA
 
