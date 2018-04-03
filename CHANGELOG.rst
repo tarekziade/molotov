@@ -1,9 +1,16 @@
 CHANGELOG
 =========
 
-1.5 - XXX
+1.5 - 2018-04-03
+----------------
 
-XXX
+- now runs on aiohttp 3.x (#109)
+- make sure we run a proper Python version (#9)
+- each process needs to have its own statsd client (#98)
+- fixed _run_in_fresh_loop and setup_session() error handling (#100)
+- Adde --fail (#105)
+- Added --force-shutdown (#107)
+- Make internet-based tests optional (#104)
 
 1.4 - 2017-09-26
 ----------------
