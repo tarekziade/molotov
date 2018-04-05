@@ -16,7 +16,6 @@ import pytest
 from queue import Empty
 from unittest.mock import patch
 
-from aiohttp.helpers import TimerNoop
 from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
@@ -136,6 +135,7 @@ def coserver(port=8888):
 
 
 def _respkw():
+    from aiohttp.helpers import TimerNoop
     return {'request_info': None,
             'writer': None,
             'continue100': None,
@@ -147,7 +147,10 @@ def _respkw():
 
 
 def Response(method='GET', status=200, body=b'***'):
-    response = LoggedClientResponse(method, URL('/'), **_respkw())
+    if util.IS_AIOHTTP2:
+        response = LoggedClientResponse(method, URL('/'))
+    else:
+        response = LoggedClientResponse(method, URL('/'), **_respkw())
     response.status = status
     response.reason = ''
     response.code = status

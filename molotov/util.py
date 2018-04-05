@@ -10,12 +10,13 @@ import time
 import threading
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
-from aiohttp import ClientSession
+from aiohttp import ClientSession, __version__
 
 
 _DNS_CACHE = {}
 _STOP = False
 _TIMER = None
+IS_AIOHTTP2 = __version__[0] == '2'
 
 
 def get_timer():
