@@ -19,7 +19,8 @@ class LoggedClientRequest(ClientRequest):
     if IS_AIOHTTP2:
         def send(self, *args, **kw):
             if self.session:
-                event = self.session.send_event('sending_request', request=self)
+                event = self.session.send_event('sending_request',
+                                                request=self)
                 asyncio.ensure_future(event)
             response = super(LoggedClientRequest, self).send(*args, **kw)
             response.request = self
@@ -27,7 +28,8 @@ class LoggedClientRequest(ClientRequest):
     else:
         async def send(self, *args, **kw):
             if self.session:
-                event = self.session.send_event('sending_request', request=self)
+                event = self.session.send_event('sending_request',
+                                                request=self)
                 asyncio.ensure_future(event)
             response = await super(LoggedClientRequest, self).send(*args, **kw)
             response.request = self
