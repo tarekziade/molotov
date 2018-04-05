@@ -1,8 +1,11 @@
 CHANGELOG
 =========
 
-1.6 XXX
-XX
+1.6 - 2018-04-05
+----------------
+
+- works with aiohttp 2.x or 3.x so Python 3.5.1 can be used (#114)
+
 
 1.5 - 2018-04-03
 ----------------
