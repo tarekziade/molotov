@@ -2,7 +2,6 @@
 molotov
 =======
 
-
 .. image:: http://coveralls.io/repos/github/loads/molotov/badge.svg?branch=master
    :target: https://coveralls.io/github/loads/molotov?branch=master
 
