@@ -74,17 +74,19 @@ def run_server(port=8888):
         socketserver.TCPServer.allow_reuse_address = True
         attempts = 0
         httpd = None
+        error = None
 
         while attempts < 3:
             try:
                 httpd = socketserver.TCPServer(("", port), HandlerRedirect)
                 break
-            except Exception:
+            except Exception as e:
+                error = e
                 attempts += 1
                 time.sleep(.1)
 
         if httpd is None:
-            raise OSError("Could not start the coserver")
+            raise OSError("Could not start the coserver: %s" % str(error))
 
         def _shutdown(*args, **kw):
             httpd.server_close()
