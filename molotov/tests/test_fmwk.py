@@ -224,7 +224,7 @@ class TestFmwk(TestLoop):
 
         @setup_session()
         async def _setup_session(wid, session):
-            json_request("http://NOPE")
+            json_request("http://invalid")
 
         @scenario(weight=100)
         async def test_working(session):
