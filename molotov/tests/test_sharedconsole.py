@@ -13,8 +13,8 @@ OUTPUT = """\
 one
 two
 3
-TypeError\("unsupported operand type(.*)?
-TypeError\("unsupported operand type.*"""
+TypeError\\("unsupported operand type(.*)?
+TypeError\\("unsupported operand type.*"""
 
 
 # pre-forked variable
