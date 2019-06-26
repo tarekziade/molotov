@@ -4,8 +4,7 @@ import time
 from molotov.listeners import EventSender
 from molotov.session import LoggedClientSession as Session
 from molotov.api import get_fixture, pick_scenario, get_scenario
-from molotov.util import (cancellable_sleep, is_stopped, set_timer, get_timer,
-                          stop)
+from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop
 
 
 class FixtureError(Exception):
@@ -19,8 +18,8 @@ def _now():
 class Worker(object):
     """"The Worker class creates a Session and runs scenario.
     """
-    def __init__(self, wid, results, console, args, statsd=None,
-                 delay=0, loop=None):
+
+    def __init__(self, wid, results, console, args, statsd=None, delay=0, loop=None):
         self.wid = wid
         self.results = results
         self.console = console
@@ -32,25 +31,25 @@ class Worker(object):
         self.worker_start = 0
         self.eventer = EventSender(console)
         # fixtures
-        self._session_setup = get_fixture('setup_session')
-        self._session_teardown = get_fixture('teardown_session')
-        self._setup = get_fixture('setup')
-        self._teardown = get_fixture('teardown')
+        self._session_setup = get_fixture("setup_session")
+        self._session_teardown = get_fixture("teardown_session")
+        self._setup = get_fixture("setup")
+        self._teardown = get_fixture("teardown")
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, wid=self.wid, **options)
 
     async def run(self):
-        if self.delay > 0.:
+        if self.delay > 0.0:
             await cancellable_sleep(self.delay)
         if is_stopped():
             return
-        self.results['WORKER'] += 1
+        self.results["WORKER"] += 1
         try:
             res = await self._run()
         finally:
             self.teardown()
-            self.results['WORKER'] -= 1
+            self.results["WORKER"] -= 1
         return res
 
     def _may_run(self):
@@ -58,7 +57,7 @@ class Worker(object):
             return False
         if _now() - self.worker_start > self.args.duration:
             return False
-        if self.results['REACHED'] == 1:
+        if self.results["REACHED"] == 1:
             return False
         if self.args.max_runs and self.count > self.args.max_runs:
             return False
@@ -76,7 +75,7 @@ class Worker(object):
         if options is None:
             options = {}
         elif not isinstance(options, dict):
-            msg = 'The setup function needs to return a dict'
+            msg = "The setup function needs to return a dict"
             self.console.print(msg)
             raise FixtureError(msg)
 
@@ -118,8 +117,9 @@ class Worker(object):
             stop()
             return
 
-        async with Session(self.loop, self.console, verbose, self.statsd,
-                           **options) as session:
+        async with Session(
+            self.loop, self.console, verbose, self.statsd, **options
+        ) as session:
             session.args = self.args
             session.worker_id = self.wid
 
@@ -134,11 +134,11 @@ class Worker(object):
                 session.step = self.count
                 result = await self.step(self.count, session, scenario=single)
                 if result == 1:
-                    self.results['OK'] += 1
-                    self.results['MINUTE_OK'] += 1
+                    self.results["OK"] += 1
+                    self.results["MINUTE_OK"] += 1
                 elif result == -1:
-                    self.results['FAILED'] += 1
-                    self.results['MINUTE_FAILED'] += 1
+                    self.results["FAILED"] += 1
+                    self.results["MINUTE_FAILED"] += 1
                     if exception:
                         stop()
 
@@ -148,7 +148,7 @@ class Worker(object):
                     break
 
                 self.count += 1
-                if self.args.delay > 0.:
+                if self.args.delay > 0.0:
                     await cancellable_sleep(self.args.delay)
                 else:
                     # forces a context switch
@@ -172,22 +172,22 @@ class Worker(object):
         if current_time - get_timer() > 60:
             # we need to reset the tolerance counters
             set_timer(current_time)
-            self.results['MINUTE_OK'].value = 0
-            self.results['MINUTE_FAILED'].value = 0
+            self.results["MINUTE_OK"].value = 0
+            self.results["MINUTE_FAILED"].value = 0
             return False
 
-        OK = self.results['MINUTE_OK'].value
-        FAILED = self.results['MINUTE_FAILED'].value
+        OK = self.results["MINUTE_OK"].value
+        FAILED = self.results["MINUTE_FAILED"].value
 
         if OK + FAILED < 100:
             # we don't have enough samples
             return False
 
-        current_ratio = float(FAILED) / float(OK) * 100.
+        current_ratio = float(FAILED) / float(OK) * 100.0
         reached = current_ratio > self.args.sizing_tolerance
         if reached:
-            self.results['REACHED'].value = 1
-            self.results['RATIO'].value = int(current_ratio * 100)
+            self.results["REACHED"].value = 1
+            self.results["RATIO"].value = int(current_ratio * 100)
 
         return reached
 
@@ -200,20 +200,17 @@ class Worker(object):
         if scenario is None:
             scenario = pick_scenario(self.wid, step_id)
         try:
-            await self.send_event('scenario_start', scenario=scenario)
+            await self.send_event("scenario_start", scenario=scenario)
 
-            await scenario['func'](session, *scenario['args'],
-                                   **scenario['kw'])
+            await scenario["func"](session, *scenario["args"], **scenario["kw"])
 
-            await self.send_event('scenario_success', scenario=scenario)
+            await self.send_event("scenario_success", scenario=scenario)
 
-            if scenario['delay'] > 0.:
-                await cancellable_sleep(scenario['delay'])
+            if scenario["delay"] > 0.0:
+                await cancellable_sleep(scenario["delay"])
             return 1
         except Exception as exc:
-            await self.send_event('scenario_failure',
-                                  scenario=scenario,
-                                  exception=exc)
+            await self.send_event("scenario_failure", scenario=scenario, exception=exc)
             if self.args.verbose > 0:
                 self.console.print_error(exc)
                 await self.console.flush()

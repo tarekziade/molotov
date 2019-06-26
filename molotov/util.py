@@ -16,7 +16,7 @@ from aiohttp import ClientSession, __version__
 _DNS_CACHE = {}
 _STOP = False
 _TIMER = None
-IS_AIOHTTP2 = __version__[0] == '2'
+IS_AIOHTTP2 = __version__[0] == "2"
 
 
 def get_timer():
@@ -42,22 +42,22 @@ def is_stopped():
 def resolve(url):
     parts = urlparse(url)
 
-    if '@' in parts.netloc:
+    if "@" in parts.netloc:
         username, password = parts.username, parts.password
-        netloc = parts.netloc.split('@', 1)[1]
+        netloc = parts.netloc.split("@", 1)[1]
     else:
         username, password = None, None
         netloc = parts.netloc
 
-    if ':' in netloc:
-        host = netloc.split(':')[0]
+    if ":" in netloc:
+        host = netloc.split(":")[0]
     else:
         host = netloc
 
     port_provided = False
-    if not parts.port and parts.scheme == 'https':
+    if not parts.port and parts.scheme == "https":
         port = 443
-    elif not parts.port and parts.scheme == 'http':
+    elif not parts.port and parts.scheme == "http":
         port = 80
     else:
         port = parts.port
@@ -76,22 +76,30 @@ def resolve(url):
 
     # Don't use a resolved hostname for SSL requests otherwise the
     # certificate will not match the IP address (resolved)
-    host = resolved if parts.scheme != 'https' else host
+    host = resolved if parts.scheme != "https" else host
     netloc = host
     if port_provided:
-        netloc += ':%d' % port
+        netloc += ":%d" % port
     if username is not None:
         if password is not None:
-            netloc = '%s:%s@%s' % (username, password, netloc)
+            netloc = "%s:%s@%s" % (username, password, netloc)
         else:
-            netloc = '%s@%s' % (username, netloc)
+            netloc = "%s@%s" % (username, netloc)
 
     if port not in (443, 80):
-        host += ':%d' % port
-        original += ':%d' % port
+        host += ":%d" % port
+        original += ":%d" % port
 
-    new = urlunparse((parts.scheme, netloc, parts.path or '', '',
-                      parts.query or '', parts.fragment or ''))
+    new = urlunparse(
+        (
+            parts.scheme,
+            netloc,
+            parts.path or "",
+            "",
+            parts.query or "",
+            parts.fragment or "",
+        )
+    )
     return new, original, host
 
 
@@ -120,16 +128,16 @@ def expand_options(config, scenario, args):
             except ValueError:
                 raise OptionError("Can't parse %r" % config)
 
-    if 'molotov' not in config:
+    if "molotov" not in config:
         raise OptionError("Bad config -- no molotov key")
 
-    if 'tests' not in config['molotov']:
+    if "tests" not in config["molotov"]:
         raise OptionError("Bad config -- no molotov/tests key")
 
-    if scenario not in config['molotov']['tests']:
+    if scenario not in config["molotov"]["tests"]:
         raise OptionError("Can't find %r in the config" % scenario)
 
-    _expand_args(args, config['molotov']['tests'][scenario])
+    _expand_args(args, config["molotov"]["tests"][scenario])
 
 
 def _run_in_fresh_loop(coro, timeout=30):
@@ -157,8 +165,9 @@ def _run_in_fresh_loop(coro, timeout=30):
     return thres[0]
 
 
-async def _request(endpoint, verb='GET', session_options=None,
-                   json=False, loop=None, **options):
+async def _request(
+    endpoint, verb="GET", session_options=None, json=False, loop=None, **options
+):
     if session_options is None:
         session_options = {}
 
@@ -167,16 +176,16 @@ async def _request(endpoint, verb='GET', session_options=None,
         result = {}
         async with meth(endpoint, **options) as resp:
             if json:
-                result['content'] = await resp.json()
+                result["content"] = await resp.json()
             else:
-                result['content'] = await resp.text()
-            result['status'] = resp.status
-            result['headers'] = resp.headers
+                result["content"] = await resp.text()
+            result["status"] = resp.status
+            result["headers"] = resp.headers
 
         return result
 
 
-def request(endpoint, verb='GET', session_options=None, **options):
+def request(endpoint, verb="GET", session_options=None, **options):
     """Performs a synchronous request.
 
     Uses a dedicated event loop and aiohttp.ClientSession object.
@@ -195,16 +204,16 @@ def request(endpoint, verb='GET', session_options=None, **options):
     - status: the status
     - headers: a dict with all the response headers
     """
-    req = functools.partial(_request, endpoint, verb, session_options,
-                            **options)
+    req = functools.partial(_request, endpoint, verb, session_options, **options)
     return _run_in_fresh_loop(req)
 
 
-def json_request(endpoint, verb='GET', session_options=None, **options):
+def json_request(endpoint, verb="GET", session_options=None, **options):
     """Like :func:`molotov.request` but extracts json from the response.
     """
-    req = functools.partial(_request, endpoint, verb, session_options,
-                            json=True, **options)
+    req = functools.partial(
+        _request, endpoint, verb, session_options, json=True, **options
+    )
     return _run_in_fresh_loop(req)
 
 
@@ -264,5 +273,5 @@ def printable_error(error, tb=None):
     traceback.print_tb(tb, file=printed)
     printed.seek(0)
     for line in printed.readlines():
-        printable.append(line.rstrip('\n'))
+        printable.append(line.rstrip("\n"))
     return printable

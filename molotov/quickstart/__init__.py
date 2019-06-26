@@ -5,8 +5,8 @@ import argparse
 from molotov import __version__
 
 
-_DEFAULTS = {'target_dir': '.'}
-_PREFIX = '> '
+_DEFAULTS = {"target_dir": "."}
+_PREFIX = "> "
 _HERE = os.path.dirname(__file__)
 
 
@@ -15,13 +15,13 @@ class ValidationError(Exception):
 
 
 def _input(msg):
-    return input(msg)		# pragma: no cover
+    return input(msg)  # pragma: no cover
 
 
 def _prompt(text, default, validator=None):
     while True:
         try:
-            res = _input(_PREFIX + '%s [%s]: ' % (text, default))
+            res = _input(_PREFIX + "%s [%s]: " % (text, default))
             if not res and default:
                 res = default
 
@@ -34,15 +34,19 @@ def _prompt(text, default, validator=None):
 
 
 def _yes(x):
-    if x.upper() not in ('Y', 'YES', 'N', 'NO'):
+    if x.upper() not in ("Y", "YES", "N", "NO"):
         raise ValidationError("Please enter either 'y' or 'n'.")
-    return x.upper() in ('Y', 'YES')
+    return x.upper() in ("Y", "YES")
 
 
 def _parser():
-    parser = argparse.ArgumentParser(description='Quickstart')
-    parser.add_argument('--version', action='store_true', default=False,
-                        help='Displays version and exits.')
+    parser = argparse.ArgumentParser(description="Quickstart")
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Displays version and exits.",
+    )
 
     return parser
 
@@ -65,21 +69,21 @@ def main():
         sys.exit(0)
 
     # XXX
-    print('**** Molotov Quickstart ****')
-    print('')
-    print('Answer to a few questions to get started...')
-    target_dir = _prompt("Target directory", '.')
-    create_makefile = _prompt("Create Makefile", 'y', validator=_yes)
+    print("**** Molotov Quickstart ****")
+    print("")
+    print("Answer to a few questions to get started...")
+    target_dir = _prompt("Target directory", ".")
+    create_makefile = _prompt("Create Makefile", "y", validator=_yes)
 
-    print('Generating Molotov test...')
+    print("Generating Molotov test...")
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
     if create_makefile:
-        _copy_file('Makefile', target_dir)
+        _copy_file("Makefile", target_dir)
 
-    _copy_file('loadtest.py', target_dir)
-    _copy_file('molotov.json', target_dir)
+    _copy_file("loadtest.py", target_dir)
+    _copy_file("molotov.json", target_dir)
 
     print("")
     print("All done. Happy Breaking!")

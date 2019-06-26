@@ -15,6 +15,7 @@ import molotov
 class SomeObject(object):
     """Does something smart in real life with the async loop.
     """
+
     def __init__(self, loop):
         self.loop = loop
 
@@ -24,15 +25,14 @@ class SomeObject(object):
 
 @molotov.global_setup()
 def init_test(args):
-    molotov.set_var('SomeHeader', '1')
-    molotov.set_var('endpoint', 'http://localhost:8080')
+    molotov.set_var("SomeHeader", "1")
+    molotov.set_var("endpoint", "http://localhost:8080")
 
 
 @molotov.setup()
 async def init_worker(worker_num, args):
-    headers = {'AnotherHeader': '1',
-               'SomeHeader': molotov.get_var('SomeHeader')}
-    return {'headers': headers}
+    headers = {"AnotherHeader": "1", "SomeHeader": molotov.get_var("SomeHeader")}
+    return {"headers": headers}
 
 
 @molotov.setup_session()
@@ -42,10 +42,10 @@ async def init_session(worker_num, session):
 
 @molotov.scenario(100)
 async def scenario_one(session):
-    endpoint = molotov.get_var('endpoint')
+    endpoint = molotov.get_var("endpoint")
     async with session.get(endpoint) as resp:
         res = await resp.json()
-        assert res['result'] == 'OK'
+        assert res["result"] == "OK"
         assert resp.status == 200
 
 

@@ -4,11 +4,25 @@ from molotov.session import LoggedClientSession
 from molotov.runner import Runner
 from molotov.worker import Worker
 from molotov.util import json_request, request
-from molotov.api import (scenario, setup, global_setup, teardown,
-                         global_teardown, setup_session, teardown_session,
-                         scenario_picker, events)
-from molotov.tests.support import (TestLoop, async_test, dedicatedloop,
-                                   serialize, catch_sleep, coserver)
+from molotov.api import (
+    scenario,
+    setup,
+    global_setup,
+    teardown,
+    global_teardown,
+    setup_session,
+    teardown_session,
+    scenario_picker,
+    events,
+)
+from molotov.tests.support import (
+    TestLoop,
+    async_test,
+    dedicatedloop,
+    serialize,
+    catch_sleep,
+    coserver,
+)
 
 
 class TestFmwk(TestLoop):
@@ -17,8 +31,7 @@ class TestFmwk(TestLoop):
         delay = 0
         if args is None:
             args = self.get_args(console=console)
-        return Worker(1, results, console, args, statsd=statsd,
-                      delay=delay, loop=loop)
+        return Worker(1, results, console, args, statsd=statsd, delay=delay, loop=loop)
 
     @async_test
     async def test_step(self, loop, console, results):
@@ -26,11 +39,11 @@ class TestFmwk(TestLoop):
 
         @scenario(weight=0)
         async def test_one(session):
-            res.append('1')
+            res.append("1")
 
         @scenario(weight=100, delay=1.5)
         async def test_two(session):
-            res.append('2')
+            res.append("2")
 
         async def _slept(time):
             res.append(time)
@@ -50,16 +63,16 @@ class TestFmwk(TestLoop):
 
         @scenario_picker()
         def picker(wid, sid):
-            series = '_one', '_two', '_two', '_one'
+            series = "_one", "_two", "_two", "_one"
             return series[sid]
 
         @scenario()
         async def _one(session):
-            res.append('1')
+            res.append("1")
 
         @scenario()
         async def _two(session):
-            res.append('2')
+            res.append("2")
 
         w = self.get_worker(console, results, loop=loop)
 
@@ -67,11 +80,10 @@ class TestFmwk(TestLoop):
             async with LoggedClientSession(loop, console) as session:
                 await w.step(i, session)
 
-        self.assertEqual(res, ['1', '2', '2', '1'])
+        self.assertEqual(res, ["1", "2", "2", "1"])
 
     @async_test
     async def test_failing_step(self, loop, console, results):
-
         @scenario(weight=100)
         async def test_two(session):
             raise ValueError()
@@ -88,7 +100,7 @@ class TestFmwk(TestLoop):
 
         @setup()
         async def setuptest(num, args):
-            res.append('0')
+            res.append("0")
 
         @scenario(weight=50)
         async def test_one(session):
@@ -102,8 +114,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
 
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
+        self.assertTrue(results["OK"] > 0)
+        self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
     def _runner(self, console, screen=None):
@@ -116,31 +128,31 @@ class TestFmwk(TestLoop):
 
         @global_setup()
         def init(args):
-            res.append('SETUP')
+            res.append("SETUP")
 
         @setup_session()
         async def _session(wid, session):
             session.some = 1
-            res.append('SESSION')
+            res.append("SESSION")
 
         @setup()
         async def setuptest(num, args):
-            res.append('0')
+            res.append("0")
 
         @scenario(weight=50)
         async def test_one(session):
-            async with session.get('http://localhost:8888') as resp:
+            async with session.get("http://localhost:8888") as resp:
                 await resp.text()
 
         @scenario(weight=100)
         async def test_two(session):
-            async with session.get('http://localhost:8888') as resp:
+            async with session.get("http://localhost:8888") as resp:
                 await resp.text()
 
         @teardown_session()
         async def _teardown_session(wid, session):
             self.assertEqual(session.some, 1)
-            res.append('SESSION_TEARDOWN')
+            res.append("SESSION_TEARDOWN")
 
         args = self.get_args()
         args.console = console
@@ -148,9 +160,9 @@ class TestFmwk(TestLoop):
         if not args.sizing:
             args.max_runs = 5
         results = Runner(args)()
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
-        self.assertEqual(res, ['SETUP', '0', 'SESSION', 'SESSION_TEARDOWN'])
+        self.assertTrue(results["OK"] > 0)
+        self.assertEqual(results["FAILED"], 0)
+        self.assertEqual(res, ["SETUP", "0", "SESSION", "SESSION_TEARDOWN"])
         self.assertTrue(len(_events) > 0)
 
     @dedicatedloop
@@ -168,9 +180,10 @@ class TestFmwk(TestLoop):
         res = []
 
         if not nosetup:
+
             @setup()
             async def setuptest(num, args):
-                res.append('0')
+                res.append("0")
 
         @scenario(weight=50)
         async def test_one(session):
@@ -185,8 +198,8 @@ class TestFmwk(TestLoop):
         args.workers = 5
         args.console = console
         results = Runner(args)()
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
+        self.assertTrue(results["OK"] > 0)
+        self.assertEqual(results["FAILED"], 0)
 
     @dedicatedloop
     def test_runner_multiprocess_console(self):
@@ -200,7 +213,7 @@ class TestFmwk(TestLoop):
 
         @setup()
         async def setuptest(num, args):
-            res.append('0')
+            res.append("0")
 
         @scenario(weight=50)
         async def test_one(session):
@@ -215,13 +228,12 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
 
-        self.assertTrue(results['OK'] > 0)
-        self.assertEqual(results['FAILED'], 0)
+        self.assertTrue(results["OK"] > 0)
+        self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
     @async_test
     async def test_setup_session_failure(self, loop, console, results):
-
         @setup_session()
         async def _setup_session(wid, session):
             json_request("http://invalid")
@@ -235,8 +247,10 @@ class TestFmwk(TestLoop):
 
         await w.run()
         output = await serialize(console)
-        expected = ("Name or service not known" in output or
-                    "nodename nor servname provided" in output)
+        expected = (
+            "Name or service not known" in output
+            or "nodename nor servname provided" in output
+        )
         self.assertTrue(expected, output)
 
     @async_test
@@ -260,7 +274,6 @@ class TestFmwk(TestLoop):
 
     @async_test
     async def test_failure(self, loop, console, results):
-
         @scenario(weight=100)
         async def test_failing(session):
             raise ValueError()
@@ -269,8 +282,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
 
-        self.assertTrue(results['OK'] == 0)
-        self.assertTrue(results['FAILED'] > 0)
+        self.assertTrue(results["OK"] == 0)
+        self.assertTrue(results["FAILED"] > 0)
 
     @dedicatedloop
     def test_shutdown(self):
@@ -278,11 +291,11 @@ class TestFmwk(TestLoop):
 
         @teardown()
         def _worker_teardown(num):
-            res.append('BYE WORKER')
+            res.append("BYE WORKER")
 
         @global_teardown()
         def _teardown():
-            res.append('BYE')
+            res.append("BYE")
 
         @scenario(weight=100)
         async def test_two(session):
@@ -291,19 +304,19 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         results = Runner(args)()
 
-        self.assertEqual(results['OK'], 1)
-        self.assertEqual(results['FAILED'], 0)
-        self.assertEqual(res, ['BYE WORKER', 'BYE'])
+        self.assertEqual(results["OK"], 1)
+        self.assertEqual(results["FAILED"], 0)
+        self.assertEqual(res, ["BYE WORKER", "BYE"])
 
     @dedicatedloop
     def test_shutdown_exception(self):
         @teardown()
         def _worker_teardown(num):
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @global_teardown()
         def _teardown():
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @scenario(weight=100)
         async def test_two(session):
@@ -311,13 +324,13 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         results = Runner(args)()
-        self.assertEqual(results['OK'], 1)
+        self.assertEqual(results["OK"], 1)
 
     @async_test
     async def test_session_shutdown_exception(self, loop, console, results):
         @teardown_session()
         async def _teardown_session(wid, session):
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @scenario(weight=100)
         async def test_tds(session):
@@ -329,14 +342,13 @@ class TestFmwk(TestLoop):
 
         output = await serialize(console)
         self.assertTrue("Exception" in output, output)
-        self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(results["FAILED"], 0)
 
     @dedicatedloop
     def test_setup_exception(self):
-
         @setup()
         async def _worker_setup(num, args):
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @scenario(weight=100)
         async def test_two(session):
@@ -344,14 +356,13 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         results = Runner(args)()
-        self.assertEqual(results['OK'], 0)
+        self.assertEqual(results["OK"], 0)
 
     @dedicatedloop
     def test_global_setup_exception(self):
-
         @global_setup()
         def _setup(args):
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @scenario(weight=100)
         async def test_two(session):
@@ -363,10 +374,9 @@ class TestFmwk(TestLoop):
 
     @dedicatedloop
     def test_teardown_exception(self):
-
         @teardown()
         def _teardown(args):
-            raise Exception('bleh')
+            raise Exception("bleh")
 
         @scenario(weight=100)
         async def test_two(session):
@@ -374,11 +384,10 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         results = Runner(args)()
-        self.assertEqual(results['FAILED'], 0)
+        self.assertEqual(results["FAILED"], 0)
 
     @dedicatedloop
     def test_setup_not_dict(self):
-
         @setup()
         async def _worker_setup(num, args):
             return 1
@@ -389,4 +398,4 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         results = Runner(args)()
-        self.assertEqual(results['OK'], 0)
+        self.assertEqual(results["OK"], 0)

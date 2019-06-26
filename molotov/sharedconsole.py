@@ -10,7 +10,8 @@ from molotov.util import cancellable_sleep, printable_error
 class SharedConsole(object):
     """Multi-process compatible stdout console.
     """
-    def __init__(self, interval=.1, max_lines_displayed=20):
+
+    def __init__(self, interval=0.1, max_lines_displayed=20):
         self._stream = multiprocessing.Queue()
         self._interval = interval
         self._stop = True
@@ -52,7 +53,7 @@ class SharedConsole(object):
             if not self._stop:
                 await cancellable_sleep(self._interval)
 
-    def print(self, line, end='\n'):
+    def print(self, line, end="\n"):
         if os.getpid() != self._creator:
             line = "[%d] %s" % (os.getpid(), line)
         line += end
@@ -62,12 +63,12 @@ class SharedConsole(object):
         for line in printable_error(error, tb):
             self.print(line)
 
-    def print_block(self, start, callable, end='OK'):
+    def print_block(self, start, callable, end="OK"):
         if os.getpid() != self._creator:
             prefix = "[%d] " % os.getpid()
         else:
-            prefix = ''
-        self._stream.put(prefix + start + '...\n')
+            prefix = ""
+        self._stream.put(prefix + start + "...\n")
         res = callable()
-        self._stream.put(prefix + 'OK\n')
+        self._stream.put(prefix + "OK\n")
         return res

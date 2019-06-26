@@ -28,14 +28,13 @@ from molotov.sharedcounter import SharedCounters
 
 HERE = os.path.dirname(__file__)
 
-skip_pypy = pytest.mark.skipif(PYPY,
-                               reason='could not make work on pypy')
-only_pypy = pytest.mark.skipif(not PYPY, reason='only pypy')
+skip_pypy = pytest.mark.skipif(PYPY, reason="could not make work on pypy")
+only_pypy = pytest.mark.skipif(not PYPY, reason="only pypy")
 
-if os.environ.get('HAS_JOSH_K_SEAL_OF_APPROVAL', False):
-    _TIMEOUT = 1.
+if os.environ.get("HAS_JOSH_K_SEAL_OF_APPROVAL", False):
+    _TIMEOUT = 1.0
 else:
-    _TIMEOUT = .2
+    _TIMEOUT = 0.2
 
 
 async def serialize(console):
@@ -45,14 +44,14 @@ async def serialize(console):
             res.append(console._stream.get(block=True, timeout=_TIMEOUT))
         except Empty:
             break
-    return ''.join(res)
+    return "".join(res)
 
 
 class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/redirect":
             self.send_response(302)
-            self.send_header('Location', '/')
+            self.send_header("Location", "/")
             self.end_headers()
             return
         if self.path == "/slow":
@@ -69,6 +68,7 @@ class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
+
     def _run():
         os.chdir(HERE)
         socketserver.TCPServer.allow_reuse_address = True
@@ -83,7 +83,7 @@ def run_server(port=8888):
             except Exception as e:
                 error = e
                 attempts += 1
-                time.sleep(.1)
+                time.sleep(0.1)
 
         if httpd is None:
             raise OSError("Could not start the coserver: %s" % str(error))
@@ -103,58 +103,61 @@ def run_server(port=8888):
 
     while time.time() - start < 5 and not connected:
         try:
-            conn = HTTPConnection('localhost', 8888)
+            conn = HTTPConnection("localhost", 8888)
             conn.request("GET", "/")
             conn.getresponse()
             connected = True
         except Exception:
-            time.sleep(.1)
+            time.sleep(0.1)
     if not connected:
         os.kill(p.pid, signal.SIGTERM)
-        p.join(timeout=1.)
-        raise OSError('Could not connect to coserver')
+        p.join(timeout=1.0)
+        raise OSError("Could not connect to coserver")
     return p
 
 
-_CO = {'clients': 0, 'server': None}
+_CO = {"clients": 0, "server": None}
 
 
 @contextmanager
 def coserver(port=8888):
-    if _CO['clients'] == 0:
-        _CO['server'] = run_server(port)
+    if _CO["clients"] == 0:
+        _CO["server"] = run_server(port)
 
-    _CO['clients'] += 1
+    _CO["clients"] += 1
     try:
         yield
     finally:
-        _CO['clients'] -= 1
-        if _CO['clients'] == 0:
-            os.kill(_CO['server'].pid, signal.SIGTERM)
-            _CO['server'].join(timeout=1.)
-            _CO['server'].terminate()
-            _CO['server'] = None
+        _CO["clients"] -= 1
+        if _CO["clients"] == 0:
+            os.kill(_CO["server"].pid, signal.SIGTERM)
+            _CO["server"].join(timeout=1.0)
+            _CO["server"].terminate()
+            _CO["server"] = None
 
 
 def _respkw():
     from aiohttp.helpers import TimerNoop
-    return {'request_info': None,
-            'writer': None,
-            'continue100': None,
-            'timer': TimerNoop(),
-            'auto_decompress': True,
-            'traces': [],
-            'loop': asyncio.get_event_loop(),
-            'session': None}
+
+    return {
+        "request_info": None,
+        "writer": None,
+        "continue100": None,
+        "timer": TimerNoop(),
+        "auto_decompress": True,
+        "traces": [],
+        "loop": asyncio.get_event_loop(),
+        "session": None,
+    }
 
 
-def Response(method='GET', status=200, body=b'***'):
+def Response(method="GET", status=200, body=b"***"):
     if util.IS_AIOHTTP2:
-        response = LoggedClientResponse(method, URL('/'))
+        response = LoggedClientResponse(method, URL("/"))
     else:
-        response = LoggedClientResponse(method, URL('/'), **_respkw())
+        response = LoggedClientResponse(method, URL("/"), **_respkw())
     response.status = status
-    response.reason = ''
+    response.reason = ""
     response.code = status
     response.should_close = False
     response.headers = CIMultiDict({})
@@ -165,9 +168,10 @@ def Response(method='GET', status=200, body=b'***'):
             return body
 
         def unread_data(self, data):
-            if body == b'':
-                err = AttributeError("'EmptyStreamReader' object has no "
-                                     "attribute 'unread_data'")
+            if body == b"":
+                err = AttributeError(
+                    "'EmptyStreamReader' object has no " "attribute 'unread_data'"
+                )
                 raise err
             pass
 
@@ -177,7 +181,7 @@ def Response(method='GET', status=200, body=b'***'):
     return response
 
 
-def Request(url="http://127.0.0.1/", method='GET', body=b'***'):
+def Request(url="http://127.0.0.1/", method="GET", body=b"***"):
     request = LoggedClientRequest(method, URL(url))
     request.body = body
     return request
@@ -198,9 +202,9 @@ class TestLoop(unittest.TestCase):
         asyncio.set_event_loop_policy(self.policy)
 
     def get_args(self, console=None):
-        args = namedtuple('args', 'verbose quiet duration exception')
+        args = namedtuple("args", "verbose quiet duration exception")
         args.force_shutdown = False
-        args.ramp_up = .0
+        args.ramp_up = 0.0
         args.verbose = 1
         args.quiet = False
         args.duration = 5
@@ -212,9 +216,9 @@ class TestLoop(unittest.TestCase):
         args.statsd = False
         args.single_mode = None
         args.max_runs = None
-        args.delay = .0
+        args.delay = 0.0
         args.sizing = False
-        args.sizing_tolerance = .0
+        args.sizing_tolerance = 0.0
         args.console_update = 0
         args.use_extension = []
         args.fail = None
@@ -235,17 +239,19 @@ def async_test(func):
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
         console = SharedConsole(interval=0)
-        results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
-                                 'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
-        kw['loop'] = loop
-        kw['console'] = console
-        kw['results'] = results
+        results = SharedCounters(
+            "WORKER", "REACHED", "RATIO", "OK", "FAILED", "MINUTE_OK", "MINUTE_FAILED"
+        )
+        kw["loop"] = loop
+        kw["console"] = console
+        kw["results"] = results
         try:
             loop.run_until_complete(cofunc(*args, **kw))
         finally:
             loop.stop()
             loop.close()
             asyncio.set_event_loop(oldloop)
+
     return _async_test
 
 
@@ -262,6 +268,7 @@ def dedicatedloop(func):
                 loop.stop()
                 loop.close()
             asyncio.set_event_loop(old_loop)
+
     return _loop
 
 
@@ -279,6 +286,7 @@ def dedicatedloop_noclose(func):
         finally:
             loop._close()
             asyncio.set_event_loop(old_loop)
+
     return _loop
 
 
@@ -322,5 +330,5 @@ def catch_sleep(calls=None):
         # forces a context switch
         await original(0)
 
-    with patch('asyncio.sleep', _slept):
+    with patch("asyncio.sleep", _slept):
         yield calls

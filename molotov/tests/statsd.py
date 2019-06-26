@@ -40,7 +40,7 @@ class UDPServer(object):
 
         def make_proto():
             proto = ServerProto(self.incoming)
-            ctx['proto'] = proto
+            ctx["proto"] = proto
             return proto
 
         conn = self.loop.create_datagram_endpoint(
@@ -49,7 +49,7 @@ class UDPServer(object):
 
         async def listen_for_stop():
             await self._stop
-            ctx['proto'].disconnect()
+            ctx["proto"].disconnect()
 
         await asyncio.gather(conn, listen_for_stop(), loop=self.loop)
         self._done.set_result(True)

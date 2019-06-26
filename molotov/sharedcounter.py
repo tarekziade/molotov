@@ -4,8 +4,9 @@ import multiprocessing
 class SharedCounter(object):
     """A multi-process compatible counter.
     """
+
     def __init__(self, name):
-        self._val = multiprocessing.Value('i', 0)
+        self._val = multiprocessing.Value("i", 0)
         self._name = name
 
     def __eq__(self, other):
@@ -38,7 +39,7 @@ class SharedCounter(object):
         return -1
 
     def __repr__(self):
-        return '<SharedCounter %d>' % self._val.value
+        return "<SharedCounter %d>" % self._val.value
 
     def __iadd__(self, other):
         self.__add__(other)
@@ -76,6 +77,7 @@ class SharedCounter(object):
 class SharedCounters(object):
     """Mapping of SharedCounter items.
     """
+
     def __init__(self, *keys):
         self._counters = {}
         for key in keys:

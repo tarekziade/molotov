@@ -12,7 +12,7 @@ import json
 from molotov import scenario, setup, global_setup, global_teardown, teardown
 
 
-_API = 'http://localhost:8080'
+_API = "http://localhost:8080"
 _HEADERS = {}
 
 
@@ -20,7 +20,7 @@ _HEADERS = {}
 # are not a coroutine.
 @global_setup()
 def init_test(args):
-    _HEADERS['SomeHeader'] = '1'
+    _HEADERS["SomeHeader"] = "1"
 
 
 @global_teardown()
@@ -30,9 +30,9 @@ def end_test():
 
 @setup()
 async def init_worker(worker_num, args):
-    headers = {'AnotherHeader': '1'}
+    headers = {"AnotherHeader": "1"}
     headers.update(_HEADERS)
-    return {'headers': headers}
+    return {"headers": headers}
 
 
 @teardown()
@@ -44,9 +44,9 @@ def end_worker(worker_num):
 async def scenario_one(session):
     async with session.get(_API) as resp:
         if session.statsd:
-            session.statsd.incr('BLEH')
+            session.statsd.incr("BLEH")
         res = await resp.json()
-        assert res['result'] == 'OK'
+        assert res["result"] == "OK"
         assert resp.status == 200
 
 
@@ -58,6 +58,6 @@ async def scenario_two(session):
 
 @scenario(weight=30)
 async def scenario_three(session):
-    somedata = json.dumps({'OK': 1})
+    somedata = json.dumps({"OK": 1})
     async with session.post(_API, data=somedata) as resp:
         assert resp.status == 200

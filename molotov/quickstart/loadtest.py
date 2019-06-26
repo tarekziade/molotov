@@ -5,7 +5,7 @@ from molotov import scenario, setup, global_setup, teardown, global_teardown
 
 
 # This is the service you want to load test
-_API = 'http://localhost:8080'
+_API = "http://localhost:8080"
 
 
 @global_setup()
@@ -26,8 +26,8 @@ async def worker_starts(worker_id, args):
     You can add things like Authorization headers for instance,
     by setting a "headers" key.
     """
-    headers = {'SomeHeader': '1'}
-    return {'headers': headers}
+    headers = {"SomeHeader": "1"}
+    return {"headers": headers}
 
 
 @teardown()
@@ -57,10 +57,10 @@ async def scenario_one(session):
         # you will have a statsd client set into the session
         # you can use to add metrics
         if session.statsd:
-            session.statsd.incr('BLEH')
+            session.statsd.incr("BLEH")
         # when you read the body, don't forget to use await
         res = await resp.json()
-        assert res['result'] == 'OK'
+        assert res["result"] == "OK"
         assert resp.status == 200
 
 
@@ -75,6 +75,6 @@ async def scenario_two(session):
 
 @scenario(weight=30)
 async def scenario_three(session):
-    somedata = json.dumps({'OK': 1})
+    somedata = json.dumps({"OK": 1})
     async with session.post(_API, data=somedata) as resp:
         assert resp.status == 200

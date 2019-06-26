@@ -5,20 +5,20 @@ from molotov.api import get_fixture
 _UNREADABLE = "***WARNING: Molotov can't display this body***"
 _BINARY = "**** Binary content ****"
 _FILE = "**** File content ****"
-_COMPRESSED = ('gzip', 'compress', 'deflate', 'identity', 'br')
+_COMPRESSED = ("gzip", "compress", "deflate", "identity", "br")
 
 
 class BaseListener(object):
     async def __call__(self, event, **options):
-        attr = getattr(self, 'on_' + event, None)
+        attr = getattr(self, "on_" + event, None)
         if attr is not None:
             await attr(**options)
 
 
 class StdoutListener(BaseListener):
     def __init__(self, **options):
-        self.verbose = options.get('verbose', 0)
-        self.console = options['console']
+        self.verbose = options.get("verbose", 0)
+        self.console = options["console"]
 
     def _body2str(self, body):
         try:
@@ -34,7 +34,7 @@ class StdoutListener(BaseListener):
 
         if not isinstance(body, str):
             try:
-                body = str(body, 'utf8')
+                body = str(body, "utf8")
             except UnicodeDecodeError:
                 return _UNREADABLE
 
@@ -43,42 +43,41 @@ class StdoutListener(BaseListener):
     async def on_sending_request(self, session, request):
         if self.verbose < 2:
             return
-        raw = '>' * 45
-        raw += '\n' + request.method + ' ' + str(request.url)
+        raw = ">" * 45
+        raw += "\n" + request.method + " " + str(request.url)
         if len(request.headers) > 0:
-            headers = '\n'.join('%s: %s' % (k, v) for k, v in
-                                request.headers.items())
-            raw += '\n' + headers
-        if request.headers.get('Content-Encoding') in _COMPRESSED:
-            raw += '\n\n' + _BINARY + '\n'
+            headers = "\n".join("%s: %s" % (k, v) for k, v in request.headers.items())
+            raw += "\n" + headers
+        if request.headers.get("Content-Encoding") in _COMPRESSED:
+            raw += "\n\n" + _BINARY + "\n"
         elif request.body:
-            raw += '\n\n' + self._body2str(request.body) + '\n'
+            raw += "\n\n" + self._body2str(request.body) + "\n"
 
         self.console.print(raw)
 
     async def on_response_received(self, session, response, request):
         if self.verbose < 2:
             return
-        raw = '\n' + '=' * 45 + '\n'
-        raw += 'HTTP/1.1 %d %s\n' % (response.status, response.reason)
+        raw = "\n" + "=" * 45 + "\n"
+        raw += "HTTP/1.1 %d %s\n" % (response.status, response.reason)
         items = response.headers.items()
-        headers = '\n'.join('{}: {}'.format(k, v) for k, v in items)
+        headers = "\n".join("{}: {}".format(k, v) for k, v in items)
         raw += headers
-        if response.headers.get('Content-Encoding') in _COMPRESSED:
-            raw += '\n\n' + _BINARY
+        if response.headers.get("Content-Encoding") in _COMPRESSED:
+            raw += "\n\n" + _BINARY
         elif response.content:
             content = await response.content.read()
             if len(content) > 0:
                 # put back the data in the content
                 response.content.unread_data(content)
                 try:
-                    raw += '\n\n' + content.decode()
+                    raw += "\n\n" + content.decode()
                 except UnicodeDecodeError:
-                    raw += '\n\n' + _UNREADABLE
+                    raw += "\n\n" + _UNREADABLE
             else:
-                raw += '\n\n'
+                raw += "\n\n"
 
-        raw += '\n' + '<' * 45 + '\n'
+        raw += "\n" + "<" * 45 + "\n"
         self.console.print(raw)
 
 
@@ -98,7 +97,7 @@ class EventSender(object):
         self._listeners = listeners
         self._stopped = False
 
-        fixture_listeners = get_fixture('events')
+        fixture_listeners = get_fixture("events")
         if fixture_listeners is not None:
             for listener in fixture_listeners:
                 self.add_listener(CustomListener(listener))

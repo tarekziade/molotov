@@ -17,10 +17,10 @@ def _now():
 
 @molotov.events()
 async def record_time(event, **info):
-    req = info.get('request')
-    if event == 'sending_request':
+    req = info.get("request")
+    if event == "sending_request":
         _T[req] = _now()
-    elif event == 'response_received':
+    elif event == "response_received":
         _T[req] = _now() - _T[req]
 
 

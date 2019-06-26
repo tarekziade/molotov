@@ -18,7 +18,7 @@ def get_scenario(name):
 
 def _check_coroutine(func):
     if not asyncio.iscoroutinefunction(func):
-        raise TypeError('%s needs to be a coroutine' % str(func))
+        raise TypeError("%s needs to be a coroutine" % str(func))
 
 
 def scenario(weight=1, delay=0.0, name=None):
@@ -39,35 +39,42 @@ def scenario(weight=1, delay=0.0, name=None):
 
     The decorated function receives an :class:`aiohttp.ClientSession` instance.
     """
+
     def _scenario(func, *args, **kw):
         _check_coroutine(func)
         if weight > 0:
             sname = name or func.__name__
-            data = {'name': sname,
-                    'weight': weight, 'delay': delay,
-                    'func': func, 'args': args, 'kw': kw}
+            data = {
+                "name": sname,
+                "weight": weight,
+                "delay": delay,
+                "func": func,
+                "args": args,
+                "kw": kw,
+            }
             _SCENARIO[sname] = data
 
         @functools.wraps(func)
         def __scenario(*args, **kw):
             return func(*args, **kw)
+
         return __scenario
 
     return _scenario
 
 
 def pick_scenario(worker_id=0, step_id=0):
-    custom_picker = get_fixture('scenario_picker')
+    custom_picker = get_fixture("scenario_picker")
     if custom_picker is not None:
         name = custom_picker(worker_id, step_id)
         return get_scenario(name)
 
     scenarios = get_scenarios()
-    total = sum(item['weight'] for item in scenarios)
+    total = sum(item["weight"] for item in scenarios)
     selection = random.uniform(0, total)
     upto = 0
     for item in scenarios:
-        weight = item['weight']
+        weight = item["weight"]
         if upto + weight > selection:
             return item
         upto += weight
@@ -88,7 +95,7 @@ def scenario_picker():
 
     *The decorated function should not be a coroutine.*
     """
-    return _fixture('scenario_picker', coroutine=False)
+    return _fixture("scenario_picker", coroutine=False)
 
 
 _FIXTURES = {}
@@ -117,6 +124,7 @@ def _fixture(name, coroutine=True, multiple=False):
             return func(*args, **kw)
 
         return ___fixture
+
     return __fixture
 
 
@@ -137,7 +145,7 @@ def setup():
 
     *The decorated function should be a coroutine.*
     """
-    return _fixture('setup')
+    return _fixture("setup")
 
 
 def global_setup():
@@ -155,7 +163,7 @@ def global_setup():
 
     *The decorated function should not be a coroutine.*
     """
-    return _fixture('global_setup', coroutine=False)
+    return _fixture("global_setup", coroutine=False)
 
 
 def teardown():
@@ -167,7 +175,7 @@ def teardown():
 
     *The decorated function should not be a coroutine.*
     """
-    return _fixture('teardown', coroutine=False)
+    return _fixture("teardown", coroutine=False)
 
 
 def global_teardown():
@@ -175,7 +183,7 @@ def global_teardown():
 
     *The decorated function should not be a coroutine.*
     """
-    return _fixture('global_teardown', coroutine=False)
+    return _fixture("global_teardown", coroutine=False)
 
 
 def setup_session():
@@ -195,7 +203,7 @@ def setup_session():
 
     *The decorated function should be a coroutine.*
     """
-    return _fixture('setup_session')
+    return _fixture("setup_session")
 
 
 def teardown_session():
@@ -208,7 +216,7 @@ def teardown_session():
 
     *The decorated function should be a coroutine.*
     """
-    return _fixture('teardown_session')
+    return _fixture("teardown_session")
 
 
 def events():
@@ -223,4 +231,4 @@ def events():
 
     *IMPORTANT This function will directly impact the load test performances*
     """
-    return _fixture('events', multiple=True)
+    return _fixture("events", multiple=True)

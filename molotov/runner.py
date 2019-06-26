@@ -15,6 +15,7 @@ from molotov.worker import Worker
 class Runner(object):
     """Manages processes & workers and grabs results.
     """
+
     def __init__(self, args, loop=None):
         self.args = args
         self.console = self.args.shared_console
@@ -26,8 +27,9 @@ class Runner(object):
         self.statsd = None
         self._tasks = []
         self._procs = []
-        self._results = SharedCounters('WORKER', 'REACHED', 'RATIO', 'OK',
-                                       'FAILED', 'MINUTE_OK', 'MINUTE_FAILED')
+        self._results = SharedCounters(
+            "WORKER", "REACHED", "RATIO", "OK", "FAILED", "MINUTE_OK", "MINUTE_FAILED"
+        )
         self.eventer = EventSender(self.console)
 
     def _set_statsd(self):
@@ -49,7 +51,7 @@ class Runner(object):
         return asyncio.ensure_future(coro, loop=self.loop)
 
     def __call__(self):
-        global_setup = get_fixture('global_setup')
+        global_setup = get_fixture("global_setup")
         if global_setup is not None:
             try:
                 global_setup(self.args)
@@ -61,7 +63,7 @@ class Runner(object):
         try:
             return self._launch_processes()
         finally:
-            global_teardown = get_fixture('global_teardown')
+            global_teardown = get_fixture("global_teardown")
             if global_teardown is not None:
                 try:
                     global_teardown()
@@ -77,7 +79,7 @@ class Runner(object):
 
         if args.processes > 1:
             if not args.quiet:
-                self.console.print('Forking %d processes' % args.processes)
+                self.console.print("Forking %d processes" % args.processes)
             jobs = []
             for i in range(args.processes):
                 p = multiprocessing.Process(target=self._process)
@@ -90,7 +92,7 @@ class Runner(object):
             async def run(quiet, console):
                 while len(self._procs) > 0:
                     if not quiet:
-                        console.print(self.display_results(), end='\r')
+                        console.print(self.display_results(), end="\r")
                     for job in jobs:
                         if job.exitcode is not None and job in self._procs:
                             self._procs.remove(job)
@@ -98,9 +100,11 @@ class Runner(object):
                 await self.console.stop()
                 await self.eventer.stop()
 
-            tasks = [self.ensure_future(self.console.display()),
-                     self.ensure_future(self._send_workers_event(1)),
-                     self.ensure_future(run(args.quiet, self.console))]
+            tasks = [
+                self.ensure_future(self.console.display()),
+                self.ensure_future(self._send_workers_event(1)),
+                self.ensure_future(run(args.quiet, self.console)),
+            ]
             self.loop.run_until_complete(self.gather(*tasks))
         else:
             self._process()
@@ -120,13 +124,20 @@ class Runner(object):
         def _prepare():
             tasks = []
             delay = 0
-            if args.ramp_up > 0.:
+            if args.ramp_up > 0.0:
                 step = args.ramp_up / args.workers
             else:
-                step = 0.
+                step = 0.0
             for i in range(self.args.workers):
-                worker = Worker(i, self._results, self.console, self.args,
-                                self.statsd, delay, self.loop)
+                worker = Worker(
+                    i,
+                    self._results,
+                    self.console,
+                    self.args,
+                    self.statsd,
+                    delay,
+                    self.loop,
+                )
                 f = self.ensure_future(worker.run())
                 tasks.append(f)
                 delay += step
@@ -135,8 +146,8 @@ class Runner(object):
         if self.args.quiet:
             return _prepare()
         else:
-            msg = 'Preparing {} worker{}'
-            msg = msg.format(args.workers, 's' if args.workers > 1 else '')
+            msg = "Preparing {} worker{}"
+            msg = msg.format(args.workers, "s" if args.workers > 1 else "")
             return self.console.print_block(msg, _prepare)
 
     def _process(self):
@@ -144,10 +155,10 @@ class Runner(object):
 
         # coroutine that will kill everything when duration is up
         if self.args.duration and self.args.force_shutdown:
+
             async def _duration_killer():
                 cancelled = object()
-                res = await cancellable_sleep(self.args.duration,
-                                              result=cancelled)
+                res = await cancellable_sleep(self.args.duration, result=cancelled)
                 if res is cancelled or (res and not res.canceled()):
                     self._shutdown(None, None)
                     await asyncio.sleep(0)
@@ -163,7 +174,7 @@ class Runner(object):
             asyncio.set_event_loop(self.loop)
 
         if self.args.debug:
-            self.console.print('**** RUNNING IN DEBUG MODE == SLOW ****')
+            self.console.print("**** RUNNING IN DEBUG MODE == SLOW ****")
             self.loop.set_debug(True)
 
         self._set_statsd()
@@ -208,19 +219,19 @@ class Runner(object):
         self._tasks[:] = []
 
     def display_results(self):
-        ok, fail = self._results['OK'].value, self._results['FAILED'].value
-        workers = self._results['WORKER'].value
-        pat = 'SUCCESSES: %s | FAILURES: %s | WORKERS: %s'
+        ok, fail = self._results["OK"].value, self._results["FAILED"].value
+        workers = self._results["WORKER"].value
+        pat = "SUCCESSES: %s | FAILURES: %s | WORKERS: %s"
         return pat % (ok, fail, workers)
 
     async def _display_results(self, update_interval):
         while not is_stopped():
-            self.console.print(self.display_results(), end='\r')
+            self.console.print(self.display_results(), end="\r")
             await cancellable_sleep(update_interval)
         await self.console.stop()
 
     async def _send_workers_event(self, update_interval):
         while not self.eventer.stopped() and not is_stopped():
-            workers = self._results['WORKER'].value
-            await self.eventer.send_event('current_workers', workers=workers)
+            workers = self._results["WORKER"].value
+            await self.eventer.send_event("current_workers", workers=workers)
             await cancellable_sleep(update_interval)

@@ -18,7 +18,7 @@ TypeError\\("unsupported operand type.*"""
 
 
 # pre-forked variable
-_CONSOLE = SharedConsole(interval=0.)
+_CONSOLE = SharedConsole(interval=0.0)
 _PROC = []
 
 
@@ -38,26 +38,25 @@ def run_worker(input):
         loop.close()
 
     stdout = stdout.read()
-    assert stdout == '', stdout
+    assert stdout == "", stdout
 
 
 class TestSharedConsole(unittest.TestCase):
-
     @dedicatedloop
     def test_simple_usage(self):
         test_loop = asyncio.get_event_loop()
-        console = SharedConsole(interval=0.)
+        console = SharedConsole(interval=0.0)
 
         async def add_lines():
             console.print("one")
             console.print("two")
             console.print("3")
             try:
-                1 + 'e'
+                1 + "e"
             except Exception as e:
                 console.print_error(e)
                 console.print_error(e, sys.exc_info()[2])
-            await asyncio.sleep(.2)
+            await asyncio.sleep(0.2)
             await console.stop()
 
         with catch_output() as (stdout, stderr):
@@ -67,8 +66,7 @@ class TestSharedConsole(unittest.TestCase):
 
         output = stdout.read()
         test_loop.close()
-        self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None,
-                        output)
+        self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 
     @dedicatedloop
     def test_multiprocess(self):

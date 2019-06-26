@@ -16,8 +16,8 @@ def _now():
 
 @molotov.events()
 async def record_time(event, **info):
-    if event == 'current_workers':
-        concurs.append((_now(), info['workers']))
+    if event == "current_workers":
+        concurs.append((_now(), info["workers"]))
 
 
 @molotov.global_teardown()
