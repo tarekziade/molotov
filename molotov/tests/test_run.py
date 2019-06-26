@@ -84,7 +84,7 @@ class TestRunner(TestLoop):
         @scenario(weight=90)
         async def here_two(session):
             if session.statsd is not None:
-                session.statsd.incr('yopla')
+                session.statsd.increment('yopla')
             _RES.append(2)
 
         args = self._get_args()
@@ -389,7 +389,7 @@ class TestRunner(TestLoop):
 
         @scenario()
         async def staty(session):
-            session.statsd.incr('yopla')
+            session.statsd.increment('yopla')
 
         server = UDPServer('127.0.0.1', 9999, loop=test_loop)
         _stop = asyncio.Future()
@@ -415,7 +415,6 @@ class TestRunner(TestLoop):
         _stop.set_result(True)
         test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
         udp = server.flush()
-
         incrs = 0
         for line in udp:
             for el in line.split(b'\n'):

@@ -32,10 +32,15 @@ class Runner(object):
 
     def _set_statsd(self):
         if self.args.statsd:
-            self.statsd = get_statsd_client(self.args.statsd_address,
-                                            loop=self.loop)
+            self.statsd = get_statsd_client(self.args.statsd_address)
         else:
             self.statsd = None
+
+    def run_coro(self, coro):
+        if not self.loop.is_running():
+            raise Exception("Loop is not running")
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        return future.result()
 
     def gather(self, *futures):
         return asyncio.gather(*futures, loop=self.loop, return_exceptions=True)
@@ -162,6 +167,8 @@ class Runner(object):
             self.loop.set_debug(True)
 
         self._set_statsd()
+        if self.statsd is not None:
+            self._tasks.append(self.ensure_future(self.statsd.connect()))
 
         if self.args.original_pid == os.getpid():
             self._tasks.append(self.ensure_future(self._send_workers_event(1)))
@@ -186,10 +193,9 @@ class Runner(object):
         try:
             self.loop.run_until_complete(self.gather(*self._tasks))
         finally:
-            self._kill_tasks()
             if self.statsd is not None:
-                self.statsd.close()
-            self.loop.run_until_complete(self.ensure_future(asyncio.sleep(0)))
+                self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
+            self._kill_tasks()
             self.loop.close()
 
     def _kill_tasks(self):

@@ -1,3 +1,4 @@
+from time import perf_counter
 import socket
 from urllib.parse import urlparse
 import asyncio
@@ -88,10 +89,12 @@ class LoggedClientSession(ClientSession):
 
             label = prefix % data
 
-            @self.statsd.timer(label)
             async def request():
+                start = perf_counter()
                 resp = await req(*args, **kw)
-                self.statsd.incr(label + '.' + str(resp.status))
+                duration = int((perf_counter() - start) * 1000)
+                self.statsd.timing(label, value=duration)
+                self.statsd.increment(label + '.' + str(resp.status))
                 return resp
 
             resp = await request()
