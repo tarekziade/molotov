@@ -144,7 +144,6 @@ def _respkw():
         "writer": None,
         "continue100": None,
         "timer": TimerNoop(),
-        "auto_decompress": True,
         "traces": [],
         "loop": asyncio.get_event_loop(),
         "session": None,
