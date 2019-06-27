@@ -249,7 +249,7 @@ class TestFmwk(TestLoop):
         output = await serialize(console)
         expected = (
             "Name or service not known" in output
-            or "nodename nor servname provided" in output
+            or "nodename nor servname provided" in output  # NOQA
         )
         self.assertTrue(expected, output)
 
