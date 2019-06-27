@@ -16,7 +16,8 @@ from aiohttp import ClientSession, __version__
 _DNS_CACHE = {}
 _STOP = False
 _TIMER = None
-IS_AIOHTTP2 = __version__[0] == "2"
+if __version__[0] == "2":
+    raise ImportError("Molotov only supports aiohttp 3.x going forward")
 
 
 def get_timer():

@@ -5,7 +5,7 @@ import asyncio
 from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector
 
-from molotov.util import resolve, IS_AIOHTTP2
+from molotov.util import resolve
 from molotov.listeners import StdoutListener, EventSender
 
 
@@ -15,28 +15,15 @@ _HOST = socket.gethostname()
 class LoggedClientRequest(ClientRequest):
     """Printable Request.
     """
-
     session = None
 
-    if IS_AIOHTTP2:
-
-        def send(self, *args, **kw):
-            if self.session:
-                event = self.session.send_event("sending_request", request=self)
-                asyncio.ensure_future(event)
-            response = super(LoggedClientRequest, self).send(*args, **kw)
-            response.request = self
-            return response
-
-    else:
-
-        async def send(self, *args, **kw):
-            if self.session:
-                event = self.session.send_event("sending_request", request=self)
-                asyncio.ensure_future(event)
-            response = await super(LoggedClientRequest, self).send(*args, **kw)
-            response.request = self
-            return response
+    async def send(self, *args, **kw):
+        if self.session:
+            event = self.session.send_event("sending_request", request=self)
+            asyncio.ensure_future(event)
+        response = await super(LoggedClientRequest, self).send(*args, **kw)
+        response.request = self
+        return response
 
 
 class LoggedClientResponse(ClientResponse):

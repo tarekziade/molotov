@@ -151,10 +151,7 @@ def _respkw():
 
 
 def Response(method="GET", status=200, body=b"***"):
-    if util.IS_AIOHTTP2:
-        response = LoggedClientResponse(method, URL("/"))
-    else:
-        response = LoggedClientResponse(method, URL("/"), **_respkw())
+    response = LoggedClientResponse(method, URL("/"), **_respkw())
     response.status = status
     response.reason = ""
     response.code = status
