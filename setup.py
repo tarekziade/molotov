@@ -1,8 +1,8 @@
 import sys
 from setuptools import setup, find_packages
 
-if sys.version_info < (3, 5):
-    raise ValueError("Requires Python 3.5 or superior")
+if sys.version_info < (3, 6):
+    raise ValueError("Requires Python 3.6 or superior")
 
 from molotov import __version__     # NOQA
 
@@ -18,8 +18,8 @@ classifiers = ["Programming Language :: Python",
                "License :: OSI Approved :: Apache Software License",
                "Development Status :: 5 - Production/Stable",
                "Programming Language :: Python :: 3 :: Only",
-               "Programming Language :: Python :: 3.5",
-               "Programming Language :: Python :: 3.6"]
+               "Programming Language :: Python :: 3.6",
+               "Programming Language :: Python :: 3.7"]
 
 
 setup(name='molotov',
