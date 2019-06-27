@@ -2,4 +2,3 @@ pytest
 pytest-cov
 pytest-random-order
 coveralls
-aiodogstatsd
