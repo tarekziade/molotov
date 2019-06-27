@@ -159,8 +159,8 @@ def Response(method="GET", status=200, body=b"***"):
     response.reason = ""
     response.code = status
     response.should_close = False
-    response.headers = CIMultiDict({})
-    response.raw_headers = []
+    response._headers = CIMultiDict({})
+    response._raw_headers = []
 
     class Body:
         async def read(self):
