@@ -10,7 +10,7 @@ matrix:
     - python: 3.8
       env:
       - TOX_ENV=py38
-    - python: 3.9
+    - python: 3.9-dev
       env:
       - TOX_ENV=py39
 addons:
