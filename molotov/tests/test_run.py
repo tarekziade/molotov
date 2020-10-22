@@ -306,7 +306,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_uvloop(self):
         try:
-            import uvloop
+            import uvloop       # noqa
         except ImportError:
             return
 
