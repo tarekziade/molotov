@@ -6,7 +6,7 @@ if sys.version_info < (3, 6):
 
 from molotov import __version__     # NOQA
 
-install_requires = ['aiohttp', 'aiomeasures']
+install_requires = ['aiohttp', 'aiomeasures', 'aiodogstatsd']
 description = ''
 
 for file_ in ('README', 'CHANGELOG'):
