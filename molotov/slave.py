@@ -2,7 +2,7 @@ import json
 import os
 import sys
 import argparse
-import subprocess
+from subprocess import check_call
 import tempfile
 import shutil
 import site
@@ -14,16 +14,16 @@ from molotov.run import main as run, _parser
 
 def clone_repo(github):
     # XXX security
-    subprocess.check_call("git clone %s ." % github, shell=True)
+    check_call("git clone %s ." % github, shell=True)
 
 
 def create_virtualenv(virtualenv, python):
     # XXX security
-    subprocess.check_call("%s --python %s venv" % (virtualenv, python), shell=True)
+    check_call("%s --python %s venv" % (virtualenv, python), shell=True)
 
 
 def install_reqs(reqfile):
-    subprocess.check_call("./venv/bin/pip install -r %s" % reqfile, shell=True)
+    check_call("./venv/bin/pip install -r %s" % reqfile, shell=True)
 
 
 def run_test(**options):
@@ -78,6 +78,10 @@ def main():
     )
 
     parser.add_argument(
+        "--directory", type=str, default=None, help="Directory to run into."
+    )
+
+    parser.add_argument(
         "--config",
         type=str,
         default="molotov.json",
@@ -93,13 +97,18 @@ def main():
         print(__version__)
         sys.exit(0)
 
-    tempdir = tempfile.mkdtemp()
+    if args.directory is None:
+        args.directory = tempfile.mkdtemp()
+        remove_dir = True
+    else:
+        remove_dir = False
+
     curdir = os.getcwd()
-    os.chdir(tempdir)
-    print("Working directory is %s" % tempdir)
+    os.chdir(args.directory)
+    print("Working directory is %s" % args.directory)
     try:
         clone_repo(args.repo)
-        config_file = os.path.join(tempdir, args.config)
+        config_file = os.path.join(args.directory, args.config)
 
         with open(config_file) as f:
             config = json.loads(f.read())
@@ -114,7 +123,7 @@ def main():
         # load deps into sys.path
         pyver = "%d.%d" % (sys.version_info.major, sys.version_info.minor)
         site_pkg = os.path.join(
-            tempdir, "venv", "lib", "python" + pyver, "site-packages"
+            args.directory, "venv", "lib", "python" + pyver, "site-packages"
         )
         site.addsitedir(site_pkg)
         pkg_resources.working_set.add_entry(site_pkg)
@@ -127,5 +136,6 @@ def main():
         run_test(**config["molotov"]["tests"][args.run])
     except Exception:
         os.chdir(curdir)
-        shutil.rmtree(tempdir, ignore_errors=True)
+        if remove_dir:
+            shutil.rmtree(args.directory, ignore_errors=True)
         raise

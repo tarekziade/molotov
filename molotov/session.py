@@ -15,6 +15,7 @@ _HOST = socket.gethostname()
 class LoggedClientRequest(ClientRequest):
     """Printable Request.
     """
+
     session = None
 
     async def send(self, *args, **kw):

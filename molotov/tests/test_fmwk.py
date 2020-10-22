@@ -195,15 +195,16 @@ class TestFmwk(TestLoop):
 
         args = self.get_args()
         args.processes = 2
-        args.workers = 5
+        args.workers = 2
         args.console = console
         results = Runner(args)()
         self.assertTrue(results["OK"] > 0)
         self.assertEqual(results["FAILED"], 0)
 
-    @dedicatedloop
     def test_runner_multiprocess_console(self):
         self._multiprocess(console=True)
+
+    def test_runner_multiprocess_no_console(self):
         self._multiprocess(console=False, nosetup=True)
 
     @async_test

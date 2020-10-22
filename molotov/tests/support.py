@@ -203,7 +203,7 @@ class TestLoop(unittest.TestCase):
         args.ramp_up = 0.0
         args.verbose = 1
         args.quiet = False
-        args.duration = 5
+        args.duration = 0.2
         args.exception = True
         args.processes = 1
         args.debug = True
