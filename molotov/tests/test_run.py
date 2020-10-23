@@ -745,3 +745,39 @@ class TestRunner(TestLoop):
         assert _RES["one"] == 1
         assert _RES["two"] == 1
         assert _RES["three"] == 1
+
+    @dedicatedloop
+    @patch("molotov.session.resolve")
+    def test_enable_dns(self, m_resolve):
+
+        m_resolve.return_value = ("http://localhost", "http://localhost", "localhost")
+
+        with catch_sleep():
+
+            @scenario()
+            async def one(session):
+                async with session.get("http://localhost") as resp:
+                    pass
+
+            stdout, stderr, rc = self._test_molotov(
+                "--single-run", "molotov.tests.test_run",
+            )
+
+        m_resolve.assert_called()
+
+    @dedicatedloop
+    @patch("molotov.session.resolve")
+    def test_disable_dns(self, m_resolve):
+
+        with catch_sleep():
+
+            @scenario()
+            async def one(session):
+                async with session.get("http://localhost") as resp:
+                    pass
+
+            stdout, stderr, rc = self._test_molotov(
+                "--disable-dns-resolve", "--single-run", "molotov.tests.test_run",
+            )
+
+        m_resolve.assert_not_called()

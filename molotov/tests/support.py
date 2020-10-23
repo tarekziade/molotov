@@ -220,6 +220,7 @@ class TestLoop(unittest.TestCase):
         args.use_extension = []
         args.fail = None
         args.force_reconnection = False
+        args.disable_dns_resolve = False
 
         if console is None:
             console = SharedConsole(interval=0)

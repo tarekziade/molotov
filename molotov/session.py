@@ -35,7 +35,7 @@ class LoggedClientSession(ClientSession):
     """Session with printable requests and responses.
     """
 
-    def __init__(self, loop, console, verbose=0, statsd=None, **kw):
+    def __init__(self, loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
         connector = kw.pop("connector", None)
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
@@ -56,6 +56,7 @@ class LoggedClientSession(ClientSession):
         self.eventer = EventSender(
             console, [StdoutListener(verbose=self.verbose, console=self.console)]
         )
+        self._resolve_dns = resolve_dns
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, session=self, **options)
@@ -65,7 +66,8 @@ class LoggedClientSession(ClientSession):
 
     async def _request(self, *args, **kw):
         args = list(args)
-        args[1] = self._dns_lookup(args[1])
+        if self._resolve_dns:
+            args[1] = self._dns_lookup(args[1])
         args = tuple(args)
         req = super(LoggedClientSession, self)._request
 

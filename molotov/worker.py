@@ -32,6 +32,7 @@ class Worker(object):
         self.worker_start = 0
         self.eventer = EventSender(console)
         self._exhausted = False
+        self.resolve_dns = not args.disable_dns_resolve
         # fixtures
         self._session_setup = get_fixture("setup_session")
         self._session_teardown = get_fixture("teardown_session")
@@ -125,7 +126,7 @@ class Worker(object):
             return
 
         async with Session(
-            self.loop, self.console, verbose, self.statsd, **options
+            self.loop, self.console, verbose, self.statsd, self.resolve_dns, **options
         ) as session:
             session.args = self.args
             session.worker_id = self.wid

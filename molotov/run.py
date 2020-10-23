@@ -34,6 +34,13 @@ def _parser():
     )
 
     parser.add_argument(
+        "--disable-dns-resolve",
+        action="store_true",
+        default=False,
+        help="Disable DNS resolving on all calls",
+    )
+
+    parser.add_argument(
         "-s",
         "--single-mode",
         default=None,
