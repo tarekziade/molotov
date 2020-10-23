@@ -1,9 +1,19 @@
 CHANGELOG
 =========
 
-1.7
-XXX
-XX
+
+2.0 - 2020-10-23
+----------------
+
+- added the --disable-dns-resolve option (#119)
+- fix multiprocessing pickling issues by using dill
+- display the max worker in the sizing result (#123)
+- add aiodogstatsd (#122)
+- added the --single-run option (#124)
+- added support for 3.8 & 3.9 in tox/travis-ci
+- speed up tests
+- dropped support for 3.5
+
 
 1.6 - 2018-04-05
 ----------------
