@@ -412,7 +412,7 @@ class TestRunner(TestLoop):
 
         ratio = float(_RES2["fail"]) / float(_RES2["succ"]) * 100.0
         self.assertTrue(ratio < 15.0 and ratio >= 5.0, ratio)
-        found = re.findall("obtained with (\d+) workers", stdout)
+        found = re.findall(r"obtained with (\d+) workers", stdout)
         assert int(found[0]) > 50
 
     @dedicatedloop
@@ -756,7 +756,7 @@ class TestRunner(TestLoop):
 
             @scenario()
             async def one(session):
-                async with session.get("http://localhost") as resp:
+                async with session.get("http://localhost"):
                     pass
 
             stdout, stderr, rc = self._test_molotov(
@@ -773,7 +773,7 @@ class TestRunner(TestLoop):
 
             @scenario()
             async def one(session):
-                async with session.get("http://localhost") as resp:
+                async with session.get("http://localhost"):
                     pass
 
             stdout, stderr, rc = self._test_molotov(
