@@ -106,6 +106,7 @@ class TestRunner(TestLoop):
         server_task = asyncio.ensure_future(server.run())
         stop_task = asyncio.ensure_future(stop())
         args.max_runs = 3
+        args.duration = 9999
 
         with coserver():
             run(args)
