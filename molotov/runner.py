@@ -28,7 +28,14 @@ class Runner(object):
         self._tasks = []
         self._procs = []
         self._results = SharedCounters(
-            "WORKER", "REACHED", "RATIO", "OK", "FAILED", "MINUTE_OK", "MINUTE_FAILED"
+            "WORKER",
+            "REACHED",
+            "RATIO",
+            "OK",
+            "FAILED",
+            "MINUTE_OK",
+            "MINUTE_FAILED",
+            "MAX_WORKERS",
         )
         self.eventer = EventSender(self.console)
 

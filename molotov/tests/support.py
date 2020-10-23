@@ -236,7 +236,14 @@ def async_test(func):
         loop.set_debug(True)
         console = SharedConsole(interval=0)
         results = SharedCounters(
-            "WORKER", "REACHED", "RATIO", "OK", "FAILED", "MINUTE_OK", "MINUTE_FAILED"
+            "WORKER",
+            "REACHED",
+            "RATIO",
+            "OK",
+            "FAILED",
+            "MINUTE_OK",
+            "MINUTE_FAILED",
+            "MAX_WORKERS",
         )
         kw["loop"] = loop
         kw["console"] = console

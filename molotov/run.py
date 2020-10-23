@@ -213,7 +213,7 @@ _SIZING = """\
 
 Sizing is over!
 
-Error Ratio %(RATIO).2f %% obtained with %(WORKER)d workers.
+Error Ratio %(RATIO).2f %% obtained with %(MAX_WORKERS)d workers.
 
 OVERALL: SUCCESSES: %(OK)d | FAILURES: %(FAILED)d
 LAST MINUTE: SUCCESSES: %(MINUTE_OK)d | FAILURES: %(MINUTE_FAILED)d

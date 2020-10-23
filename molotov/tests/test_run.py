@@ -4,6 +4,7 @@ import os
 import signal
 import asyncio
 from unittest.mock import patch
+import re
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import (
@@ -307,7 +308,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_uvloop(self):
         try:
-            import uvloop       # noqa
+            import uvloop  # noqa
         except ImportError:
             return
 
@@ -410,6 +411,8 @@ class TestRunner(TestLoop):
 
         ratio = float(_RES2["fail"]) / float(_RES2["succ"]) * 100.0
         self.assertTrue(ratio < 15.0 and ratio >= 5.0, ratio)
+        found = re.findall("obtained with (\d+) workers", stdout)
+        assert int(found[0]) > 50
 
     @dedicatedloop
     def test_sizing_multiprocess(self):

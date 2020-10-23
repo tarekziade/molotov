@@ -45,6 +45,7 @@ class Worker(object):
         if is_stopped():
             return
         self.results["WORKER"] += 1
+        self.results["MAX_WORKERS"] += 1
         try:
             res = await self._run()
         finally:
