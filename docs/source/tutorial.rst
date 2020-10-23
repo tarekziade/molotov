@@ -44,7 +44,7 @@ If that worked, you should now have a **molotov** command-line.
 .. code-block:: bash
 
     (venv) $ molotov --version
-    0.5
+    2.0
 
 
 Running one scenario
@@ -67,14 +67,14 @@ A scenario needs to be a coroutine and gets a **session** instance that
 can be used to query a server.
 
 In our example we query https://example.com and make sure it returns
-a 200. Let's run it in console mode just once with --max-runs:
+a 200. Let's run it in console mode just once with --single-run:
 
 .. code-block:: bash
 
-    (venv) $  molotov --max-runs 1 -x loadtest.py
-    **** Molotov v0.5. Happy breaking! ****
-    [77947] Preparing 1 workers...OK
-    SUCCESSES: 1 | FAILURES: 0
+    (venv) $  molotov --single-run 1 loadtest.py
+    **** Molotov v2.0. Happy breaking! ****
+    Preparing 1 workers...OK
+    SUCCESSES: 1 | FAILURES: 0  | WORKERS: 1
     *** Bye ***
 
 It worked! Let's try for 3 seconds now:
@@ -82,9 +82,9 @@ It worked! Let's try for 3 seconds now:
 .. code-block:: bash
 
     (venv) $  molotov -d 3 -x loadtest.py
-    **** Molotov v0.5. Happy breaking! ****
-    [78005] Preparing 1 workers...OK
-    SUCCESSES: 6 | FAILURES: 0
+    **** Molotov v2.0. Happy breaking! ****
+    Preparing 1 workers...OK
+    SUCCESSES: 26 | FAILURES: 0 | WORKERS: 1
     *** Bye ***
 
 Notice that you can stop the test anytime with Ctrl+C.
@@ -96,9 +96,9 @@ workers:
 .. code-block:: bash
 
     (venv) $ molotov -w 10 -d 2 -x loadtest.py
-    **** Molotov v0.5. Happy breaking! ****
-    [44543] Preparing 10 workers...OK
-    SUCCESSES: 20 | FAILURES: 0
+    **** Molotov v2.0. Happy breaking! ****
+    Preparing 10 workers...OK
+    SUCCESSES: 110 | FAILURES: 0 | WORKERS: 10
     *** Bye ***
 
 Molotov can also run several processes in parallel, each one running its
@@ -108,7 +108,7 @@ it means the level of concurrency will be 40:
 .. code-block:: bash
 
     (venv) $ molotov -w 10 -p 4 -d 2 -x loadtest.py
-    **** Molotov v0.5. Happy breaking! ****
+    **** Molotov v2.0. Happy breaking! ****
     Forking 4 processes
     [44553] Preparing 10 workers...OK
     [44554] Preparing 10 workers...OK

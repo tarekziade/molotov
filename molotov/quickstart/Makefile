@@ -1,6 +1,5 @@
 HERE = $(shell pwd)
 PYTHON = python3
-VTENV_OPTS = --python $(PYTHON)
 TESTNAME = smoke
 BIN = $(HERE)/venv/bin
 VENV_PIP = $(BIN)/pip3
@@ -11,7 +10,7 @@ INSTALL = $(VENV_PIP) install
 
 
 $(VENV_PYTHON):
-	virtualenv $(VTENV_OPTS) venv
+	$(PYTHON) -m venv venv
 
 build: $(VENV_PYTHON)
 	$(INSTALL) --upgrade git+https://github.com/loads/molotov.git
