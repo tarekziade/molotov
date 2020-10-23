@@ -27,6 +27,13 @@ def _parser():
     )
 
     parser.add_argument(
+        "--single-run",
+        action="store_true",
+        default=False,
+        help="Run once every existing scenario",
+    )
+
+    parser.add_argument(
         "-s",
         "--single-mode",
         default=None,
@@ -263,6 +270,10 @@ def run(args):
 
     if args.verbose > 0 and args.quiet:
         print("You can't use -q and -v at the same time")
+        sys.exit(1)
+
+    if args.single_mode and args.single_run:
+        print("You can't use --singlee-mode and --single-run")
         sys.exit(1)
 
     if args.single_mode:

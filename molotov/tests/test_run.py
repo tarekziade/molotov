@@ -5,6 +5,7 @@ import signal
 import asyncio
 from unittest.mock import patch
 import re
+from collections import defaultdict
 
 from molotov.api import scenario, global_setup
 from molotov.tests.support import (
@@ -717,3 +718,30 @@ class TestRunner(TestLoop):
         # makes sure the test finishes
         self.assertTrue(time.time() - start > 5)
         self.assertTrue(len(_RES) == 1)
+
+    @dedicatedloop
+    def test_single_run(self):
+        _RES = defaultdict(int)
+
+        with catch_sleep():
+
+            @scenario()
+            async def one(session):
+                _RES["one"] += 1
+
+            @scenario()
+            async def two(session):
+                _RES["two"] += 1
+
+            @scenario()
+            async def three(session):
+                _RES["three"] += 1
+
+            stdout, stderr, rc = self._test_molotov(
+                "--single-run", "molotov.tests.test_run",
+            )
+
+        assert rc == 0
+        assert _RES["one"] == 1
+        assert _RES["two"] == 1
+        assert _RES["three"] == 1

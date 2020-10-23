@@ -1,9 +1,10 @@
 import asyncio
 import time
+from inspect import isgenerator
 
 from molotov.listeners import EventSender
 from molotov.session import LoggedClientSession as Session
-from molotov.api import get_fixture, pick_scenario, get_scenario
+from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
 from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop
 
 
@@ -30,6 +31,7 @@ class Worker(object):
         self.count = 0
         self.worker_start = 0
         self.eventer = EventSender(console)
+        self._exhausted = False
         # fixtures
         self._session_setup = get_fixture("setup_session")
         self._session_teardown = get_fixture("teardown_session")
@@ -57,6 +59,8 @@ class Worker(object):
         if is_stopped():
             return False
         if _now() - self.worker_start > self.args.duration:
+            return False
+        if self._exhausted:
             return False
         if self.results["REACHED"] == 1:
             return False
@@ -106,6 +110,8 @@ class Worker(object):
 
         if self.args.single_mode:
             single = get_scenario(self.args.single_mode)
+        elif self.args.single_run:
+            single = next_scenario()
         else:
             single = None
 
@@ -200,6 +206,12 @@ class Worker(object):
         """
         if scenario is None:
             scenario = pick_scenario(self.wid, step_id)
+        elif isgenerator(scenario):
+            try:
+                scenario = next(scenario)
+            except StopIteration:
+                self._exhausted = True
+                return 0
         try:
             await self.send_event("scenario_start", scenario=scenario)
 

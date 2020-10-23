@@ -211,6 +211,7 @@ class TestLoop(unittest.TestCase):
         args.console = True
         args.statsd = False
         args.single_mode = None
+        args.single_run = False
         args.max_runs = None
         args.delay = 0.0
         args.sizing = False

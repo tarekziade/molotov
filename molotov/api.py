@@ -80,6 +80,11 @@ def pick_scenario(worker_id=0, step_id=0):
         upto += weight
 
 
+def next_scenario():
+    for scenario in get_scenarios():
+        yield scenario
+
+
 def scenario_picker():
     """Called to chose a scenario.
 
