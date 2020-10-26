@@ -47,7 +47,7 @@ async def serialize(console):
     return "".join(res)
 
 
-class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
+class RequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/redirect":
             self.send_response(302)
@@ -62,7 +62,16 @@ class HandlerRedirect(http.server.SimpleHTTPRequestHandler):
             except SystemExit:
                 pass
             return
-        return super(HandlerRedirect, self).do_GET()
+        return super(RequestHandler, self).do_GET()
+
+    def do_POST(self):
+        content_length = int(self.headers["Content-Length"])
+        body = self.rfile.read(content_length)
+        response_code = 200
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(body)
 
 
 def run_server(port=8888):
@@ -78,7 +87,7 @@ def run_server(port=8888):
 
         while attempts < 3:
             try:
-                httpd = socketserver.TCPServer(("", port), HandlerRedirect)
+                httpd = socketserver.TCPServer(("", port), RequestHandler)
                 break
             except Exception as e:
                 error = e

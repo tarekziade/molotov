@@ -6,8 +6,11 @@ import asyncio
 from unittest.mock import patch
 import re
 from collections import defaultdict
+import json
 
-from molotov.api import scenario, global_setup
+import aiohttp
+
+from molotov.api import _SCENARIO, scenario, global_setup
 from molotov.tests.support import (
     TestLoop,
     coserver,
@@ -36,6 +39,7 @@ class TestRunner(TestLoop):
         super(TestRunner, self).setUp()
         _RES[:] = []
         _RES2.clear()
+        _SCENARIO.clear()
 
     def _get_args(self):
         args = self.get_args()
@@ -781,3 +785,55 @@ class TestRunner(TestLoop):
             )
 
         m_resolve.assert_not_called()
+
+    @dedicatedloop
+    def test_bug_121(self):
+
+        PASSED = [0]
+
+        with catch_sleep():
+
+            @scenario()
+            async def scenario_one(session):
+
+                cookies = {
+                    "csrftoken": "sometoken",
+                    "dtk": "1234",
+                    "djdt": "hide",
+                    "sessionid": "5678",
+                }
+                boundary = "----WebKitFormBoundaryFTE"
+                headers = {
+                    "X-CSRFToken": "sometoken",
+                    "Content-Type": "multipart/form-data; boundary={}".format(boundary),
+                }
+                data = json.dumps({"1": "xxx"})
+
+                with aiohttp.MultipartWriter(
+                    "form-data", boundary=boundary
+                ) as mpwriter:
+                    mpwriter.append(
+                        data,
+                        {
+                            "Content-Disposition": 'form-data; name="json"; filename="blob"',
+                            "Content-Type": "application/json",
+                        },
+                    )
+                    async with session.post(
+                        "http://localhost:8888",
+                        data=mpwriter,
+                        headers=headers,
+                        cookies=cookies,
+                    ) as resp:
+                        res = await resp.text()
+                        assert data in res
+                        PASSED[0] += 1
+
+            args = self._get_args()
+            args.verbose = 2
+            args.max_runs = 1
+            with coserver():
+                res = run(args)
+
+            assert PASSED[0] == 1
+            assert res["OK"] == 1

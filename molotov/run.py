@@ -312,3 +312,4 @@ def run(args):
         print("*** Bye ***")
         if args.fail is not None and res["FAILED"] >= args.fail:
             sys.exit(1)
+    return res

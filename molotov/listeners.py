@@ -1,4 +1,5 @@
 import io
+import aiohttp
 
 from molotov.api import get_fixture
 
@@ -15,12 +16,28 @@ class BaseListener(object):
             await attr(**options)
 
 
+class Writer:
+    def __init__(self):
+        self.buffer = bytearray()
+
+    async def write(self, data):
+        self.buffer.extend(data)
+
+
 class StdoutListener(BaseListener):
     def __init__(self, **options):
         self.verbose = options.get("verbose", 0)
         self.console = options["console"]
 
-    def _body2str(self, body):
+    async def _body2str(self, body):
+        if body is None:
+            return ""
+
+        if isinstance(body, aiohttp.multipart.MultipartWriter):
+            writer = Writer()
+            await body.write(writer)
+            body = writer.buffer.decode("utf8")
+
         try:
             from aiohttp.payload import Payload
         except ImportError:
@@ -51,7 +68,8 @@ class StdoutListener(BaseListener):
         if request.headers.get("Content-Encoding") in _COMPRESSED:
             raw += "\n\n" + _BINARY + "\n"
         elif request.body:
-            raw += "\n\n" + self._body2str(request.body) + "\n"
+            str_body = await self._body2str(request.body)
+            raw += "\n\n" + str_body + "\n"
 
         self.console.print(raw)
 
