@@ -154,7 +154,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_no_scenario(self):
         stdout, stderr, rc = self._test_molotov()
-        self.assertTrue("Cannot import" in stdout)
+        self.assertTrue("Cannot import" in stdout, msg=stdout)
 
     @dedicatedloop
     def test_config_no_scenario(self):
