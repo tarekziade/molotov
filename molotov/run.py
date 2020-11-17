@@ -236,16 +236,24 @@ LAST MINUTE: SUCCESSES: %(MINUTE_OK)d | FAILURES: %(MINUTE_FAILED)d
 HELLO = "**** Molotov v%s. Happy breaking! ****" % __version__
 
 
-def run(args):
-    args.shared_console = SharedConsole(interval=args.console_update)
+def direct_print(stream, msg):
+    stream.write(msg + "\n")
+    stream.flush()
+
+
+def run(args, stream=None):
+    if stream is None:
+        stream = sys.stdout
+
+    args.shared_console = SharedConsole(interval=args.console_update, stream=stream)
 
     if not args.quiet:
-        print(HELLO)
+        direct_print(stream, HELLO)
 
     if args.use_extension:
         for extension in args.use_extension:
             if not args.quiet:
-                print("Loading extension %r" % extension)
+                direct_print(stream, "Loading extension %r" % extension)
             if os.path.exists(extension):
                 spec = spec_from_file_location("extension", extension)
                 module = module_from_spec(spec)
@@ -254,8 +262,8 @@ def run(args):
                 try:
                     import_module(extension)
                 except (ImportError, ValueError) as e:
-                    print("Cannot import %r" % extension)
-                    print("\n".join(printable_error(e)))
+                    direct_print(stream, "Cannot import %r" % extension)
+                    direct_print(stream, "\n".join(printable_error(e)))
                     sys.exit(1)
 
     if os.path.exists(args.scenario):
@@ -266,26 +274,28 @@ def run(args):
         try:
             import_module(args.scenario)
         except (ImportError, ValueError) as e:
-            print("Cannot import %r" % args.scenario)
-            print("\n".join(printable_error(e)))
+            direct_print(stream, "Cannot import %r" % args.scenario)
+            direct_print(stream, "\n".join(printable_error(e)))
             sys.exit(1)
 
     if len(get_scenarios()) == 0:
-        print("You need at least one scenario. No scenario was found.")
-        print("A scenario with a weight of 0 is ignored")
+        direct_print(stream, "You need at least one scenario. No scenario was found.")
+        direct_print(stream, "A scenario with a weight of 0 is ignored")
         sys.exit(1)
 
     if args.verbose > 0 and args.quiet:
-        print("You can't use -q and -v at the same time")
+        direct_print(stream, "You can't use -q and -v at the same time")
         sys.exit(1)
 
     if args.single_mode and args.single_run:
-        print("You can't use --singlee-mode and --single-run")
+        direct_print(stream, "You can't use --singlee-mode and --single-run")
         sys.exit(1)
 
     if args.single_mode:
         if get_scenario(args.single_mode) is None:
-            print("Can't find %r in registered scenarii" % args.single_mode)
+            direct_print(
+                stream, "Can't find %r in registered scenarii" % args.single_mode
+            )
             sys.exit(1)
 
     res = Runner(args)()
@@ -304,12 +314,12 @@ def run(args):
     if not args.quiet:
         if args.sizing:
             if res["REACHED"] == 1:
-                print(_SIZING % res)
+                direct_print(stream, _SIZING % res)
             else:
-                print("Sizing was not finished. (interrupted)")
+                direct_print(stream, "Sizing was not finished. (interrupted)")
         else:
-            print("SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r" % res)
-        print("*** Bye ***")
+            direct_print(stream, "SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r" % res)
+        direct_print(stream, "*** Bye ***")
         if args.fail is not None and res["FAILED"] >= args.fail:
             sys.exit(1)
     return res

@@ -7,6 +7,7 @@ from unittest.mock import patch
 import re
 from collections import defaultdict
 import json
+import io
 
 import aiohttp
 
@@ -485,7 +486,9 @@ class TestRunner(TestLoop):
         args.single_mode = "staty"
         args.scenario = "molotov.tests.test_run"
 
-        run(args)
+        stream = io.StringIO()
+
+        run(args, stream=stream)
 
         _stop.set_result(True)
         test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
@@ -500,6 +503,9 @@ class TestRunner(TestLoop):
         # two processes making 5 run each
         # we want at least 5  here
         self.assertTrue(incrs > 5)
+        stream.seek(0)
+        output = stream.read()
+        self.assertTrue("Happy breaking!" in output, output)
 
     @dedicatedloop
     def test_timed_sizing(self):

@@ -4,6 +4,7 @@ import sys
 import os
 import re
 import multiprocessing
+import io
 
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
@@ -45,7 +46,8 @@ class TestSharedConsole(unittest.TestCase):
     @dedicatedloop
     def test_simple_usage(self):
         test_loop = asyncio.get_event_loop()
-        console = SharedConsole(interval=0.0)
+        stream = io.StringIO()
+        console = SharedConsole(interval=0.0, stream=stream)
 
         async def add_lines():
             console.print("one")
@@ -64,7 +66,8 @@ class TestSharedConsole(unittest.TestCase):
             displayer = asyncio.ensure_future(console.display())
             test_loop.run_until_complete(asyncio.gather(adder, displayer))
 
-        output = stdout.read()
+        stream.seek(0)
+        output = stream.read()
         test_loop.close()
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 
