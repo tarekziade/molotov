@@ -356,7 +356,7 @@ class TestRunner(TestLoop):
             )
             wanted = "SUCCESSES: 2"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay, [1, 0.1, 1, 0.6, 1, 0.1, 1, 0.6, 1])
+            self.assertEqual(delay[:9], [1, 0.1, 1, 0.6, 1, 0.1, 1, 0.6, 1])
 
     @dedicatedloop
     def test_rampup(self):
