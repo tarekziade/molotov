@@ -36,6 +36,8 @@ class Runner(object):
             "MINUTE_OK",
             "MINUTE_FAILED",
             "MAX_WORKERS",
+            "SETUP_FAILED",
+            "SESSION_SETUP_FAILED",
         )
         self.eventer = EventSender(self.console)
 

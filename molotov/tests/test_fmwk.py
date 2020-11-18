@@ -3,7 +3,7 @@ import signal
 from molotov.session import LoggedClientSession
 from molotov.runner import Runner
 from molotov.worker import Worker
-from molotov.util import json_request, request
+from molotov.util import json_request, request, stop_reason
 from molotov.api import (
     scenario,
     setup,
@@ -277,7 +277,7 @@ class TestFmwk(TestLoop):
     async def test_failure(self, loop, console, results):
         @scenario(weight=100)
         async def test_failing(session):
-            raise ValueError()
+            raise ValueError("XxX")
 
         args = self.get_args(console=console)
         w = self.get_worker(console, results, loop=loop, args=args)
@@ -285,6 +285,7 @@ class TestFmwk(TestLoop):
 
         self.assertTrue(results["OK"] == 0)
         self.assertTrue(results["FAILED"] > 0)
+        self.assertEquals(stop_reason()[0].args, ("XxX",))
 
     @dedicatedloop
     def test_shutdown(self):
@@ -358,6 +359,7 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         results = Runner(args)()
         self.assertEqual(results["OK"], 0)
+        self.assertEqual(results["SETUP_FAILED"], 1)
 
     @dedicatedloop
     def test_global_setup_exception(self):

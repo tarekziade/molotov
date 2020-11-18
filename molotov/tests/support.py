@@ -254,6 +254,8 @@ def async_test(func):
             "MINUTE_OK",
             "MINUTE_FAILED",
             "MAX_WORKERS",
+            "SETUP_FAILED",
+            "SESSION_SETUP_FAILED",
         )
         kw["loop"] = loop
         kw["console"] = console

@@ -15,6 +15,7 @@ from aiohttp import ClientSession, __version__
 
 _DNS_CACHE = {}
 _STOP = False
+_STOP_WHY = []
 _TIMER = None
 if __version__[0] == "2":
     raise ImportError("Molotov only supports aiohttp 3.x going forward")
@@ -31,9 +32,15 @@ def set_timer(value=None):
     _TIMER = value
 
 
-def stop():
+def stop(why=None):
     global _STOP
+    if why is not None:
+        _STOP_WHY.append(why)
     _STOP = True
+
+
+def stop_reason():
+    return _STOP_WHY
 
 
 def is_stopped():

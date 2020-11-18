@@ -121,8 +121,9 @@ class Worker(object):
 
         try:
             options = await self.setup()
-        except FixtureError:
-            stop()
+        except FixtureError as e:
+            self.results["SETUP_FAILED"] += 1
+            stop(why=e)
             return
 
         async with Session(
@@ -133,8 +134,9 @@ class Worker(object):
 
             try:
                 await self.session_setup(session)
-            except FixtureError:
-                stop()
+            except FixtureError as e:
+                self.results["SESSION_SETUP_FAILED"] += 1
+                stop(why=e)
                 return
 
             while self._may_run():
@@ -144,11 +146,11 @@ class Worker(object):
                 if result == 1:
                     self.results["OK"] += 1
                     self.results["MINUTE_OK"] += 1
-                elif result == -1:
+                elif result != 0:
                     self.results["FAILED"] += 1
                     self.results["MINUTE_FAILED"] += 1
                     if exception:
-                        stop()
+                        stop(why=result)
 
                 if not is_stopped() and self._reached_tolerance(step_start):
                     stop()
@@ -228,5 +230,6 @@ class Worker(object):
             if self.args.verbose > 0:
                 self.console.print_error(exc)
                 await self.console.flush()
+            return exc
 
         return -1
