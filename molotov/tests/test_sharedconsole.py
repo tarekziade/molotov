@@ -3,9 +3,9 @@ import asyncio
 import sys
 import os
 import re
-import multiprocessing
 import io
 
+import multiprocessing_on_dill as multiprocessing
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
 

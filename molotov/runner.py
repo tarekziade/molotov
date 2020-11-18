@@ -1,8 +1,9 @@
 from contextlib import suppress
 import signal
-import multiprocessing
 import asyncio
 import os
+
+import multiprocessing_on_dill as multiprocessing
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender

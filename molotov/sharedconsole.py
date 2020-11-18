@@ -1,9 +1,9 @@
 import sys
 import asyncio
-import multiprocessing
 import os
 from queue import Empty
 
+import multiprocessing_on_dill as multiprocessing
 from molotov.util import cancellable_sleep, printable_error
 
 

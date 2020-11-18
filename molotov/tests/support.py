@@ -3,7 +3,6 @@ import signal
 import os
 import asyncio
 import unittest
-import multiprocessing
 import time
 from contextlib import contextmanager
 import functools
@@ -15,6 +14,8 @@ import socketserver
 import pytest
 from queue import Empty
 from unittest.mock import patch
+
+import multiprocessing_on_dill as multiprocessing
 
 from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
@@ -73,38 +74,38 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
+def _run(port):
+    os.chdir(HERE)
+    socketserver.TCPServer.allow_reuse_address = True
+    attempts = 0
+    httpd = None
+    error = None
+
+    while attempts < 3:
+        try:
+            httpd = socketserver.TCPServer(("", port), RequestHandler)
+            break
+        except Exception as e:
+            error = e
+            attempts += 1
+            time.sleep(0.1)
+
+    if httpd is None:
+        raise OSError("Could not start the coserver: %s" % str(error))
+
+    def _shutdown(*args, **kw):
+        httpd.server_close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+    httpd.serve_forever()
+
+
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
-
-    def _run():
-        os.chdir(HERE)
-        socketserver.TCPServer.allow_reuse_address = True
-        attempts = 0
-        httpd = None
-        error = None
-
-        while attempts < 3:
-            try:
-                httpd = socketserver.TCPServer(("", port), RequestHandler)
-                break
-            except Exception as e:
-                error = e
-                attempts += 1
-                time.sleep(0.1)
-
-        if httpd is None:
-            raise OSError("Could not start the coserver: %s" % str(error))
-
-        def _shutdown(*args, **kw):
-            httpd.server_close()
-            sys.exit(0)
-
-        signal.signal(signal.SIGTERM, _shutdown)
-        signal.signal(signal.SIGINT, _shutdown)
-        httpd.serve_forever()
-
-    p = multiprocessing.Process(target=_run)
+    p = multiprocessing.Process(target=functools.partial(_run, port))
     p.start()
     start = time.time()
     connected = False
@@ -196,6 +197,7 @@ class TestLoop(unittest.TestCase):
         self.old = dict(_SCENARIO)
         self.oldsetup = dict(_FIXTURES)
         util._STOP = False
+        util._STOP_WHY = []
         util._TIMER = None
         self.policy = asyncio.get_event_loop_policy()
 
@@ -239,7 +241,6 @@ class TestLoop(unittest.TestCase):
 def async_test(func):
     @functools.wraps(func)
     def _async_test(*args, **kw):
-        cofunc = asyncio.coroutine(func)
         oldloop = asyncio.get_event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -260,12 +261,16 @@ def async_test(func):
         kw["loop"] = loop
         kw["console"] = console
         kw["results"] = results
+
+        fut = asyncio.ensure_future(func(*args, **kw))
         try:
-            loop.run_until_complete(cofunc(*args, **kw))
+            loop.run_until_complete(fut)
         finally:
             loop.stop()
             loop.close()
             asyncio.set_event_loop(oldloop)
+
+        return fut.result()
 
     return _async_test
 

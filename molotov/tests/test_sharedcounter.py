@@ -1,5 +1,5 @@
 import unittest
-import multiprocessing
+import multiprocessing_on_dill as multiprocessing
 from molotov.sharedcounter import SharedCounters, SharedCounter
 
 

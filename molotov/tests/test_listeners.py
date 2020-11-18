@@ -2,6 +2,11 @@ from molotov.listeners import BaseListener, EventSender
 from molotov.tests.support import TestLoop, async_test, serialize
 
 
+class MyBuggyListener(BaseListener):
+    def on_my_event(self, **options):
+        raise Exception("Bam")
+
+
 class TestListeners(TestLoop):
     @async_test
     async def test_add_listener(self, loop, console, results):
@@ -25,11 +30,7 @@ class TestListeners(TestLoop):
 
     @async_test
     async def test_buggy_listener(self, loop, console, results):
-        class MyListener(BaseListener):
-            def on_my_event(self, **options):
-                raise Exception("Bam")
-
-        listener = MyListener()
+        listener = MyBuggyListener()
         eventer = EventSender(console)
         eventer.add_listener(listener)
         await eventer.send_event("my_event")

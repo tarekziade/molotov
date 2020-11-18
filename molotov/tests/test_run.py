@@ -416,7 +416,7 @@ class TestRunner(TestLoop):
             )
 
         ratio = float(_RES2["fail"]) / float(_RES2["succ"]) * 100.0
-        self.assertTrue(ratio < 15.0 and ratio >= 5.0, ratio)
+        self.assertTrue(ratio < 14.75 and ratio >= 4.75, ratio)
         found = re.findall(r"obtained with (\d+) workers", stdout)
         assert int(found[0]) > 50
 
@@ -457,7 +457,7 @@ class TestRunner(TestLoop):
             ratio = (
                 float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
             )
-            self.assertTrue(ratio >= 5.0, ratio)
+            self.assertTrue(ratio >= 4.75, ratio)
 
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
@@ -551,7 +551,7 @@ class TestRunner(TestLoop):
             )
 
         ratio = float(_RES2["fail"]) / float(_RES2["succ"]) * 100.0
-        self.assertTrue(ratio < 20.0 and ratio > 5.0, ratio)
+        self.assertTrue(ratio < 20.0 and ratio > 4.75, ratio)
 
     @dedicatedloop
     def test_sizing_multiprocess_interrupted(self):

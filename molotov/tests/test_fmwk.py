@@ -201,10 +201,10 @@ class TestFmwk(TestLoop):
         self.assertTrue(results["OK"] > 0)
         self.assertEqual(results["FAILED"], 0)
 
-    def test_runner_multiprocess_console(self):
+    def _XXX_test_runner_multiprocess_console(self):
         self._multiprocess(console=True)
 
-    def test_runner_multiprocess_no_console(self):
+    def _XXX_test_runner_multiprocess_no_console(self):
         self._multiprocess(console=False, nosetup=True)
 
     @async_test
@@ -285,7 +285,7 @@ class TestFmwk(TestLoop):
 
         self.assertTrue(results["OK"] == 0)
         self.assertTrue(results["FAILED"] > 0)
-        self.assertEquals(stop_reason()[0].args, ("XxX",))
+        self.assertEqual(stop_reason()[0].args, ("XxX",))
 
     @dedicatedloop
     def test_shutdown(self):

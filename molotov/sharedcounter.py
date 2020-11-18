@@ -1,4 +1,4 @@
-import multiprocessing
+import multiprocessing_on_dill as multiprocessing
 
 
 class SharedCounter(object):
