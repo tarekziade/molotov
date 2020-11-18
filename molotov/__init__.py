@@ -16,4 +16,4 @@ try:
 except ImportError:
     pass  # first import
 
-__version__ = "2.1"
+__version__ = "2.2"
