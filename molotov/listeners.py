@@ -87,7 +87,7 @@ class StdoutListener(BaseListener):
             content = await response.content.read()
             if len(content) > 0:
                 # put back the data in the content
-                response.content.unread_data(content)
+                response.content.feed_data(content)
                 try:
                     raw += "\n\n" + content.decode()
                 except UnicodeDecodeError:

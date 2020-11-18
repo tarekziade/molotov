@@ -170,7 +170,7 @@ def Response(method="GET", status=200, body=b"***"):
         async def read(self):
             return body
 
-        def unread_data(self, data):
+        def feed_data(self, data):
             if body == b"":
                 err = AttributeError(
                     "'EmptyStreamReader' object has no " "attribute 'unread_data'"
