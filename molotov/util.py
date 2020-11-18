@@ -14,10 +14,10 @@ from socket import gethostbyname
 from aiohttp import ClientSession, __version__
 
 # this lib works for CPython 3.7+
-if platform.python_implementation() == 'PyPy' or sys.version_info.minor < 7:
-    import multiprocessing
+if platform.python_implementation() == "PyPy" or sys.version_info.minor < 7:
+    import multiprocessing  # noqa
 else:
-    import multiprocessing_on_dill as multiprocessing
+    import multiprocessing_on_dill as multiprocessing  # noqa
 
 
 _DNS_CACHE = {}
