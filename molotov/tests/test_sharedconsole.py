@@ -5,7 +5,7 @@ import os
 import re
 import io
 
-import multiprocessing_on_dill as multiprocessing
+from molotov.util import multiprocessing
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
 

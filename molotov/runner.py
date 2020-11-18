@@ -3,13 +3,12 @@ import signal
 import asyncio
 import os
 
-import multiprocessing_on_dill as multiprocessing
-
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
 from molotov.util import cancellable_sleep, stop, is_stopped, set_timer
+from molotov.util import multiprocessing
 from molotov.worker import Worker
 
 

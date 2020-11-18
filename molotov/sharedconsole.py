@@ -3,8 +3,7 @@ import asyncio
 import os
 from queue import Empty
 
-import multiprocessing_on_dill as multiprocessing
-from molotov.util import cancellable_sleep, printable_error
+from molotov.util import cancellable_sleep, printable_error, multiprocessing
 
 
 class SharedConsole(object):

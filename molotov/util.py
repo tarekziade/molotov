@@ -8,9 +8,16 @@ import os
 import asyncio
 import time
 import threading
+import platform
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
 from aiohttp import ClientSession, __version__
+
+# this lib works for CPython 3.7+
+if platform.python_implementation() == 'PyPy' or sys.version_info.minor < 7:
+    import multiprocessing
+else:
+    import multiprocessing_on_dill as multiprocessing
 
 
 _DNS_CACHE = {}

@@ -1,4 +1,4 @@
-import multiprocessing_on_dill as multiprocessing
+from molotov.util import multiprocessing
 
 
 class SharedCounter(object):

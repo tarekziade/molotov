@@ -1,4 +1,4 @@
-aiohttp==3.5.4
+aiohttp==3.7.2
 aiodogstatsd==0.14.0
 aiomeasures==0.5.14
 multiprocessing_on_dill==3.5.0a4
