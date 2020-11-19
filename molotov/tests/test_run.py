@@ -40,7 +40,6 @@ class TestRunner(TestLoop):
         super(TestRunner, self).setUp()
         _RES[:] = []
         _RES2.clear()
-        _SCENARIO.clear()
 
     def _get_args(self):
         args = self.get_args()

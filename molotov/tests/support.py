@@ -198,6 +198,8 @@ class TestLoop(unittest.TestCase):
         util._STOP_WHY = []
         util._TIMER = None
         self.policy = asyncio.get_event_loop_policy()
+        _SCENARIO.clear()
+        _FIXTURES.clear()
 
     def tearDown(self):
         _SCENARIO.clear()
