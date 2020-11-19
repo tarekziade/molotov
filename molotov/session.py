@@ -69,7 +69,7 @@ class LoggedClientSession(ClientSession):
     async def _request(self, *args, **kw):
         args = list(args)
         if self._resolve_dns:
-            resolved = await resolve(args[1])
+            resolved = await resolve(args[1], loop=self.loop)
             args[1] = resolved[0]
         args = tuple(args)
         req = super(LoggedClientSession, self)._request
