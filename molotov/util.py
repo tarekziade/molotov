@@ -10,7 +10,6 @@ import time
 import threading
 import platform
 from urllib.parse import urlparse, urlunparse
-from socket import gethostbyname
 
 from aiohttp import ClientSession, __version__
 from aiohttp.resolver import DefaultResolver
