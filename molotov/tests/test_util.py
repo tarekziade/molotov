@@ -4,6 +4,7 @@ import json
 import unittest
 import os
 from molotov.util import resolve, expand_options, OptionError, set_var, get_var, _VARS
+from molotov.tests.support import async_test
 
 _HERE = os.path.dirname(__file__)
 config = os.path.join(_HERE, "..", "..", "molotov.json")
@@ -18,7 +19,8 @@ class TestUtil(unittest.TestCase):
         super(TestUtil, self).setUp()
         _VARS.clear()
 
-    def test_resolve(self):
+    @async_test
+    async def test_resolve(self, loop, console, results):
 
         urls = [
             ("http://localhost:80/blah", "http://127.0.0.1:80/blah"),
@@ -33,7 +35,7 @@ class TestUtil(unittest.TestCase):
         ]
 
         for url, wanted in urls:
-            changed, original, resolved = resolve(url)
+            changed, original, resolved = await resolve(url, loop=loop)
             self.assertEqual(changed, wanted, "%s vs %s" % (original, resolved))
 
     def test_config(self):

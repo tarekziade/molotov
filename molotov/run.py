@@ -220,7 +220,8 @@ def main(args=None):
         if args.workers == 1:
             args.workers = 500
 
-    return run(args)
+    run(args)
+    return 0
 
 
 _SIZING = """\

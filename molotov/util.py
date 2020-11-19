@@ -11,7 +11,9 @@ import threading
 import platform
 from urllib.parse import urlparse, urlunparse
 from socket import gethostbyname
+
 from aiohttp import ClientSession, __version__
+from aiohttp.resolver import DefaultResolver
 
 # this lib works for CPython 3.7+
 if platform.python_implementation() == "PyPy" or sys.version_info.minor < 7:
@@ -54,7 +56,15 @@ def is_stopped():
     return _STOP
 
 
-def resolve(url):
+_RESOLVERS = {}
+
+
+async def resolve(url, loop=None):
+    if loop in _RESOLVERS:
+        resolver = _RESOLVERS[loop]
+    else:
+        resolver = _RESOLVERS[loop] = DefaultResolver(loop=loop)
+
     parts = urlparse(url)
 
     if "@" in parts.netloc:
@@ -84,10 +94,13 @@ def resolve(url):
         resolved = _DNS_CACHE[host]
     else:
         try:
-            resolved = gethostbyname(host)
-            _DNS_CACHE[host] = resolved
+            hosts = await resolver.resolve(host, port)
         except socket.gaierror:
+            hosts = []
+        if len(hosts) == 0:
             return url, original, host
+        resolved = hosts[0]["host"]
+        _DNS_CACHE[host] = resolved
 
     # Don't use a resolved hostname for SSL requests otherwise the
     # certificate will not match the IP address (resolved)

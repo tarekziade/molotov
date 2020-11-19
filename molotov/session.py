@@ -66,13 +66,11 @@ class LoggedClientSession(ClientSession):
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, session=self, **options)
 
-    def _dns_lookup(self, url):
-        return resolve(url)[0]
-
     async def _request(self, *args, **kw):
         args = list(args)
         if self._resolve_dns:
-            args[1] = self._dns_lookup(args[1])
+            resolved = await resolve(args[1])
+            args[1] = resolved[0]
         args = tuple(args)
         req = super(LoggedClientSession, self)._request
 
