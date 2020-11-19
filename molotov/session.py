@@ -54,7 +54,12 @@ class LoggedClientSession(ClientSession):
         self.request_class.response_class = LoggedClientResponse
         self.statsd = statsd
         self.eventer = EventSender(
-            console, [StdoutListener(verbose=self.verbose, console=self.console)]
+            console,
+            [
+                StdoutListener(
+                    verbose=self.verbose, console=self.console, loop=self.loop
+                )
+            ],
         )
         self._resolve_dns = resolve_dns
 

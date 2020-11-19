@@ -1,5 +1,7 @@
 import io
+
 import aiohttp
+from aiohttp.streams import DataQueue
 
 from molotov.api import get_fixture
 
@@ -27,6 +29,7 @@ class Writer:
 class StdoutListener(BaseListener):
     def __init__(self, **options):
         self.verbose = options.get("verbose", 0)
+        self.loop = options.pop("loop", None)
         self.console = options["console"]
 
     async def _body2str(self, body):
@@ -87,7 +90,9 @@ class StdoutListener(BaseListener):
             content = await response.content.read()
             if len(content) > 0:
                 # put back the data in the content
+                response.content = DataQueue(loop=self.loop)
                 response.content.feed_data(content)
+                response.content.feed_eof()
                 try:
                     raw += "\n\n" + content.decode()
                 except UnicodeDecodeError:
