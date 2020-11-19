@@ -36,6 +36,7 @@ class LoggedClientSession(ClientSession):
     """
 
     def __init__(self, loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
+        self.client_loop = loop
         connector = kw.pop("connector", None)
         if connector is None:
             connector = TCPConnector(loop=loop, limit=None)
@@ -57,7 +58,7 @@ class LoggedClientSession(ClientSession):
             console,
             [
                 StdoutListener(
-                    verbose=self.verbose, console=self.console, loop=self.loop
+                    verbose=self.verbose, console=self.console, loop=self.client_loop
                 )
             ],
         )
@@ -69,7 +70,7 @@ class LoggedClientSession(ClientSession):
     async def _request(self, *args, **kw):
         args = list(args)
         if self._resolve_dns:
-            resolved = await resolve(args[1], loop=self.loop)
+            resolved = await resolve(args[1], loop=self.client_loop)
             args[1] = resolved[0]
         args = tuple(args)
         req = super(LoggedClientSession, self)._request

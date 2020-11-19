@@ -33,7 +33,7 @@ class UDPServer(object):
             self.loop = loop
         self._stop = asyncio.Future(loop=self.loop)
         self._done = asyncio.Future(loop=self.loop)
-        self.incoming = asyncio.Queue(loop=self.loop)
+        self.incoming = asyncio.Queue()
 
     async def run(self):
         ctx = {}
