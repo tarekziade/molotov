@@ -69,7 +69,7 @@ class TestLoggedClientSession(TestLoop):
                     self.assertEqual(resp.status, 200)
 
             res = await serialize(console)
-            self.assertTrue("GET http://127.0.0.1:8888" in res)
+            self.assertTrue("GET http://127.0.0.1:8888" in res, res)
 
     @async_test
     async def test_not_verbose(self, loop, console, results):
