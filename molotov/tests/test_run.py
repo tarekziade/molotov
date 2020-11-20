@@ -11,7 +11,7 @@ import io
 
 import aiohttp
 
-from molotov.api import _FIXTURES, _SCENARIO, scenario, global_setup
+from molotov.api import scenario, global_setup
 from molotov.tests.support import (
     TestLoop,
     coserver,
@@ -150,13 +150,6 @@ class TestRunner(TestLoop):
     def test_empty_scenario(self):
         stdout, stderr, rc = self._test_molotov("")
         self.assertTrue("Cannot import" in stdout)
-
-    @dedicatedloop
-    def test_no_scenario(self):
-        _SCENARIO.clear()
-        _FIXTURES.clear()
-        stdout, stderr, rc = self._test_molotov()
-        self.assertTrue("Cannot import" in stdout, msg=stdout)
 
     @dedicatedloop
     def test_config_no_scenario(self):
