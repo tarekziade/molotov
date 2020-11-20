@@ -1,14 +1,12 @@
 from time import perf_counter
 import socket
-from urllib.parse import urlparse
 import asyncio
-import functools
 from types import SimpleNamespace
 
 from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector, TraceConfig
 
-from molotov.util import resolve
+from molotov.util import resolve    # noqa
 from molotov.listeners import StdoutListener, EventSender
 
 
@@ -34,34 +32,6 @@ class LoggedClientResponse(ClientResponse):
     request = None
 
 
-class RequestContext:
-    def __init__(self, coro):
-        self.coro = coro
-
-    def send(self, arg):
-        return self.coro.send(arg)
-
-    def throw(self, arg):
-        self.coro.throw(arg)
-
-    def close(self):
-        return self.coro.close()
-
-    def __await__(self):
-        ret = self.coro.__await__()
-        return ret
-
-    def __iter__(self):
-        return self.__await__()
-
-    async def __aenter__(self):
-        self._resp = await self.coro
-        return self._resp
-
-    async def __aexit__(self, exc_type, exc, tb):
-        self._resp.release()
-
-
 class SessionTracer(TraceConfig):
     def __init__(self, loop, console, verbose, statsd, resolve_dns):
         super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)
@@ -81,6 +51,10 @@ class SessionTracer(TraceConfig):
         self._resolve_dns = resolve_dns
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
+
+    def attach(self, name, obj):
+        # XXX do something cleaner
+        setattr(self, name, obj)
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
         return SimpleNamespace(trace_request_ctx=trace_request_ctx, statsd=self.statsd)

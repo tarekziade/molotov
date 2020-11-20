@@ -9,7 +9,6 @@ import asyncio
 import time
 import threading
 import platform
-from urllib.parse import urlparse, urlunparse
 
 from aiohttp import ClientSession, __version__
 from aiohttp.resolver import DefaultResolver
@@ -65,16 +64,13 @@ async def resolve(url, loop=None):
         resolver = _RESOLVERS[loop] = DefaultResolver(loop=loop)
 
     host = url.host
-    port_provided = False
-    if not url.port and parts.scheme == "https":
+    if not url.port and url.scheme == "https":
         port = 443
-    elif not url.port and parts.scheme == "http":
+    elif not url.port and url.scheme == "http":
         port = 80
     else:
         port = url.port
-        port_provided = True
 
-    original = host
     resolved = None
     if host in _DNS_CACHE:
         resolved = _DNS_CACHE[host]
