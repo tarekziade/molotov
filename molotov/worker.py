@@ -3,7 +3,7 @@ import time
 from inspect import isgenerator
 
 from molotov.listeners import EventSender
-from molotov.session import LoggedClientSession as Session
+from molotov.session import get_session
 from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
 from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop
 
@@ -126,7 +126,7 @@ class Worker(object):
             stop(why=e)
             return
 
-        async with Session(
+        async with get_session(
             self.loop, self.console, verbose, self.statsd, self.resolve_dns, **options
         ) as session:
             session.args = self.args

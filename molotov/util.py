@@ -64,27 +64,14 @@ async def resolve(url, loop=None):
     else:
         resolver = _RESOLVERS[loop] = DefaultResolver(loop=loop)
 
-    parts = urlparse(url)
-
-    if "@" in parts.netloc:
-        username, password = parts.username, parts.password
-        netloc = parts.netloc.split("@", 1)[1]
-    else:
-        username, password = None, None
-        netloc = parts.netloc
-
-    if ":" in netloc:
-        host = netloc.split(":")[0]
-    else:
-        host = netloc
-
+    host = url.host
     port_provided = False
-    if not parts.port and parts.scheme == "https":
+    if not url.port and parts.scheme == "https":
         port = 443
-    elif not parts.port and parts.scheme == "http":
+    elif not url.port and parts.scheme == "http":
         port = 80
     else:
-        port = parts.port
+        port = url.port
         port_provided = True
 
     original = host
@@ -103,31 +90,9 @@ async def resolve(url, loop=None):
 
     # Don't use a resolved hostname for SSL requests otherwise the
     # certificate will not match the IP address (resolved)
-    host = resolved if parts.scheme != "https" else host
-    netloc = host
-    if port_provided:
-        netloc += ":%d" % port
-    if username is not None:
-        if password is not None:
-            netloc = "%s:%s@%s" % (username, password, netloc)
-        else:
-            netloc = "%s@%s" % (username, netloc)
-
-    if port not in (443, 80):
-        host += ":%d" % port
-        original += ":%d" % port
-
-    new = urlunparse(
-        (
-            parts.scheme,
-            netloc,
-            parts.path or "",
-            "",
-            parts.query or "",
-            parts.fragment or "",
-        )
-    )
-    return new, original, host
+    if  url.scheme != "https":
+        url = url.with_host(resolved)
+    return url
 
 
 class OptionError(Exception):
