@@ -11,7 +11,7 @@ from molotov.tests.support import TestLoop, async_test, serialize
 
 class TestLoggedClientSession(TestLoop):
     def _get_session(self, *args, **kw):
-        return molotov.session.LoggedClientSession(*args, **kw)
+        return molotov.session.get_session(*args, **kw)
 
     @async_test
     async def test_add_listener(self, loop, console, results):
@@ -24,11 +24,11 @@ class TestLoggedClientSession(TestLoop):
 
         lis = MyListener()
         async with self._get_session(loop, console, verbose=2) as session:
-            session.eventer.add_listener(lis)
+            session.trace_configs[0].eventer.add_listener(lis)
             request = Request()
             binary_body = b""
             response = Response(body=binary_body)
-            await session.send_event(
+            await session.trace_configs[0].send_event(
                 "response_received", response=response, request=request
             )
 
@@ -41,7 +41,7 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b""
             response = Response(body=binary_body)
-            await session.send_event(
+            await session.trace_configs[0].send_event(
                 "response_received", response=response, request=request
             )
 
@@ -53,7 +53,7 @@ class TestLoggedClientSession(TestLoop):
             request = Request()
             binary_body = b"MZ\x90\x00\x03\x00\x00\x00\x04\x00"
             response = Response(body=binary_body)
-            await session.send_event(
+            await session.trace_configs[0].send_event(
                 "response_received", response=response, request=request
             )
 
@@ -69,17 +69,17 @@ class TestLoggedClientSession(TestLoop):
                     self.assertEqual(resp.status, 200)
 
             res = await serialize(console)
-            self.assertTrue("GET http://127.0.0.1:8888" in res, res)
+            self.assertTrue("Directory listing" in res, res)
 
     @async_test
     async def test_not_verbose(self, loop, console, results):
         async with self._get_session(loop, console, verbose=1) as session:
             req = ClientRequest("GET", URL("http://example.com"))
-            await session.send_event("sending_request", request=req)
+            await session.trace_configs[0].send_event("sending_request", request=req)
 
             response = Response(body="")
             request = Request()
-            await session.send_event(
+            await session.trace_configs[0].send_event(
                 "response_received", response=response, request=request
             )
 
@@ -92,7 +92,7 @@ class TestLoggedClientSession(TestLoop):
             binary_body = gzip.compress(b"some gzipped data")
             req = ClientRequest("GET", URL("http://example.com"), data=binary_body)
             req.headers["Content-Encoding"] = "gzip"
-            await session.send_event("sending_request", request=req)
+            await session.trace_configs[0].send_event("sending_request", request=req)
 
         res = await serialize(console)
         self.assertTrue("Binary" in res, res)
@@ -103,7 +103,9 @@ class TestLoggedClientSession(TestLoop):
             with open(__file__) as f:
                 req = ClientRequest("POST", URL("http://example.com"), data=f)
                 req.headers["Content-Encoding"] = "something/bin"
-                await session.send_event("sending_request", request=req)
+                await session.trace_configs[0].send_event(
+                    "sending_request", request=req
+                )
 
         res = await serialize(console)
         self.assertTrue("File" in res, res)
@@ -114,7 +116,9 @@ class TestLoggedClientSession(TestLoop):
             with open(__file__, "rb") as f:
                 req = ClientRequest("POST", URL("http://example.com"), data=f)
                 req.headers["Content-Encoding"] = "something/bin"
-                await session.send_event("sending_request", request=req)
+                await session.trace_configs[0].send_event(
+                    "sending_request", request=req
+                )
 
         res = await serialize(console)
         self.assertTrue("File" in res, res)
@@ -126,7 +130,7 @@ class TestLoggedClientSession(TestLoop):
             binary_body = gzip.compress(b"some gzipped data")
             response = Response(body=binary_body)
             response.headers["Content-Encoding"] = "gzip"
-            await session.send_event(
+            await session.trace_configs[0].send_event(
                 "response_received", response=response, request=request
             )
 
@@ -138,7 +142,7 @@ class TestLoggedClientSession(TestLoop):
         async with self._get_session(loop, console, verbose=2) as session:
             binary_body = gzip.compress(b"some gzipped data")
             req = ClientRequest("GET", URL("http://example.com"), data=binary_body)
-            await session.send_event("sending_request", request=req)
+            await session.trace_configs[0].send_event("sending_request", request=req)
 
         res = await serialize(console)
         self.assertTrue("display this body" in res, res)
@@ -158,7 +162,9 @@ class TestLoggedClientSession(TestLoop):
                 body = "ok man"
                 req = ClientRequest("GET", URL("http://example.com"), data=body)
                 req.body = req.body._value
-                await session.send_event("sending_request", request=req)
+                await session.trace_configs[0].send_event(
+                    "sending_request", request=req
+                )
 
         res = await serialize(console)
         self.assertTrue("ok man" in res, res)

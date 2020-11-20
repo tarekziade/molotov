@@ -3,6 +3,7 @@ import socket
 from urllib.parse import urlparse
 import asyncio
 import functools
+from types import SimpleNamespace
 
 from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector, TraceConfig
@@ -17,6 +18,7 @@ _HOST = socket.gethostname()
 class LoggedClientRequest(ClientRequest):
     """Printable Request.
     """
+
     tracer = None
 
     async def send(self, *args, **kw):
@@ -60,15 +62,14 @@ class RequestContext:
         self._resp.release()
 
 
-
 class SessionTracer(TraceConfig):
-
     def __init__(self, loop, console, verbose, statsd, resolve_dns):
-        super().__init__(self)
+        super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)
         self.loop = loop
         self.console = console
         self.verbose = verbose
         self.statsd = statsd
+        self.worker_id = self.step = self.args = None
         self.eventer = EventSender(
             console,
             [
@@ -81,23 +82,23 @@ class SessionTracer(TraceConfig):
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
 
-    def __call__(self, trace_request_ctx):
-        return trace_request_ctx
+    def _trace_config_ctx_factory(self, trace_request_ctx):
+        return SimpleNamespace(trace_request_ctx=trace_request_ctx, statsd=self.statsd)
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, session=self, **options)
 
     async def _request_start(self, session, trace_config_ctx, params):
         print("Starting request")
-        if self._resolve_dns:
-            params.url = await resolve(params.url, loop=self.loop)
-        if self.statsd:
+        # if self._resolve_dns:
+        #    params.url = await resolve(params.url, loop=self.loop)
+        if trace_config_ctx.statsd:
             prefix = "molotov.%(hostname)s.%(method)s.%(host)s.%(path)s"
             data = {
-                "method": params.meth,
+                "method": params.method,
                 "hostname": _HOST,
-                "host": params.url.raw_host,
-                "path": params.path,
+                "host": params.url.host,
+                "path": params.url.path,
             }
             label = prefix % data
             trace_config_ctx.start = perf_counter()
@@ -106,13 +107,17 @@ class SessionTracer(TraceConfig):
 
     async def _request_end(self, session, trace_config_ctx, params):
         print("Ending request")
-        if self.statsd:
+        if trace_config_ctx.statsd:
             duration = int((perf_counter() - trace_config_ctx.start) * 1000)
-            self.statsd.timing(trace_config_ctx.label, value=duration)
-            self.statsd.increment(trace_config_ctx.label + "." +
-                    str(params.response.status))
-        await self.send_event("response_received",
-                response=params.response, request=params.response.request)
+            trace_config_ctx.statsd.timing(trace_config_ctx.label, value=duration)
+            trace_config_ctx.statsd.increment(
+                trace_config_ctx.label + "." + str(params.response.status)
+            )
+        await self.send_event(
+            "response_received",
+            response=params.response,
+            request=params.response.request,
+        )
 
 
 def get_session(loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
@@ -126,7 +131,6 @@ def get_session(loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
     request_class.verbose = verbose
     request_class.response_class = LoggedClientResponse
     request_class.tracer = trace_config
-
     session = ClientSession(
         loop=loop,
         request_class=request_class,
@@ -135,5 +139,12 @@ def get_session(loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
         trace_configs=[trace_config],
         **kw
     )
-    session.statsd = trace_config.statsd
+
     return session
+
+
+def get_context(session):
+    for trace in session._trace_configs:
+        if isinstance(trace, SessionTracer):
+            return trace
+    return None

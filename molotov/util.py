@@ -84,13 +84,13 @@ async def resolve(url, loop=None):
         except socket.gaierror:
             hosts = []
         if len(hosts) == 0:
-            return url, original, host
+            return url
         resolved = hosts[0]["host"]
         _DNS_CACHE[host] = resolved
 
     # Don't use a resolved hostname for SSL requests otherwise the
     # certificate will not match the IP address (resolved)
-    if  url.scheme != "https":
+    if url.scheme != "https":
         url = url.with_host(resolved)
     return url
 

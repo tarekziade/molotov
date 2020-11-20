@@ -3,6 +3,9 @@ from tempfile import mkstemp
 import json
 import unittest
 import os
+
+from yarl import URL
+
 from molotov.util import resolve, expand_options, OptionError, set_var, get_var, _VARS
 from molotov.tests.support import async_test
 
@@ -34,9 +37,11 @@ class TestUtil(unittest.TestCase):
             ("http://tarek@localhost/blah", "http://tarek@127.0.0.1/blah"),
         ]
 
-        for url, wanted in urls:
-            changed, original, resolved = await resolve(url, loop=loop)
-            self.assertEqual(changed, wanted, "%s vs %s" % (original, resolved))
+        for original, wanted in urls:
+            resolved = await resolve(URL(original), loop=loop)
+            resolved = resolved.human_repr().rstrip("/")
+
+            self.assertEqual(resolved, wanted, "%s vs %s" % (original, resolved))
 
     def test_config(self):
         args = Args()
