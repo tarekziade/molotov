@@ -47,7 +47,7 @@ def end_worker(worker_num):
     print("This is the end for %d" % worker_num)
 
 
-@scenario(weight=40)
+# @scenario(weight=40)
 async def scenario_one(session):
     async with session.get(_API) as resp:
         if get_context(session).statsd:
@@ -63,7 +63,7 @@ async def scenario_two(session):
         assert resp.status == 200
 
 
-@scenario(weight=30)
+# @scenario(weight=30)
 async def scenario_three(session):
     somedata = json.dumps({"OK": 1})
     async with session.post(_API, data=somedata) as resp:

@@ -1,12 +1,11 @@
 from time import perf_counter
 import socket
-import asyncio
 from types import SimpleNamespace
+from collections import namedtuple
 
 from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector, TraceConfig
 
-from molotov.util import resolve    # noqa
 from molotov.listeners import StdoutListener, EventSender
 
 
@@ -21,9 +20,8 @@ class LoggedClientRequest(ClientRequest):
 
     async def send(self, *args, **kw):
         if self.tracer:
-            event = self.tracer.send_event("sending_request", request=self)
-            asyncio.ensure_future(event)
-        response = await super(LoggedClientRequest, self).send(*args, **kw)
+            await self.tracer.send_event("sending_request", request=self)
+        response = await super().send(*args, **kw)
         response.request = self
         return response
 
@@ -33,13 +31,11 @@ class LoggedClientResponse(ClientResponse):
 
 
 class SessionTracer(TraceConfig):
-    def __init__(self, loop, console, verbose, statsd, resolve_dns):
+    def __init__(self, loop, console, verbose, statsd):
         super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)
         self.loop = loop
         self.console = console
         self.verbose = verbose
-        self.statsd = statsd
-        self.worker_id = self.step = self.args = None
         self.eventer = EventSender(
             console,
             [
@@ -48,25 +44,24 @@ class SessionTracer(TraceConfig):
                 )
             ],
         )
-        self._resolve_dns = resolve_dns
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
-
-    def attach(self, name, obj):
-        # XXX do something cleaner
-        setattr(self, name, obj)
+        self.context = namedtuple("context", ["statsd"])
+        self.context.statsd = statsd
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
-        return SimpleNamespace(trace_request_ctx=trace_request_ctx, statsd=self.statsd)
+        return SimpleNamespace(
+            trace_request_ctx=trace_request_ctx, context=self.context
+        )
+
+    def add_listener(self, listener):
+        return self.eventer.add_listener(listener)
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, session=self, **options)
 
     async def _request_start(self, session, trace_config_ctx, params):
-        print("Starting request")
-        # if self._resolve_dns:
-        #    params.url = await resolve(params.url, loop=self.loop)
-        if trace_config_ctx.statsd:
+        if self.context.statsd:
             prefix = "molotov.%(hostname)s.%(method)s.%(host)s.%(path)s"
             data = {
                 "method": params.method,
@@ -80,11 +75,10 @@ class SessionTracer(TraceConfig):
             trace_config_ctx.data = data
 
     async def _request_end(self, session, trace_config_ctx, params):
-        print("Ending request")
-        if trace_config_ctx.statsd:
+        if self.context.statsd:
             duration = int((perf_counter() - trace_config_ctx.start) * 1000)
-            trace_config_ctx.statsd.timing(trace_config_ctx.label, value=duration)
-            trace_config_ctx.statsd.increment(
+            self.context.statsd.timing(trace_config_ctx.label, value=duration)
+            self.context.statsd.increment(
                 trace_config_ctx.label + "." + str(params.response.status)
             )
         await self.send_event(
@@ -94,12 +88,12 @@ class SessionTracer(TraceConfig):
         )
 
 
-def get_session(loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
-    trace_config = SessionTracer(loop, console, verbose, statsd, resolve_dns)
+def get_session(loop, console, verbose=0, statsd=None, **kw):
+    trace_config = SessionTracer(loop, console, verbose, statsd)
 
     connector = kw.pop("connector", None)
     if connector is None:
-        connector = TCPConnector(loop=loop, limit=None)
+        connector = TCPConnector(loop=loop, limit=None, ttl_dns_cache=None)
 
     request_class = LoggedClientRequest
     request_class.verbose = verbose
@@ -117,8 +111,15 @@ def get_session(loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
     return session
 
 
-def get_context(session):
+def get_eventer(session):
     for trace in session._trace_configs:
         if isinstance(trace, SessionTracer):
             return trace
+    return None
+
+
+def get_context(session):
+    for trace in session._trace_configs:
+        if isinstance(trace, SessionTracer):
+            return trace.context
     return None
