@@ -88,12 +88,11 @@ class SessionTracer(TraceConfig):
         )
 
 
-def get_session(loop, console, verbose=0, statsd=None, disable_dns_resolve=False, **kw):
+def get_session(loop, console, verbose=0, statsd=None, **kw):
     trace_config = SessionTracer(loop, console, verbose, statsd)
 
     connector = kw.pop("connector", None)
     if connector is None:
-        # todo, disable dns resolving if disable_dns_resolve is True
         connector = TCPConnector(loop=loop, limit=None, ttl_dns_cache=None)
 
     request_class = LoggedClientRequest
