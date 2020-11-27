@@ -71,7 +71,7 @@ a 200. Let's run it in console mode just once with --single-run:
 
 .. code-block:: bash
 
-    (venv) $  molotov --single-run 1 loadtest.py
+    (venv) $  molotov --single-run loadtest.py
     **** Molotov v2.0. Happy breaking! ****
     Preparing 1 workers...OK
     SUCCESSES: 1 | FAILURES: 0  | WORKERS: 1

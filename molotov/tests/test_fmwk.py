@@ -1,6 +1,6 @@
 import os
 import signal
-from molotov.session import LoggedClientSession
+from molotov.session import get_session
 from molotov.runner import Runner
 from molotov.worker import Worker
 from molotov.util import json_request, request, stop_reason
@@ -51,7 +51,7 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop)
 
         with catch_sleep(res):
-            async with LoggedClientSession(loop, console) as session:
+            async with get_session(loop, console) as session:
                 result = await w.step(0, session)
                 self.assertTrue(result, 1)
                 self.assertEqual(len(res), 2)
@@ -77,7 +77,7 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop)
 
         for i in range(4):
-            async with LoggedClientSession(loop, console) as session:
+            async with get_session(loop, console) as session:
                 await w.step(i, session)
 
         self.assertEqual(res, ["1", "2", "2", "1"])
@@ -89,7 +89,7 @@ class TestFmwk(TestLoop):
             raise ValueError()
 
         w = self.get_worker(console, results, loop=loop)
-        async with LoggedClientSession(loop, console) as session:
+        async with get_session(loop, console) as session:
             result = await w.step(0, session)
             self.assertTrue(result, -1)
 

@@ -3,7 +3,7 @@ import time
 from inspect import isgenerator
 
 from molotov.listeners import EventSender
-from molotov.session import LoggedClientSession as Session
+from molotov.session import get_session, get_context
 from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
 from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop
 
@@ -32,7 +32,6 @@ class Worker(object):
         self.worker_start = 0
         self.eventer = EventSender(console)
         self._exhausted = False
-        self.resolve_dns = not args.disable_dns_resolve
         # fixtures
         self._session_setup = get_fixture("setup_session")
         self._session_teardown = get_fixture("teardown_session")
@@ -126,12 +125,11 @@ class Worker(object):
             stop(why=e)
             return
 
-        async with Session(
-            self.loop, self.console, verbose, self.statsd, self.resolve_dns, **options
+        async with get_session(
+            self.loop, self.console, verbose, self.statsd, **options
         ) as session:
-            session.args = self.args
-            session.worker_id = self.wid
-
+            get_context(session).args = self.args
+            get_context(session).worker_id = self.wid
             try:
                 await self.session_setup(session)
             except FixtureError as e:
@@ -141,7 +139,7 @@ class Worker(object):
 
             while self._may_run():
                 step_start = _now()
-                session.step = self.count
+                get_context(session).step = self.count
                 result = await self.step(self.count, session, scenario=single)
                 if result == 1:
                     self.results["OK"] += 1
@@ -217,9 +215,7 @@ class Worker(object):
                 return 0
         try:
             await self.send_event("scenario_start", scenario=scenario)
-
             await scenario["func"](session, *scenario["args"], **scenario["kw"])
-
             await self.send_event("scenario_success", scenario=scenario)
 
             if scenario["delay"] > 0.0:

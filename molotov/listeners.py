@@ -134,9 +134,9 @@ class EventSender(object):
     def stopped(self):
         return self._stopped
 
-    async def send_event(self, event, **options):
+    async def send_event(self, event, *args, **options):
         for listener in self._listeners:
             try:
-                await listener(event, **options)
+                await listener(event, *args, **options)
             except Exception as e:
                 self.console.print_error(e)

@@ -3,16 +3,13 @@ import traceback
 import sys
 import functools
 import json
-import socket
 import os
 import asyncio
 import time
 import threading
 import platform
-from urllib.parse import urlparse, urlunparse
 
 from aiohttp import ClientSession, __version__
-from aiohttp.resolver import DefaultResolver
 
 # this lib works for CPython 3.7+
 if platform.python_implementation() == "PyPy" or sys.version_info.minor < 7:
@@ -53,81 +50,6 @@ def stop_reason():
 
 def is_stopped():
     return _STOP
-
-
-_RESOLVERS = {}
-
-
-async def resolve(url, loop=None):
-    if loop in _RESOLVERS:
-        resolver = _RESOLVERS[loop]
-    else:
-        resolver = _RESOLVERS[loop] = DefaultResolver(loop=loop)
-
-    parts = urlparse(url)
-
-    if "@" in parts.netloc:
-        username, password = parts.username, parts.password
-        netloc = parts.netloc.split("@", 1)[1]
-    else:
-        username, password = None, None
-        netloc = parts.netloc
-
-    if ":" in netloc:
-        host = netloc.split(":")[0]
-    else:
-        host = netloc
-
-    port_provided = False
-    if not parts.port and parts.scheme == "https":
-        port = 443
-    elif not parts.port and parts.scheme == "http":
-        port = 80
-    else:
-        port = parts.port
-        port_provided = True
-
-    original = host
-    resolved = None
-    if host in _DNS_CACHE:
-        resolved = _DNS_CACHE[host]
-    else:
-        try:
-            hosts = await resolver.resolve(host, port)
-        except socket.gaierror:
-            hosts = []
-        if len(hosts) == 0:
-            return url, original, host
-        resolved = hosts[0]["host"]
-        _DNS_CACHE[host] = resolved
-
-    # Don't use a resolved hostname for SSL requests otherwise the
-    # certificate will not match the IP address (resolved)
-    host = resolved if parts.scheme != "https" else host
-    netloc = host
-    if port_provided:
-        netloc += ":%d" % port
-    if username is not None:
-        if password is not None:
-            netloc = "%s:%s@%s" % (username, password, netloc)
-        else:
-            netloc = "%s@%s" % (username, netloc)
-
-    if port not in (443, 80):
-        host += ":%d" % port
-        original += ":%d" % port
-
-    new = urlunparse(
-        (
-            parts.scheme,
-            netloc,
-            parts.path or "",
-            "",
-            parts.query or "",
-            parts.fragment or "",
-        )
-    )
-    return new, original, host
 
 
 class OptionError(Exception):

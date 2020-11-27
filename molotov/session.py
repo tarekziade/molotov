@@ -1,13 +1,11 @@
 from time import perf_counter
 import socket
-from urllib.parse import urlparse
-import asyncio
-import functools
+from types import SimpleNamespace
+from collections import namedtuple
 
 from aiohttp.client import ClientSession, ClientRequest, ClientResponse
-from aiohttp import TCPConnector
+from aiohttp import TCPConnector, TraceConfig
 
-from molotov.util import resolve
 from molotov.listeners import StdoutListener, EventSender
 
 
@@ -18,13 +16,12 @@ class LoggedClientRequest(ClientRequest):
     """Printable Request.
     """
 
-    logged_session = None
+    tracer = None
 
     async def send(self, *args, **kw):
-        if self.logged_session:
-            event = self.logged_session.send_event("sending_request", request=self)
-            asyncio.ensure_future(event)
-        response = await super(LoggedClientRequest, self).send(*args, **kw)
+        if self.tracer:
+            await self.tracer.send_event("sending_request", request=self)
+        response = await super().send(*args, **kw)
         response.request = self
         return response
 
@@ -33,131 +30,96 @@ class LoggedClientResponse(ClientResponse):
     request = None
 
 
-class RequestContext:
-    def __init__(self, coro):
-        self.coro = coro
-
-    def send(self, arg):
-        return self.coro.send(arg)
-
-    def throw(self, arg):
-        self.coro.throw(arg)
-
-    def close(self):
-        return self.coro.close()
-
-    def __await__(self):
-        ret = self.coro.__await__()
-        return ret
-
-    def __iter__(self):
-        return self.__await__()
-
-    async def __aenter__(self):
-        self._resp = await self.coro
-        return self._resp
-
-    async def __aexit__(self, exc_type, exc, tb):
-        self._resp.release()
-
-
-class LoggedClientSession:
-    def __init__(self, loop, console, verbose=0, statsd=None, resolve_dns=True, **kw):
-        self.client_loop = loop
-        connector = kw.pop("connector", None)
-        if connector is None:
-            connector = TCPConnector(loop=loop, limit=None)
-
-        request_class = LoggedClientRequest
-        request_class.logged_session = self
-        request_class.verbose = verbose
-        request_class.response_class = LoggedClientResponse
-
-        self.session = ClientSession(
-            loop=loop,
-            request_class=request_class,
-            response_class=LoggedClientResponse,
-            connector=connector,
-            **kw
-        )
+class SessionTracer(TraceConfig):
+    def __init__(self, loop, console, verbose, statsd):
+        super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)
+        self.loop = loop
         self.console = console
         self.verbose = verbose
-        self.statsd = statsd
         self.eventer = EventSender(
             console,
             [
                 StdoutListener(
-                    verbose=self.verbose, console=self.console, loop=self.client_loop
+                    verbose=self.verbose, console=self.console, loop=self.loop
                 )
             ],
         )
-        self._resolve_dns = resolve_dns
+        self.on_request_start.append(self._request_start)
+        self.on_request_end.append(self._request_end)
+        self.context = namedtuple("context", ["statsd"])
+        self.context.statsd = statsd
+
+    def _trace_config_ctx_factory(self, trace_request_ctx):
+        return SimpleNamespace(
+            trace_request_ctx=trace_request_ctx, context=self.context
+        )
+
+    def add_listener(self, listener):
+        return self.eventer.add_listener(listener)
 
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, session=self, **options)
 
-    def request(self, method, url, **kwargs):
-        return RequestContext(self._request(method, url, **kwargs))
-
-    async def _request(self, *args, **kw):
-        args = list(args)
-        if self._resolve_dns:
-            resolved = await resolve(args[1], loop=self.client_loop)
-            args[1] = resolved[0]
-        args = tuple(args)
-        req = self.session._request
-
-        if self.statsd:
+    async def _request_start(self, session, trace_config_ctx, params):
+        if self.context.statsd:
             prefix = "molotov.%(hostname)s.%(method)s.%(host)s.%(path)s"
-            meth, url = args[:2]
-            url = urlparse(url)
-            path = url.path != "" and url.path or "/"
-
             data = {
-                "method": meth,
+                "method": params.method,
                 "hostname": _HOST,
-                "host": url.netloc.split(":")[0],
-                "path": path,
+                "host": params.url.host,
+                "path": params.url.path,
             }
-
             label = prefix % data
+            trace_config_ctx.start = perf_counter()
+            trace_config_ctx.label = label
+            trace_config_ctx.data = data
 
-            async def request():
-                start = perf_counter()
-                resp = await req(*args, **kw)
-                duration = int((perf_counter() - start) * 1000)
-                self.statsd.timing(label, value=duration)
-                self.statsd.increment(label + "." + str(resp.status))
-                return resp
+    async def _request_end(self, session, trace_config_ctx, params):
+        if self.context.statsd:
+            duration = int((perf_counter() - trace_config_ctx.start) * 1000)
+            self.context.statsd.timing(trace_config_ctx.label, value=duration)
+            self.context.statsd.increment(
+                trace_config_ctx.label + "." + str(params.response.status)
+            )
+        await self.send_event(
+            "response_received",
+            response=params.response,
+            request=params.response.request,
+        )
 
-            resp = await request()
-        else:
-            resp = await req(*args, **kw)
 
-        await self.send_event("response_received", response=resp, request=resp.request)
-        return resp
+def get_session(loop, console, verbose=0, statsd=None, **kw):
+    trace_config = SessionTracer(loop, console, verbose, statsd)
 
-    get = functools.partialmethod(request, "get")
-    connect = functools.partialmethod(request, "connect")
-    head = functools.partialmethod(request, "head")
-    delete = functools.partialmethod(request, "delete")
-    options = functools.partialmethod(request, "options")
-    patch = functools.partialmethod(request, "patch")
-    post = functools.partialmethod(request, "post")
-    put = functools.partialmethod(request, "put")
-    trace = functools.partialmethod(request, "trace")
+    connector = kw.pop("connector", None)
+    if connector is None:
+        connector = TCPConnector(loop=loop, limit=None, ttl_dns_cache=None)
 
-    def __getattr__(self, name):
-        return getattr(self.session, name)
+    request_class = LoggedClientRequest
+    request_class.verbose = verbose
+    request_class.response_class = LoggedClientResponse
+    request_class.tracer = trace_config
+    session = ClientSession(
+        loop=loop,
+        request_class=request_class,
+        response_class=LoggedClientResponse,
+        connector=connector,
+        trace_configs=[trace_config],
+        **kw
+    )
 
-    def __enter__(self):
-        raise TypeError("Use async with instead")
+    return session
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
 
-    async def __aenter__(self):
-        return self
+def get_eventer(session):
+    for trace in session._trace_configs:
+        if isinstance(trace, SessionTracer):
+            return trace
+    return None
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.close()
+
+def get_context(session):
+    for trace in session._trace_configs:
+        if isinstance(trace, SessionTracer):
+            return trace.context
+    return None

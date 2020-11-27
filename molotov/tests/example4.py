@@ -37,7 +37,7 @@ async def init_worker(worker_num, args):
 
 @molotov.setup_session()
 async def init_session(worker_num, session):
-    session.ob = SomeObject(loop=session.loop)
+    molotov.get_context(session).attach("ob", SomeObject(loop=session.loop))
 
 
 @molotov.scenario(100)
@@ -51,7 +51,7 @@ async def scenario_one(session):
 
 @molotov.teardown_session()
 async def end_session(worker_num, session):
-    session.ob.cleanup()
+    molotov.get_context(session).ob.cleanup()
 
 
 @molotov.teardown()

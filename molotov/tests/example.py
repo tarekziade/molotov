@@ -9,7 +9,14 @@ This Molotov script has:
 
 """
 import json
-from molotov import scenario, setup, global_setup, global_teardown, teardown
+from molotov import (
+    scenario,
+    setup,
+    global_setup,
+    global_teardown,
+    teardown,
+    get_context,
+)
 
 
 _API = "http://localhost:8080"
@@ -40,11 +47,11 @@ def end_worker(worker_num):
     print("This is the end for %d" % worker_num)
 
 
-@scenario(weight=40)
+# @scenario(weight=40)
 async def scenario_one(session):
     async with session.get(_API) as resp:
-        if session.statsd:
-            session.statsd.incr("BLEH")
+        if get_context(session).statsd:
+            get_context(session).statsd.incr("BLEH")
         res = await resp.json()
         assert res["result"] == "OK"
         assert resp.status == 200
@@ -56,7 +63,7 @@ async def scenario_two(session):
         assert resp.status == 200
 
 
-@scenario(weight=30)
+# @scenario(weight=30)
 async def scenario_three(session):
     somedata = json.dumps({"OK": 1})
     async with session.post(_API, data=somedata) as resp:
