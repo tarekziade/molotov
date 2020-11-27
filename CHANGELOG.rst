@@ -3,7 +3,11 @@ CHANGELOG
 
 Started 2.2
 --
-XXX
+
+- now compatible with aiohttp 4.x (#125)
+- dropped --disable-dns-resolver. This is aiohttp's job
+- added the `get_context` API to attach data to a session
+
 
 2.1 - 2020-11-18
 ----------------
