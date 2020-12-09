@@ -836,3 +836,15 @@ class TestRunner(TestLoop):
 
             assert PASSED[0] == 1
             assert res["OK"] == 1
+
+    @dedicatedloop
+    def test_local_import(self):
+        test = os.path.join(_HERE, "example9.py")
+
+        with coserver():
+            stdout, stderr, rc = self._test_molotov(
+                "--max-runs",
+                "1",
+                test
+            )
+        self.assertTrue("SUCCESSES: 1" in stdout, stdout)

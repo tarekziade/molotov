@@ -261,16 +261,18 @@ def run(args, stream=None):
                     sys.exit(1)
 
     if os.path.exists(args.scenario):
+        sys.path.insert(0, os.path.dirname(args.scenario))
         spec = spec_from_file_location("loadtest", args.scenario)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
     else:
         try:
-            import_module(args.scenario)
+            module = import_module(args.scenario)
         except (ImportError, ValueError) as e:
             direct_print(stream, "Cannot import %r" % args.scenario)
             direct_print(stream, "\n".join(printable_error(e)))
             sys.exit(1)
+        sys.path.insert(0, os.path.dirname(module.__file__))
 
     if len(get_scenarios()) == 0:
         direct_print(stream, "You need at least one scenario. No scenario was found.")

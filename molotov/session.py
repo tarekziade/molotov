@@ -93,14 +93,13 @@ def get_session(loop, console, verbose=0, statsd=None, **kw):
 
     connector = kw.pop("connector", None)
     if connector is None:
-        connector = TCPConnector(loop=loop, limit=None, ttl_dns_cache=None)
+        connector = TCPConnector(limit=None, ttl_dns_cache=None)
 
     request_class = LoggedClientRequest
     request_class.verbose = verbose
     request_class.response_class = LoggedClientResponse
     request_class.tracer = trace_config
     session = ClientSession(
-        loop=loop,
         request_class=request_class,
         response_class=LoggedClientResponse,
         connector=connector,
