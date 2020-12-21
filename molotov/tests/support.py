@@ -184,11 +184,15 @@ def Response(method="GET", status=200, body=b"***"):
     return response
 
 
-def Request(url="http://127.0.0.1/", method="GET", body=b"***"):
-    request = LoggedClientRequest(method, URL(url))
+def Request(url="http://127.0.0.1/", method="GET", body=b"***", loop=None):
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    request = LoggedClientRequest(method, URL(url), loop=loop)
     request.body = body
     return request
 
+
+args = namedtuple("args", "verbose quiet duration exception")
 
 class TestLoop(unittest.TestCase):
     def setUp(self):
@@ -208,7 +212,6 @@ class TestLoop(unittest.TestCase):
         asyncio.set_event_loop_policy(self.policy)
 
     def get_args(self, console=None):
-        args = namedtuple("args", "verbose quiet duration exception")
         args.force_shutdown = False
         args.ramp_up = 0.0
         args.verbose = 1

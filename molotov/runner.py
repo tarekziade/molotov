@@ -2,6 +2,7 @@ from contextlib import suppress
 import signal
 import asyncio
 import os
+from copy import copy
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
@@ -40,6 +41,19 @@ class Runner(object):
             "SESSION_SETUP_FAILED",
         )
         self.eventer = EventSender(self.console)
+
+    def __getstate__(self):
+        # when we're getting pickled, we remove the loop attribute
+        data = {}
+        for key, item in self.__dict__.items():
+            if key == "loop":
+                continue
+            data[key] = item
+        return data
+
+    def __setstate__(self, data):
+        self.__dict__ = data
+        self.loop = asyncio.get_event_loop()
 
     def _set_statsd(self):
         if self.args.statsd:

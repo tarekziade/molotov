@@ -75,7 +75,7 @@ class TestLoggedClientSession(TestLoop):
     @async_test
     async def test_not_verbose(self, loop, console, results):
         async with self._get_session(loop, console, verbose=1) as session:
-            req = ClientRequest("GET", URL("http://example.com"))
+            req = ClientRequest("GET", URL("http://example.com"), loop=loop)
             await get_eventer(session).send_event("sending_request", request=req)
 
             response = Response(body="")
@@ -91,7 +91,8 @@ class TestLoggedClientSession(TestLoop):
     async def test_gzipped_request(self, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             binary_body = gzip.compress(b"some gzipped data")
-            req = ClientRequest("GET", URL("http://example.com"), data=binary_body)
+            req = ClientRequest("GET", URL("http://example.com"),
+                    data=binary_body, loop=loop)
             req.headers["Content-Encoding"] = "gzip"
             await get_eventer(session).send_event("sending_request", request=req)
 
@@ -102,7 +103,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_file_request(self, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             with open(__file__) as f:
-                req = ClientRequest("POST", URL("http://example.com"), data=f)
+                req = ClientRequest("POST", URL("http://example.com"), data=f, loop=loop)
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
@@ -113,7 +114,7 @@ class TestLoggedClientSession(TestLoop):
     async def test_binary_file_request(self, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             with open(__file__, "rb") as f:
-                req = ClientRequest("POST", URL("http://example.com"), data=f)
+                req = ClientRequest("POST", URL("http://example.com"), data=f, loop=loop)
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
@@ -138,7 +139,8 @@ class TestLoggedClientSession(TestLoop):
     async def test_cantread_request(self, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             binary_body = gzip.compress(b"some gzipped data")
-            req = ClientRequest("GET", URL("http://example.com"), data=binary_body)
+            req = ClientRequest("GET", URL("http://example.com"),
+                    data=binary_body, loop=loop)
             await get_eventer(session).send_event("sending_request", request=req)
 
         res = await serialize(console)
@@ -157,7 +159,7 @@ class TestLoggedClientSession(TestLoop):
         with patch("builtins.__import__", side_effect=import_mock):
             async with self._get_session(loop, console, verbose=2) as session:
                 body = "ok man"
-                req = ClientRequest("GET", URL("http://example.com"), data=body)
+                req = ClientRequest("GET", URL("http://example.com"), data=body, loop=loop)
                 req.body = req.body._value
                 await get_eventer(session).send_event("sending_request", request=req)
 

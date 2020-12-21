@@ -1,12 +1,16 @@
 from molotov.util import multiprocessing
 
 
+_manager = multiprocessing.Manager()
+
+
 class SharedCounter(object):
     """A multi-process compatible counter.
     """
 
     def __init__(self, name):
-        self._val = multiprocessing.Value("i", 0)
+        self._val = _manager.Value("i", 0)
+        self._lock = _manager.Lock()
         self._name = name
 
     def __eq__(self, other):
@@ -50,7 +54,7 @@ class SharedCounter(object):
         return self
 
     def __add__(self, other):
-        with self._val.get_lock():
+        with self._lock:
             if isinstance(other, SharedCounter):
                 other = other.value
             if not isinstance(other, int):
@@ -66,7 +70,7 @@ class SharedCounter(object):
 
     @value.setter
     def value(self, _value):
-        with self._val.get_lock():
+        with self._lock:
             if isinstance(_value, SharedCounter):
                 _value = _value.value
             if not isinstance(_value, int):

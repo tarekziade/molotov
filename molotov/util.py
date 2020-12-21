@@ -96,7 +96,7 @@ def _run_in_fresh_loop(coro, timeout=30):
     def run():
         loop = asyncio.new_event_loop()
         try:
-            task = loop.create_task(coro(loop=loop))
+            task = loop.create_task(coro())
             thres.append(loop.run_until_complete(task))
         except Exception as e:
             thexc.append(e)
@@ -115,12 +115,12 @@ def _run_in_fresh_loop(coro, timeout=30):
 
 
 async def _request(
-    endpoint, verb="GET", session_options=None, json=False, loop=None, **options
+    endpoint, verb="GET", session_options=None, json=False, **options
 ):
     if session_options is None:
         session_options = {}
 
-    async with ClientSession(loop=loop, **session_options) as session:
+    async with ClientSession(**session_options) as session:
         meth = getattr(session, verb.lower())
         result = {}
         async with meth(endpoint, **options) as resp:

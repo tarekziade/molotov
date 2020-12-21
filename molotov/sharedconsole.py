@@ -6,12 +6,15 @@ from queue import Empty
 from molotov.util import cancellable_sleep, printable_error, multiprocessing
 
 
+_manager = multiprocessing.Manager()
+
+
 class SharedConsole(object):
     """Multi-process compatible stdout console.
     """
 
     def __init__(self, interval=0.1, max_lines_displayed=20, stream=sys.stdout):
-        self._stream = multiprocessing.Queue()
+        self._stream = _manager.Queue()
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
