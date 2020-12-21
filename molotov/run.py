@@ -179,6 +179,10 @@ def main(args=None):
         print(__version__)
         sys.exit(0)
 
+    if args.processes > 1 and os.name == "nt":
+        print("The -p/--processes option is unsupported on win32")
+        sys.exit(0)
+
     if args.config:
         if args.scenario == "loadtest.py":
             args.scenario = "test"

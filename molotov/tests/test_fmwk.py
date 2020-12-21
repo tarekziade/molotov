@@ -3,7 +3,7 @@ import signal
 from molotov.session import get_session
 from molotov.runner import Runner
 from molotov.worker import Worker
-from molotov.util import json_request, request, stop_reason
+from molotov.util import get_var, set_var, json_request, request, stop_reason
 from molotov.api import (
     scenario,
     setup,
@@ -132,7 +132,7 @@ class TestFmwk(TestLoop):
 
         @setup_session()
         async def _session(wid, session):
-            session.some = 1
+            set_var("some", 1)
             res.append("SESSION")
 
         @setup()
@@ -151,7 +151,7 @@ class TestFmwk(TestLoop):
 
         @teardown_session()
         async def _teardown_session(wid, session):
-            self.assertEqual(session.some, 1)
+            self.assertEqual(get_var("some"), 1)
             res.append("SESSION_TEARDOWN")
 
         args = self.get_args()

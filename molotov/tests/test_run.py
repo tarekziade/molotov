@@ -1,3 +1,4 @@
+import unittest
 import time
 import random
 import os
@@ -415,6 +416,7 @@ class TestRunner(TestLoop):
         found = re.findall(r"obtained with (\d+) workers", stdout)
         assert int(found[0]) > 50
 
+    @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def test_sizing_multiprocess(self):
         counters = SharedCounters("OK", "FAILED")
@@ -454,6 +456,7 @@ class TestRunner(TestLoop):
             )
             self.assertTrue(ratio >= 4.75, ratio)
 
+    @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
         test_loop = asyncio.get_event_loop()
@@ -548,6 +551,7 @@ class TestRunner(TestLoop):
         ratio = float(_RES2["fail"]) / float(_RES2["succ"]) * 100.0
         self.assertTrue(ratio < 20.0 and ratio > 4.75, ratio)
 
+    @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def test_sizing_multiprocess_interrupted(self):
 
@@ -842,9 +846,5 @@ class TestRunner(TestLoop):
         test = os.path.join(_HERE, "example9.py")
 
         with coserver():
-            stdout, stderr, rc = self._test_molotov(
-                "--max-runs",
-                "1",
-                test
-            )
+            stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)

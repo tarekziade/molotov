@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+2.3xxx
+
+- Remove multiprocess support on win32 (#130)
+
+
 2.2 - 2020-12-09
 ----------------
 

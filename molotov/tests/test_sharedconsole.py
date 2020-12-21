@@ -71,6 +71,7 @@ class TestSharedConsole(unittest.TestCase):
         test_loop.close()
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 
+    @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def test_multiprocess(self):
         test_loop = asyncio.get_event_loop()

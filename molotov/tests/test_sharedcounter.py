@@ -1,3 +1,4 @@
+import os
 import unittest
 import multiprocessing_on_dill as multiprocessing
 from molotov.sharedcounter import SharedCounters, SharedCounter
@@ -71,6 +72,7 @@ class TestSharedCounters(unittest.TestCase):
         self.assertTrue(data["one"].value, 9)
         self.assertTrue(data["two"].value, 4)
 
+    @unittest.skipIf(os.name == "nt", "win32")
     def test_multiprocess(self):
         # now let's try with several processes
         pool = multiprocessing.Pool(10)
