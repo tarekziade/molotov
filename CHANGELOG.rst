@@ -1,7 +1,8 @@
 CHANGELOG
 =========
 
-2.3xxx
+2.3 - 2021-08-23
+----------------
 
 - Remove multiprocess support on win32 (#130)
 
