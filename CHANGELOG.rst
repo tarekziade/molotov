@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+2.4 - 2022-01-25
+----------------
+
+- Removed aiomeasures (the project is gone). We use aiodogstatsd
+
 2.3 - 2021-08-23
 ----------------
 

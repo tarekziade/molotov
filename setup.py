@@ -6,7 +6,7 @@ if sys.version_info < (3, 6):
 
 from molotov import __version__  # NOQA
 
-install_requires = ["aiohttp", "aiomeasures", "aiodogstatsd", "multiprocessing_on_dill"]
+install_requires = ["aiohttp", "aiodogstatsd", "multiprocessing_on_dill"]
 
 description = ""
 
