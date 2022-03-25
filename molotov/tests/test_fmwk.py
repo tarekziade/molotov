@@ -251,6 +251,7 @@ class TestFmwk(TestLoop):
         expected = (
             "Name or service not known" in output
             or "nodename nor servname provided" in output  # NOQA
+            or "Temporary failure in name resolution" in output  # NOQA
         )
         self.assertTrue(expected, output)
 
