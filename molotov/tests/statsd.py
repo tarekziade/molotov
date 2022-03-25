@@ -51,7 +51,7 @@ class UDPServer(object):
             await self._stop
             ctx["proto"].disconnect()
 
-        await asyncio.gather(conn, listen_for_stop(), loop=self.loop)
+        await asyncio.gather(conn, listen_for_stop())
         self._done.set_result(True)
 
     def flush(self):

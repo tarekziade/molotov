@@ -194,7 +194,7 @@ def get_var(name, factory=None):
 # taken from https://stackoverflow.com/a/37211337
 def _make_sleep():
     async def sleep(delay, result=None, *, loop=None):
-        coro = asyncio.sleep(delay, result=result, loop=loop)
+        coro = asyncio.sleep(delay, result=result)
         task = asyncio.ensure_future(coro, loop=loop)
         sleep.tasks.add(task)
         try:
