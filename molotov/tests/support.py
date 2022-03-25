@@ -228,7 +228,7 @@ class TestLoop(unittest.TestCase):
         args.delay = 0.0
         args.sizing = False
         args.sizing_tolerance = 0.0
-        args.console_update = 0
+        args.console_update = 0.1
         args.use_extension = []
         args.fail = None
         args.force_reconnection = False
