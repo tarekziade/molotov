@@ -15,7 +15,7 @@ molotov
    :target: https://molotov.readthedocs.io
 
 
-Simple Python 3.6+ tool to write load tests.
+Simple Python 3.7+ tool to write load tests.
 
 Based on `asyncio <https://docs.python.org/3/library/asyncio.html>`_,
 Built with `aiohttp <http://aiohttp.readthedocs.io>`_ 3.x

@@ -54,7 +54,7 @@ class Runner(object):
         return future.result()
 
     def gather(self, *futures):
-        return asyncio.gather(*futures, loop=self.loop, return_exceptions=True)
+        return asyncio.gather(*futures, return_exceptions=True)
 
     def ensure_future(self, coro):
         return asyncio.ensure_future(coro, loop=self.loop)
