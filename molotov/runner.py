@@ -3,12 +3,13 @@ import signal
 import asyncio
 import os
 
+import multiprocess
+
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
 from molotov.util import cancellable_sleep, stop, is_stopped, set_timer
-from molotov.util import multiprocessing
 from molotov.worker import Worker
 
 
@@ -91,7 +92,7 @@ class Runner(object):
                 self.console.print("Forking %d processes" % args.processes)
             jobs = []
             for i in range(args.processes):
-                p = multiprocessing.Process(target=self._process)
+                p = multiprocess.Process(target=self._process)
                 jobs.append(p)
                 p.start()
 

@@ -15,6 +15,7 @@ import pytest
 from queue import Empty
 from unittest.mock import patch
 
+import multiprocess
 from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
 from molotov.api import _SCENARIO, _FIXTURES
@@ -103,7 +104,7 @@ def _run(port):
 def run_server(port=8888):
     """Running in a subprocess to avoid any interference
     """
-    p = util.multiprocessing.Process(target=functools.partial(_run, port))
+    p = multiprocess.Process(target=functools.partial(_run, port))
     p.start()
     start = time.time()
     connected = False
