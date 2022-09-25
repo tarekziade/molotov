@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
-2.5
-XXXXX
+2.5 - 2022-09-25
+----------------
+
+- Python 3.10 compatibility, drop support for 3.6
+- Bump aiohttp from 2.3.10 to 3.7.4 (#132)
+
 
 2.4 - 2022-01-25
 ----------------
