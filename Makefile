@@ -13,7 +13,6 @@ $(PYTHON):
 	$(VIRTUALENV) $(VTENV_OPTS) .
 
 build: $(PYTHON)
-	$(PYTHON) setup.py develop
 	$(BIN)/pip install tox
 
 clean:

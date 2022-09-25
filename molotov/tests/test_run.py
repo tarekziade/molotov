@@ -68,7 +68,7 @@ class TestRunner(TestLoop):
                 assert len(redirect) == 0
                 assert resp.status == 302
                 content = await resp.text()
-                assert content == ""
+                assert '302' in content
 
             _RES.append(1)
 

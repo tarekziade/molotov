@@ -271,7 +271,7 @@ class TestFmwk(TestLoop):
         args = self.get_args(console=console)
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
-        self.assertTrue("Directory listing" in content[0])
+        self.assertTrue("Index of /" in content[0])
 
     @async_test
     async def test_failure(self, loop, console, results):
