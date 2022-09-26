@@ -19,6 +19,16 @@ if __version__[0] == "2":
     raise ImportError("Molotov only supports aiohttp 3.x going forward")
 
 
+def event_loop():
+    if sys.version_info.minor >= 10:
+        try:
+            return asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop
+    return asyncio.get_event_loop()
+
 def get_timer():
     return _TIMER
 

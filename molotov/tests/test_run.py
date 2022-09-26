@@ -23,7 +23,8 @@ from molotov.tests.support import (
     only_pypy,
     catch_sleep,
     dedicatedloop_noclose,
-    co_catch_output
+    co_catch_output,
+    event_loop
 )
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
@@ -45,89 +46,95 @@ class TestRunner(TestLoop):
         _RES[:] = []
         _RES2.clear()
 
-    def _get_args(self):
+    def _get_args(self, udp_port=0):
         args = self.get_args()
         args.statsd = True
-        args.statsd_address = "udp://127.0.0.1:9999"
+        args.statsd_address = "udp://127.0.0.1:%s" % udp_port
         args.scenario = "molotov.tests.test_run"
         return args
 
     @co_catch_output
     @dedicatedloop_noclose
     def test_redirect(self):
-        @scenario(weight=10)
-        async def _one(session):
-            # redirected
-            async with session.get("http://localhost:8888/redirect") as resp:
-                redirect = resp.history
-                assert redirect[0].status == 302
-                assert resp.status == 200
 
-            # not redirected
-            async with session.get(
-                "http://localhost:8888/redirect", allow_redirects=False
-            ) as resp:
-                redirect = resp.history
-                assert len(redirect) == 0
-                assert resp.status == 302
-                content = await resp.text()
-                assert content == ""
+        with coserver() as port:
+            @scenario(weight=10)
+            async def _one(session):
+                # redirected
+                async with session.get("http://localhost:%s/redirect" % port) as resp:
+                    redirect = resp.history
+                    assert redirect[0].status == 302
+                    assert resp.status == 200
 
-            _RES.append(1)
+                # not redirected
+                async with session.get(
+                    "http://localhost:%s/redirect" % port, allow_redirects=False
+                ) as resp:
+                    redirect = resp.history
+                    assert len(redirect) == 0
+                    assert resp.status == 302
+                    content = await resp.text()
+                    assert content == ""
 
-        args = self._get_args()
-        args.verbose = 2
-        args.max_runs = 2
-        with coserver():
+                _RES.append(1)
+
+            args = self._get_args()
+            args.verbose = 2
+            args.max_runs = 2
             run(args)
 
         self.assertTrue(len(_RES) > 0)
 
-    @co_catch_output
+    #@co_catch_output
     @dedicatedloop_noclose
     def test_runner(self):
-        test_loop = asyncio.get_event_loop()
+        test_loop = event_loop()
 
-        @global_setup()
-        def something_sync(args):
-            grab = request("http://localhost:8888")
-            self.assertEqual(grab["status"], 200)
-            grab_json = json_request("http://localhost:8888/molotov.json")
-            self.assertTrue("molotov" in grab_json["content"])
+        with coserver() as port:
 
-        @scenario(weight=10)
-        async def here_one(session):
-            async with session.get("http://localhost:8888") as resp:
-                await resp.text()
-            _RES.append(1)
+            @global_setup()
+            def something_sync(args):
+                grab = request("http://localhost:%s" % port)
+                self.assertEqual(grab["status"], 200)
+                grab_json = json_request("http://localhost:%s/molotov.json" % port)
+                self.assertTrue("molotov" in grab_json["content"])
 
-        @scenario(weight=90)
-        async def here_two(session):
-            if get_context(session).statsd is not None:
-                get_context(session).statsd.increment("yopla")
-            _RES.append(2)
+            @scenario(weight=10)
+            async def here_one(session):
+                async with session.get("http://localhost:%s" % port) as resp:
+                    await resp.text()
+                _RES.append(1)
 
-        args = self._get_args()
-        server = UDPServer("127.0.0.1", 9999, loop=test_loop)
-        _stop = asyncio.Future()
+            @scenario(weight=90)
+            async def here_two(session):
+                if get_context(session).statsd is not None:
+                    get_context(session).statsd.increment("yopla")
+                _RES.append(2)
 
-        async def stop():
-            await _stop
-            await server.stop()
+            server = UDPServer("127.0.0.1", 0, loop=test_loop)
+            _stop = asyncio.Future()
 
-        server_task = asyncio.ensure_future(server.run())
-        stop_task = asyncio.ensure_future(stop())
-        args.max_runs = 3
-        args.duration = 9999
+            udp = []
 
-        with coserver():
-            run(args)
+            async def stop():
+                await _stop
+                args = self._get_args(udp[0])
+                args.max_runs = 3
+                args.duration = 9999
+                run(args)
+                await server.stop()
 
-        _stop.set_result(True)
-        test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
+
+            def cb(udp_port):
+                udp.append(udp_port)
+                _stop.set_result(True)
+
+            server_task = asyncio.ensure_future(server.run(cb))
+            stop_task = asyncio.ensure_future(stop())
+
+            test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
 
         self.assertTrue(len(_RES) > 0)
-
         udp = server.flush()
         self.assertTrue(len(udp) > 0)
 
@@ -464,13 +471,13 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
-        test_loop = asyncio.get_event_loop()
+        test_loop = event_loop()
 
         @scenario()
         async def staty(session):
             get_context(session).statsd.increment("yopla")
 
-        server = UDPServer("127.0.0.1", 9999, loop=test_loop)
+        server = UDPServer("127.0.0.1", 0, loop=test_loop)
         _stop = asyncio.Future()
 
         async def stop():
@@ -485,7 +492,7 @@ class TestRunner(TestLoop):
         args.max_runs = 5
         args.duration = 1000
         args.statsd = True
-        args.statsd_address = "udp://127.0.0.1:9999"
+        args.statsd_address = "udp://127.0.0.1:%s" % server.server_address[1]
         args.single_mode = "staty"
         args.scenario = "molotov.tests.test_run"
 
@@ -593,13 +600,14 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_use_extension(self):
         ext = os.path.join(_HERE, "example5.py")
+        with coserver() as port:
 
-        @scenario(weight=10)
-        async def simpletest(session):
-            async with session.get("http://localhost:8888") as resp:
-                assert resp.status == 200
+            @scenario(weight=10)
+            async def simpletest(session):
+                async with session.get("http://localhost:%s" % port) as resp:
+                    assert resp.status == 200
 
-        with coserver():
+
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
                 "--max-runs",
@@ -806,7 +814,7 @@ class TestRunner(TestLoop):
 
         PASSED = [0]
 
-        with catch_sleep():
+        with catch_sleep(), coserver() as port:
 
             @scenario()
             async def scenario_one(session):
@@ -835,7 +843,7 @@ class TestRunner(TestLoop):
                         },
                     )
                     async with session.post(
-                        "http://localhost:8888",
+                        "http://localhost:%s" % port,
                         data=mpwriter,
                         headers=headers,
                         cookies=cookies,
@@ -844,11 +852,10 @@ class TestRunner(TestLoop):
                         assert data in res
                         PASSED[0] += 1
 
-            args = self._get_args()
+            args = self._get_args(0)
             args.verbose = 2
             args.max_runs = 1
-            with coserver():
-                res = run(args)
+            res = run(args)
 
             assert PASSED[0] == 1
             assert res["OK"] == 1
@@ -858,6 +865,6 @@ class TestRunner(TestLoop):
     def test_local_import(self):
         test = os.path.join(_HERE, "example9.py")
 
-        with coserver():
+        with coserver() as port:
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)

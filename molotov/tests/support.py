@@ -37,6 +37,19 @@ else:
     _TIMEOUT = 0.2
 
 
+def event_loop(no_create=False):
+    if sys.version_info.minor >= 10:
+        try:
+            return asyncio.get_running_loop()
+        except RuntimeError:
+            if no_create:
+                return None
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop
+    return asyncio.get_event_loop()
+
+
 async def serialize(console):
     res = []
     while True:
@@ -73,7 +86,7 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def _run(port):
+def _run(conn):
     os.chdir(HERE)
     socketserver.TCPServer.allow_reuse_address = True
     attempts = 0
@@ -82,7 +95,7 @@ def _run(port):
 
     while attempts < 3:
         try:
-            httpd = socketserver.TCPServer(("", port), RequestHandler)
+            httpd = socketserver.TCPServer(("", 0), RequestHandler)
             break
         except Exception as e:
             error = e
@@ -96,22 +109,27 @@ def _run(port):
         httpd.server_close()
         sys.exit(0)
 
+    conn.send(httpd.server_address[1])
+    conn.close()
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
     httpd.serve_forever()
 
 
-def run_server(port=8888):
+def run_server():
     """Running in a subprocess to avoid any interference
     """
-    p = multiprocess.Process(target=functools.partial(_run, port))
+    parent, child = multiprocess.Pipe()
+    p = multiprocess.Process(target=functools.partial(_run, child))
     p.start()
     start = time.time()
     connected = False
+    port = parent.recv()
+    os.environ['TEST_PORT'] = str(port)
 
     while time.time() - start < 5 and not connected:
         try:
-            conn = HTTPConnection("localhost", 8888)
+            conn = HTTPConnection("localhost", port)
             conn.request("GET", "/")
             conn.getresponse()
             connected = True
@@ -121,26 +139,28 @@ def run_server(port=8888):
         os.kill(p.pid, signal.SIGTERM)
         p.join(timeout=1.0)
         raise OSError("Could not connect to coserver")
-    return p
+    return p, port
 
 
 _CO = {"clients": 0, "server": None}
 
 
 @contextmanager
-def coserver(port=8888):
+def coserver():
     if _CO["clients"] == 0:
-        _CO["server"] = run_server(port)
+        process, port = run_server()
+        _CO["server"] = process, port
 
     _CO["clients"] += 1
     try:
-        yield
+        yield port
     finally:
         _CO["clients"] -= 1
         if _CO["clients"] == 0:
-            os.kill(_CO["server"].pid, signal.SIGTERM)
-            _CO["server"].join(timeout=1.0)
-            _CO["server"].terminate()
+            p = _CO["server"][0]
+            os.kill(p.pid, signal.SIGTERM)
+            p.join(timeout=1.0)
+            p.terminate()
             _CO["server"] = None
 
 
@@ -153,7 +173,7 @@ def _respkw():
         "continue100": None,
         "timer": TimerNoop(),
         "traces": [],
-        "loop": asyncio.get_event_loop(),
+        "loop": event_loop(),
         "session": None,
     }
 
@@ -187,7 +207,7 @@ def Response(method="GET", status=200, body=b"***"):
 
 def Request(url="http://127.0.0.1/", method="GET", body=b"***", loop=None):
     if loop is None:
-        loop = asyncio.get_event_loop()
+        loop = event_loop()
     request = LoggedClientRequest(method, URL(url), loop=loop)
     request.body = body
     return request
@@ -244,7 +264,7 @@ class TestLoop(unittest.TestCase):
 def async_test(func):
     @functools.wraps(func)
     def _async_test(*args, **kw):
-        oldloop = asyncio.get_event_loop()
+        oldloop = event_loop(no_create=True)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
@@ -281,7 +301,7 @@ def async_test(func):
 def dedicatedloop(func):
     @functools.wraps(func)
     def _loop(*args, **kw):
-        old_loop = asyncio.get_event_loop()
+        old_loop = event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -298,7 +318,7 @@ def dedicatedloop(func):
 def dedicatedloop_noclose(func):
     @functools.wraps(func)
     def _loop(*args, **kw):
-        old_loop = asyncio.get_event_loop()
+        old_loop = event_loop()
         loop = asyncio.new_event_loop()
         loop.set_debug(True)
         loop._close = loop.close
@@ -314,6 +334,7 @@ def dedicatedloop_noclose(func):
 
 
 def co_catch_output(func):
+    @functools.wraps(func)
     def _co(*args, **kw):
         oldout, olderr = sys.stdout, sys.stderr
         sys.stdout, sys.stderr = StringIO(), StringIO()

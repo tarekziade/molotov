@@ -14,6 +14,8 @@ class ServerProto:
         self.received_queue.put_nowait(data)
 
     def disconnect(self):
+        if self.transport is None:
+            return
         self.transport.close()
 
     def error_received(self, exc):
@@ -35,7 +37,7 @@ class UDPServer(object):
         self._done = asyncio.Future(loop=self.loop)
         self.incoming = asyncio.Queue()
 
-    async def run(self):
+    async def run(self, ready):
         ctx = {}
 
         def make_proto():
@@ -43,15 +45,18 @@ class UDPServer(object):
             ctx["proto"] = proto
             return proto
 
-        conn = self.loop.create_datagram_endpoint(
+        transport, protocol = await self.loop.create_datagram_endpoint(
             make_proto, local_addr=(self.host, self.port)
         )
+
+        self.port = transport.get_extra_info('socket').getsockname()[1]
+        ready(self.port)
 
         async def listen_for_stop():
             await self._stop
             ctx["proto"].disconnect()
 
-        await asyncio.gather(conn, listen_for_stop())
+        await listen_for_stop()
         self._done.set_result(True)
 
     def flush(self):
