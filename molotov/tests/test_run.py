@@ -9,6 +9,7 @@ import re
 from collections import defaultdict
 import json
 import io
+import pytest
 
 import aiohttp
 
@@ -22,7 +23,7 @@ from molotov.tests.support import (
     only_pypy,
     catch_sleep,
     dedicatedloop_noclose,
-    catch_output
+    co_catch_output
 )
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
@@ -51,6 +52,7 @@ class TestRunner(TestLoop):
         args.scenario = "molotov.tests.test_run"
         return args
 
+    @co_catch_output
     @dedicatedloop_noclose
     def test_redirect(self):
         @scenario(weight=10)
@@ -81,6 +83,7 @@ class TestRunner(TestLoop):
 
         self.assertTrue(len(_RES) > 0)
 
+    @co_catch_output
     @dedicatedloop_noclose
     def test_runner(self):
         test_loop = asyncio.get_event_loop()
@@ -457,6 +460,7 @@ class TestRunner(TestLoop):
             )
             self.assertTrue(ratio >= 4.75, ratio)
 
+    @co_catch_output
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
@@ -585,6 +589,7 @@ class TestRunner(TestLoop):
         )
         self.assertTrue("Sizing was not finished" in stdout)
 
+    @co_catch_output
     @dedicatedloop
     def test_use_extension(self):
         ext = os.path.join(_HERE, "example5.py")
@@ -607,6 +612,7 @@ class TestRunner(TestLoop):
         self.assertTrue("=>" in stdout)
         self.assertTrue("<=" in stdout)
 
+    @co_catch_output
     @dedicatedloop
     def test_use_extension_fail(self):
         ext = os.path.join(_HERE, "exampleIDONTEXIST.py")
@@ -628,6 +634,7 @@ class TestRunner(TestLoop):
             )
         self.assertTrue("Cannot import" in stdout)
 
+    @co_catch_output
     @dedicatedloop
     def test_use_extension_module_name(self):
         ext = "molotov.tests.example5"
@@ -650,6 +657,7 @@ class TestRunner(TestLoop):
         self.assertTrue("=>" in stdout)
         self.assertTrue("<=" in stdout)
 
+    @co_catch_output
     @dedicatedloop
     def test_use_extension_module_name_fail(self):
         ext = "IDONTEXTSIST"
@@ -683,6 +691,7 @@ class TestRunner(TestLoop):
         self.assertEqual(stdout, "")
         self.assertEqual(stderr, "")
 
+    @co_catch_output
     @dedicatedloop_noclose
     def test_slow_server_force_shutdown(self):
         @scenario(weight=10)
@@ -705,6 +714,7 @@ class TestRunner(TestLoop):
         self.assertTrue(time.time() - start < 4)
         self.assertTrue(len(_RES) == 0)
 
+    @co_catch_output
     @dedicatedloop_noclose
     def test_slow_server_graceful(self):
         @scenario(weight=10)
@@ -723,8 +733,7 @@ class TestRunner(TestLoop):
 
         start = time.time()
         with coserver():
-            with catch_output():
-                run(args)
+            run(args)
 
         # makes sure the test finishes
         self.assertTrue(time.time() - start > 5)
@@ -791,6 +800,7 @@ class TestRunner(TestLoop):
 
         m_resolve.assert_not_called()
 
+    @co_catch_output
     @dedicatedloop
     def test_bug_121(self):
 
@@ -843,6 +853,7 @@ class TestRunner(TestLoop):
             assert PASSED[0] == 1
             assert res["OK"] == 1
 
+    @co_catch_output
     @dedicatedloop
     def test_local_import(self):
         test = os.path.join(_HERE, "example9.py")

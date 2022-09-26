@@ -313,6 +313,19 @@ def dedicatedloop_noclose(func):
     return _loop
 
 
+def co_catch_output(func):
+    def _co(*args, **kw):
+        oldout, olderr = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = StringIO(), StringIO()
+        try:
+            return func(*args, **kw)
+        finally:
+            sys.stdout.seek(0)
+            sys.stderr.seek(0)
+            sys.stdout, sys.stderr = oldout, olderr
+    return _co
+
+
 @contextmanager
 def catch_output():
     oldout, olderr = sys.stdout, sys.stderr
