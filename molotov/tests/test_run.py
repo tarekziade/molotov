@@ -22,6 +22,7 @@ from molotov.tests.support import (
     only_pypy,
     catch_sleep,
     dedicatedloop_noclose,
+    catch_output
 )
 from molotov.tests.statsd import UDPServer
 from molotov.run import run, main
@@ -722,7 +723,8 @@ class TestRunner(TestLoop):
 
         start = time.time()
         with coserver():
-            run(args)
+            with catch_output():
+                run(args)
 
         # makes sure the test finishes
         self.assertTrue(time.time() - start > 5)
