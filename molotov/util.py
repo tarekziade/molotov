@@ -29,6 +29,7 @@ def event_loop():
             return loop
     return asyncio.get_event_loop()
 
+
 def get_timer():
     return _TIMER
 

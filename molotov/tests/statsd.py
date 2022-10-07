@@ -1,6 +1,5 @@
 import multiprocess
 import asyncio
-import time
 import signal
 import functools
 import os
@@ -8,8 +7,7 @@ import os
 
 def debug(data):
     with open('/tmp/yeah.txt', 'a+') as f:
-        f.write(data+'\n')
-
+        f.write(data + '\n')
 
 
 # taken from aiostatsd.tests.test_client

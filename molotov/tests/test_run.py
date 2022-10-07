@@ -9,7 +9,6 @@ import re
 from collections import defaultdict
 import json
 import io
-import pytest
 
 import aiohttp
 
@@ -23,8 +22,7 @@ from molotov.tests.support import (
     only_pypy,
     catch_sleep,
     dedicatedloop_noclose,
-    co_catch_output,
-    event_loop
+    co_catch_output
 )
 from molotov.tests.statsd import run_server, stop_server
 from molotov.run import run, main
@@ -579,7 +577,6 @@ class TestRunner(TestLoop):
                 async with session.get("http://localhost:%s" % port) as resp:
                     assert resp.status == 200
 
-
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
                 "--max-runs",
@@ -625,7 +622,6 @@ class TestRunner(TestLoop):
                 async with session.get(f"http://localhost:{port}") as resp:
                     assert resp.status == 200
 
-
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
                 "--max-runs",
@@ -648,7 +644,6 @@ class TestRunner(TestLoop):
             async def simpletest(session):
                 async with session.get(f"http://localhost:{port}") as resp:
                     assert resp.status == 200
-
 
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
@@ -839,6 +834,6 @@ class TestRunner(TestLoop):
     def test_local_import(self):
         test = os.path.join(_HERE, "example9.py")
 
-        with coserver() as port:
+        with coserver():
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)
