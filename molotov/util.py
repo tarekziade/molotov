@@ -160,8 +160,7 @@ def request(endpoint, verb="GET", session_options=None, **options):
 
 
 def json_request(endpoint, verb="GET", session_options=None, **options):
-    """Like :func:`molotov.request` but extracts json from the response.
-    """
+    """Like :func:`molotov.request` but extracts json from the response."""
     req = functools.partial(
         _request, endpoint, verb, session_options, json=True, **options
     )

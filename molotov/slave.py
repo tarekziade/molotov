@@ -32,8 +32,7 @@ def install_reqs(reqfile):
 
 
 def run_test(**options):
-    """Runs a molotov test.
-    """
+    """Runs a molotov test."""
     parser = _parser()
     fields = {}
     cli = []
@@ -63,8 +62,7 @@ def run_test(**options):
 
 
 def main():
-    """Moloslave clones a git repo and runs a molotov test
-    """
+    """Moloslave clones a git repo and runs a molotov test"""
     parser = argparse.ArgumentParser(description="Github-based load test")
 
     parser.add_argument(

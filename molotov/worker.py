@@ -17,8 +17,7 @@ def _now():
 
 
 class Worker(object):
-    """"The Worker class creates a Session and runs scenario.
-    """
+    """ "The Worker class creates a Session and runs scenario."""
 
     def __init__(self, wid, results, console, args, statsd=None, delay=0, loop=None):
         self.wid = wid
@@ -209,7 +208,7 @@ class Worker(object):
         return reached
 
     async def step(self, step_id, session, scenario=None):
-        """ single scenario call.
+        """single scenario call.
 
         When it returns 1, it works. -1 the script failed,
         0 the test is stopping or needs to stop.

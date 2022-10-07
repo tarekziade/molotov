@@ -13,8 +13,7 @@ import molotov
 
 
 class SomeObject(object):
-    """Does something smart in real life with the async loop.
-    """
+    """Does something smart in real life with the async loop."""
 
     def __init__(self, loop):
         self.loop = loop

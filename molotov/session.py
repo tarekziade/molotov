@@ -13,8 +13,7 @@ _HOST = socket.gethostname()
 
 
 class LoggedClientRequest(ClientRequest):
-    """Printable Request.
-    """
+    """Printable Request."""
 
     tracer = None
 

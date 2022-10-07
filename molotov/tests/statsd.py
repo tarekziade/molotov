@@ -6,8 +6,8 @@ import os
 
 
 def debug(data):
-    with open('/tmp/yeah.txt', 'a+') as f:
-        f.write(data + '\n')
+    with open("/tmp/yeah.txt", "a+") as f:
+        f.write(data + "\n")
 
 
 # taken from aiostatsd.tests.test_client
@@ -20,7 +20,7 @@ class ServerProto:
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        debug(data.decode('utf8'))
+        debug(data.decode("utf8"))
         self.conn.send(data)
 
     def disconnect(self):
@@ -55,23 +55,23 @@ class UDPServer(object):
             ctx["proto"] = proto
             return proto
 
-        debug('starting')
+        debug("starting")
         loop = asyncio.get_running_loop()
         transport, protocol = await loop.create_datagram_endpoint(
             make_proto, local_addr=(self.host, self.port)
         )
 
         if self.port == 0:
-            self.port = transport.get_extra_info('socket').getsockname()[1]
+            self.port = transport.get_extra_info("socket").getsockname()[1]
         self.conn.send(self.port)
 
-        debug(f'waiting on port {self.port}')
+        debug(f"waiting on port {self.port}")
         self.running = True
         try:
             while self.running:
-                await asyncio.sleep(1.)
+                await asyncio.sleep(1.0)
         finally:
-            debug('disco')
+            debug("disco")
             ctx["proto"].disconnect()
 
 
@@ -98,17 +98,17 @@ def stop_server(p, conn):
 
 
 def _run(conn):
-    server = UDPServer('localhost', 0, conn)
+    server = UDPServer("localhost", 0, conn)
     signal.signal(signal.SIGINT, server.stop)
     try:
         asyncio.run(server.run())
     except KeyboardInterrupt:
         debug("killed")
-    conn.send('STOPPED')
+    conn.send("STOPPED")
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         p, port, conn = run_server()
         while True:

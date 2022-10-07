@@ -22,7 +22,7 @@ from molotov.tests.support import (
     only_pypy,
     catch_sleep,
     dedicatedloop_noclose,
-    co_catch_output
+    co_catch_output,
 )
 from molotov.tests.statsd import run_server, stop_server
 from molotov.run import run, main
@@ -57,6 +57,7 @@ class TestRunner(TestLoop):
     def test_redirect(self):
 
         with coserver() as port:
+
             @scenario(weight=10)
             async def _one(session):
                 # redirected
@@ -458,7 +459,6 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
-
         @scenario()
         async def staty(session):
             get_context(session).statsd.increment("yopla")
@@ -617,6 +617,7 @@ class TestRunner(TestLoop):
         ext = "molotov.tests.example5"
 
         with coserver() as port:
+
             @scenario(weight=10)
             async def simpletest(session):
                 async with session.get(f"http://localhost:{port}") as resp:
@@ -640,6 +641,7 @@ class TestRunner(TestLoop):
         ext = "IDONTEXTSIST"
 
         with coserver() as port:
+
             @scenario(weight=10)
             async def simpletest(session):
                 async with session.get(f"http://localhost:{port}") as resp:
@@ -704,6 +706,7 @@ class TestRunner(TestLoop):
 
         start = time.time()
         with coserver() as port:
+
             @scenario(weight=10)
             async def _one(session):
                 async with session.get(f"http://localhost:{port}/slow") as resp:
@@ -735,7 +738,8 @@ class TestRunner(TestLoop):
                 _RES["three"] += 1
 
             stdout, stderr, rc = self._test_molotov(
-                "--single-run", "molotov.tests.test_run",
+                "--single-run",
+                "molotov.tests.test_run",
             )
 
         assert rc == 0
@@ -756,7 +760,8 @@ class TestRunner(TestLoop):
                     pass
 
             stdout, stderr, rc = self._test_molotov(
-                "--single-run", "molotov.tests.test_run",
+                "--single-run",
+                "molotov.tests.test_run",
             )
 
         m_resolve.assert_called()
@@ -772,7 +777,9 @@ class TestRunner(TestLoop):
                     pass
 
             stdout, stderr, rc = self._test_molotov(
-                "--disable-dns-resolve", "--single-run", "molotov.tests.test_run",
+                "--disable-dns-resolve",
+                "--single-run",
+                "molotov.tests.test_run",
             )
 
         m_resolve.assert_not_called()

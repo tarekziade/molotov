@@ -117,15 +117,14 @@ def _run(conn):
 
 
 def run_server():
-    """Running in a subprocess to avoid any interference
-    """
+    """Running in a subprocess to avoid any interference"""
     parent, child = multiprocess.Pipe()
     p = multiprocess.Process(target=functools.partial(_run, child))
     p.start()
     start = time.time()
     connected = False
     port = parent.recv()
-    os.environ['TEST_PORT'] = str(port)
+    os.environ["TEST_PORT"] = str(port)
 
     while time.time() - start < 5 and not connected:
         try:
@@ -344,6 +343,7 @@ def co_catch_output(func):
             sys.stdout.seek(0)
             sys.stderr.seek(0)
             sys.stdout, sys.stderr = oldout, olderr
+
     return _co
 
 

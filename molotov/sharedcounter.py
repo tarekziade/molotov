@@ -2,8 +2,7 @@ import multiprocess
 
 
 class SharedCounter(object):
-    """A multi-process compatible counter.
-    """
+    """A multi-process compatible counter."""
 
     def __init__(self, name):
         self._val = multiprocess.Value("i", 0)
@@ -75,8 +74,7 @@ class SharedCounter(object):
 
 
 class SharedCounters(object):
-    """Mapping of SharedCounter items.
-    """
+    """Mapping of SharedCounter items."""
 
     def __init__(self, *keys):
         self._counters = {}
