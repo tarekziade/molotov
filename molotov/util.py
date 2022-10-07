@@ -7,15 +7,8 @@ import os
 import asyncio
 import time
 import threading
-import platform
 
 from aiohttp import ClientSession, __version__
-
-# this lib works for CPython 3.7+
-if platform.python_implementation() == "PyPy" or sys.version_info.minor < 7:
-    import multiprocessing  # noqa
-else:
-    import multiprocessing_on_dill as multiprocessing  # noqa
 
 
 _DNS_CACHE = {}
@@ -24,6 +17,17 @@ _STOP_WHY = []
 _TIMER = None
 if __version__[0] == "2":
     raise ImportError("Molotov only supports aiohttp 3.x going forward")
+
+
+def event_loop():
+    if sys.version_info.minor >= 10:
+        try:
+            return asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop
+    return asyncio.get_event_loop()
 
 
 def get_timer():

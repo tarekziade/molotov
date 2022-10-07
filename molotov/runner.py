@@ -3,12 +3,14 @@ import signal
 import asyncio
 import os
 
+import multiprocess
+
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
-from molotov.util import cancellable_sleep, stop, is_stopped, set_timer
-from molotov.util import multiprocessing
+from molotov.util import (cancellable_sleep, stop, is_stopped, set_timer,
+                          event_loop)
 from molotov.worker import Worker
 
 
@@ -20,7 +22,7 @@ class Runner(object):
         self.args = args
         self.console = self.args.shared_console
         if loop is None:
-            loop = asyncio.get_event_loop()
+            loop = event_loop()
         self.loop = loop
         # the stastd client gets initialized after we fork
         # processes in case -p was used
@@ -91,7 +93,7 @@ class Runner(object):
                 self.console.print("Forking %d processes" % args.processes)
             jobs = []
             for i in range(args.processes):
-                p = multiprocessing.Process(target=self._process)
+                p = multiprocess.Process(target=self._process)
                 jobs.append(p)
                 p.start()
 
@@ -187,8 +189,6 @@ class Runner(object):
             self.loop.set_debug(True)
 
         self._set_statsd()
-        if self.statsd is not None:
-            self._tasks.append(self.ensure_future(self.statsd.connect()))
 
         if self.args.original_pid == os.getpid():
             self._tasks.append(self.ensure_future(self._send_workers_event(1)))
@@ -213,7 +213,7 @@ class Runner(object):
         try:
             self.loop.run_until_complete(self.gather(*self._tasks))
         finally:
-            if self.statsd is not None:
+            if self.statsd is not None and not self.statsd.disconnected:
                 self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
             self._kill_tasks()
             self.loop.close()

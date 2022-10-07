@@ -145,7 +145,7 @@ def _parser():
         "--statsd-address",
         help="Statsd Address",
         type=str,
-        default="udp://127.0.0.1:8125",
+        default="udp://localhost:8125",
     )
 
     parser.add_argument(

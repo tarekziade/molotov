@@ -4,8 +4,8 @@ import sys
 import os
 import re
 import io
+import multiprocess
 
-from molotov.util import multiprocessing
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
 
@@ -77,7 +77,7 @@ class TestSharedConsole(unittest.TestCase):
         test_loop = asyncio.get_event_loop()
 
         # now let's try with several processes
-        pool = multiprocessing.Pool(3)
+        pool = multiprocess.Pool(3)
         try:
             inputs = [1] * 3
             pool.map(run_worker, inputs)

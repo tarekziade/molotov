@@ -1,4 +1,4 @@
-from molotov.util import multiprocessing
+import multiprocess
 
 
 class SharedCounter(object):
@@ -6,7 +6,7 @@ class SharedCounter(object):
     """
 
     def __init__(self, name):
-        self._val = multiprocessing.Value("i", 0)
+        self._val = multiprocess.Value("i", 0)
         self._name = name
 
     def __eq__(self, other):

@@ -42,6 +42,7 @@ class Worker(object):
         await self.eventer.send_event(event, wid=self.wid, **options)
 
     async def run(self):
+        await asyncio.sleep(0)
         if self.delay > 0.0:
             await cancellable_sleep(self.delay)
         if is_stopped():
@@ -105,6 +106,13 @@ class Worker(object):
             self.console.print_error(e)
 
     async def _run(self):
+        if self.statsd and not self.statsd.connected:
+            try:
+                await self.statsd.connect()
+                await asyncio.sleep(0)
+            except Exception as e:
+                print(e)
+
         verbose = self.args.verbose
         exception = self.args.exception
 
@@ -128,6 +136,7 @@ class Worker(object):
         async with get_session(
             self.loop, self.console, verbose, self.statsd, **options
         ) as session:
+            await asyncio.sleep(0)
             get_context(session).args = self.args
             get_context(session).worker_id = self.wid
             try:

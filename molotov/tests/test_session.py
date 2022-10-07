@@ -64,9 +64,9 @@ class TestLoggedClientSession(TestLoop):
 
     @async_test
     async def test_request(self, loop, console, results):
-        with coserver():
+        with coserver() as port:
             async with self._get_session(loop, console, verbose=2) as session:
-                async with session.get("http://localhost:8888") as resp:
+                async with session.get(f"http://localhost:{port}") as resp:
                     self.assertEqual(resp.status, 200)
 
             res = await serialize(console)
