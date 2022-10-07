@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+2.6
+
+- Switch from multiprocessing_on_dill to multiprocess (#139)
+
+
 2.5 - 2022-09-25
 ----------------
 
