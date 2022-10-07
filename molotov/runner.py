@@ -9,14 +9,12 @@ from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
-from molotov.util import (cancellable_sleep, stop, is_stopped, set_timer,
-                          event_loop)
+from molotov.util import cancellable_sleep, stop, is_stopped, set_timer, event_loop
 from molotov.worker import Worker
 
 
 class Runner(object):
-    """Manages processes & workers and grabs results.
-    """
+    """Manages processes & workers and grabs results."""
 
     def __init__(self, args, loop=None):
         self.args = args

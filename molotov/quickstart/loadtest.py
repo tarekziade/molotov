@@ -10,7 +10,7 @@ _API = "http://localhost:8080"
 
 @global_setup()
 def test_starts(args):
-    """ This functions is called before anything starts.
+    """This functions is called before anything starts.
 
     Notice that it's not a coroutine.
     """
@@ -19,7 +19,7 @@ def test_starts(args):
 
 @setup()
 async def worker_starts(worker_id, args):
-    """ This function is called once per worker.
+    """This function is called once per worker.
 
     If it returns a mapping, it will be used with all requests.
 
@@ -32,7 +32,7 @@ async def worker_starts(worker_id, args):
 
 @teardown()
 def worker_ends(worker_id):
-    """ This functions is called when the worker is done.
+    """This functions is called when the worker is done.
 
     Notice that it's not a coroutine.
     """
@@ -41,7 +41,7 @@ def worker_ends(worker_id):
 
 @global_teardown()
 def test_ends():
-    """ This functions is called when everything is done.
+    """This functions is called when everything is done.
 
     Notice that it's not a coroutine.
     """

@@ -1,6 +1,6 @@
 import os
 
-PORT = os.environ.get('TEST_PORT', '8888')
+PORT = os.environ.get("TEST_PORT", "8888")
 
 
 def get_url():
