@@ -26,7 +26,7 @@ from molotov.tests.support import (
     co_catch_output,
     event_loop
 )
-from molotov.tests.statsd import UDPServer
+from molotov.tests.statsd import run_server, stop_server
 from molotov.run import run, main
 from molotov.sharedcounter import SharedCounters
 from molotov.util import request, json_request, set_timer
@@ -108,35 +108,30 @@ class TestRunner(TestLoop):
             @scenario(weight=90)
             async def here_two(session):
                 if get_context(session).statsd is not None:
-                    get_context(session).statsd.increment("yopla")
+                    for i in range(100):
+                        get_context(session).statsd.increment("yopla")
+                await asyncio.sleep(1)
+
                 _RES.append(2)
 
-            server = UDPServer("127.0.0.1", 0, loop=test_loop)
-            _stop = asyncio.Future()
+            udp_proc, udp_port, udp_conn = run_server()
 
-            udp = []
+            args = self._get_args(udp_port)
+            args.max_runs = 3
+            args.duration = 9999
 
-            async def stop():
-                await _stop
-                args = self._get_args(udp[0])
-                args.max_runs = 3
-                args.duration = 9999
-                run(args)
-                await server.stop()
+            run(args)
 
 
-            def cb(udp_port):
-                udp.append(udp_port)
-                _stop.set_result(True)
 
-            server_task = asyncio.ensure_future(server.run(cb))
-            stop_task = asyncio.ensure_future(stop())
+            self.assertTrue(len(_RES) > 0)
+            #import pdb; pdb.set_trace()
 
-            test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
+            #udp = server.flush()
+            #self.assertTrue(len(udp) > 0)
 
-        self.assertTrue(len(_RES) > 0)
-        udp = server.flush()
-        self.assertTrue(len(udp) > 0)
+            stop_server(udp_proc, udp_conn)
+
 
     @dedicatedloop
     def test_main(self):
@@ -477,7 +472,7 @@ class TestRunner(TestLoop):
         async def staty(session):
             get_context(session).statsd.increment("yopla")
 
-        server = UDPServer("127.0.0.1", 0, loop=test_loop)
+        server = UDPServer("127.0.0.1", 1234)  #, loop=test_loop)
         _stop = asyncio.Future()
 
         async def stop():
@@ -492,7 +487,7 @@ class TestRunner(TestLoop):
         args.max_runs = 5
         args.duration = 1000
         args.statsd = True
-        args.statsd_address = "udp://127.0.0.1:%s" % server.server_address[1]
+        args.statsd_address = "udp://127.0.0.1:%s" % 1234
         args.single_mode = "staty"
         args.scenario = "molotov.tests.test_run"
 
@@ -565,7 +560,7 @@ class TestRunner(TestLoop):
 
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
-    def test_sizing_multiprocess_interrupted(self):
+    def _test_sizing_multiprocess_interrupted(self):
 
         counters = SharedCounters("OK", "FAILED")
 
@@ -647,12 +642,13 @@ class TestRunner(TestLoop):
     def test_use_extension_module_name(self):
         ext = "molotov.tests.example5"
 
-        @scenario(weight=10)
-        async def simpletest(session):
-            async with session.get("http://localhost:8888") as resp:
-                assert resp.status == 200
+        with coserver() as port:
+            @scenario(weight=10)
+            async def simpletest(session):
+                async with session.get(f"http://localhost:{port}") as resp:
+                    assert resp.status == 200
 
-        with coserver():
+
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
                 "--max-runs",
@@ -670,12 +666,13 @@ class TestRunner(TestLoop):
     def test_use_extension_module_name_fail(self):
         ext = "IDONTEXTSIST"
 
-        @scenario(weight=10)
-        async def simpletest(session):
-            async with session.get("http://localhost:8888") as resp:
-                assert resp.status == 200
+        with coserver() as port:
+            @scenario(weight=10)
+            async def simpletest(session):
+                async with session.get(f"http://localhost:{port}") as resp:
+                    assert resp.status == 200
 
-        with coserver():
+
             stdout, stderr, rc = self._test_molotov(
                 "-cx",
                 "--max-runs",
@@ -725,12 +722,6 @@ class TestRunner(TestLoop):
     @co_catch_output
     @dedicatedloop_noclose
     def test_slow_server_graceful(self):
-        @scenario(weight=10)
-        async def _one(session):
-            async with session.get("http://localhost:8888/slow") as resp:
-                assert resp.status == 200
-                _RES.append(1)
-
         args = self._get_args()
         args.duration = 0.1
         args.verbose = 2
@@ -740,7 +731,13 @@ class TestRunner(TestLoop):
         args.graceful_shutdown = True
 
         start = time.time()
-        with coserver():
+        with coserver() as port:
+            @scenario(weight=10)
+            async def _one(session):
+                async with session.get(f"http://localhost:{port}/slow") as resp:
+                    assert resp.status == 200
+                    _RES.append(1)
+
             run(args)
 
         # makes sure the test finishes
