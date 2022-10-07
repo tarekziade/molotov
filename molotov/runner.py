@@ -189,8 +189,6 @@ class Runner(object):
             self.loop.set_debug(True)
 
         self._set_statsd()
-        if self.statsd is not None:
-            self._tasks.append(self.ensure_future(self.statsd.connect()))
 
         if self.args.original_pid == os.getpid():
             self._tasks.append(self.ensure_future(self._send_workers_event(1)))

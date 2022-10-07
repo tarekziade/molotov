@@ -22,7 +22,7 @@ class ServerProto:
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        debug(data)
+        debug(data.decode('utf8'))
         self.conn.send(data)
 
     def disconnect(self):
@@ -89,24 +89,31 @@ def run_server():
 
 def stop_server(p, conn):
     debug("Stopping server pipe")
-    conn.close()
     debug("killing process")
     os.kill(p.pid, signal.SIGINT)
     p.join(timeout=1.0)
+    res = []
+    for data in conn.recv():
+        res.append(data)
+    conn.close()
+    return res
 
 
 def _run(conn):
-
     server = UDPServer('localhost', 0, conn)
     signal.signal(signal.SIGINT, server.stop)
     try:
         asyncio.run(server.run())
     except KeyboardInterrupt:
         debug("killed")
+    conn.send('STOPPED')
     conn.close()
 
 
 if __name__ == '__main__':
-    p, port, conn = run_server()
-    time.sleep(2)
-    stop_server(p, conn)
+    try:
+        p, port, conn = run_server()
+        while True:
+            print(conn.recv())
+    finally:
+        print(stop_server(p, conn))

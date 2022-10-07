@@ -46,10 +46,11 @@ class TestRunner(TestLoop):
         _RES[:] = []
         _RES2.clear()
 
-    def _get_args(self, udp_port=0):
+    def _get_args(self, udp_port=None):
         args = self.get_args()
-        args.statsd = True
-        args.statsd_address = "udp://127.0.0.1:%s" % udp_port
+        if udp_port is not None:
+            args.statsd = True
+            args.statsd_address = "udp://localhost:%s" % udp_port
         args.scenario = "molotov.tests.test_run"
         return args
 
@@ -85,11 +86,9 @@ class TestRunner(TestLoop):
 
         self.assertTrue(len(_RES) > 0)
 
-    #@co_catch_output
+    @co_catch_output
     @dedicatedloop_noclose
     def test_runner(self):
-        test_loop = event_loop()
-
         with coserver() as port:
 
             @global_setup()
@@ -107,31 +106,26 @@ class TestRunner(TestLoop):
 
             @scenario(weight=90)
             async def here_two(session):
-                if get_context(session).statsd is not None:
-                    for i in range(100):
-                        get_context(session).statsd.increment("yopla")
-                await asyncio.sleep(1)
+                statsd = get_context(session).statsd
+                if statsd is not None:
+                    for i in range(10):
+                        statsd.increment("user.online")
+                    await asyncio.sleep(0)
+
+                await asyncio.sleep(0.1)
 
                 _RES.append(2)
 
             udp_proc, udp_port, udp_conn = run_server()
-
             args = self._get_args(udp_port)
             args.max_runs = 3
             args.duration = 9999
 
             run(args)
 
-
-
             self.assertTrue(len(_RES) > 0)
-            #import pdb; pdb.set_trace()
-
-            #udp = server.flush()
-            #self.assertTrue(len(udp) > 0)
-
-            stop_server(udp_proc, udp_conn)
-
+            received = stop_server(udp_proc, udp_conn)
+            self.assertTrue(len(received) > 0)
 
     @dedicatedloop
     def test_main(self):
@@ -387,7 +381,7 @@ class TestRunner(TestLoop):
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
             delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1])
+            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1, 1])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
@@ -466,28 +460,18 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop_noclose
     def test_statsd_multiprocess(self):
-        test_loop = event_loop()
 
         @scenario()
         async def staty(session):
             get_context(session).statsd.increment("yopla")
 
-        server = UDPServer("127.0.0.1", 1234)  #, loop=test_loop)
-        _stop = asyncio.Future()
-
-        async def stop():
-            await _stop
-            await server.stop()
-
-        server_task = asyncio.ensure_future(server.run())
-        stop_task = asyncio.ensure_future(stop())
-        args = self._get_args()
+        udp_proc, udp_port, udp_conn = run_server()
+        args = self._get_args(udp_port)
         args.verbose = 2
         args.processes = 2
         args.max_runs = 5
         args.duration = 1000
         args.statsd = True
-        args.statsd_address = "udp://127.0.0.1:%s" % 1234
         args.single_mode = "staty"
         args.scenario = "molotov.tests.test_run"
 
@@ -495,19 +479,12 @@ class TestRunner(TestLoop):
 
         run(args, stream=stream)
 
-        _stop.set_result(True)
-        test_loop.run_until_complete(asyncio.gather(server_task, stop_task))
-        udp = server.flush()
-        incrs = 0
-        for line in udp:
-            for el in line.split(b"\n"):
-                if el.strip() == b"":
-                    continue
-                incrs += 1
+        received = stop_server(udp_proc, udp_conn)
 
         # two processes making 5 run each
         # we want at least 5  here
-        self.assertTrue(incrs > 5)
+        self.assertTrue(len(received) > 5)
+
         stream.seek(0)
         output = stream.read()
         self.assertTrue("Happy breaking!" in output, output)
@@ -849,7 +826,7 @@ class TestRunner(TestLoop):
                         assert data in res
                         PASSED[0] += 1
 
-            args = self._get_args(0)
+            args = self._get_args()
             args.verbose = 2
             args.max_runs = 1
             res = run(args)
