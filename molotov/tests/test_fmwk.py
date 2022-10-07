@@ -118,7 +118,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
-    def _runner(self, console, screen=None):
+    def _runner(self, console, screen=None, port=8888):
         res = []
         _events = []
 
@@ -141,12 +141,12 @@ class TestFmwk(TestLoop):
 
         @scenario(weight=50)
         async def test_one(session):
-            async with session.get("http://localhost:8888") as resp:
+            async with session.get(f"http://localhost:{port}") as resp:
                 await resp.text()
 
         @scenario(weight=100)
         async def test_two(session):
-            async with session.get("http://localhost:8888") as resp:
+            async with session.get(f"http://localhost:{port}") as resp:
                 await resp.text()
 
         @teardown_session()
@@ -167,13 +167,13 @@ class TestFmwk(TestLoop):
 
     @dedicatedloop
     def test_runner(self):
-        with coserver():
-            return self._runner(console=False)
+        with coserver() as port:
+            return self._runner(console=False, port=port)
 
     @dedicatedloop
     def test_runner_console(self):
-        with coserver():
-            return self._runner(console=True)
+        with coserver() as port:
+            return self._runner(console=True, port=port)
 
     @dedicatedloop
     def _multiprocess(self, console, nosetup=False):
@@ -261,8 +261,8 @@ class TestFmwk(TestLoop):
 
         @setup_session()
         async def _setup_session(wid, session):
-            with coserver():
-                html = str(request("http://localhost:8888"))
+            with coserver() as port:
+                html = str(request(f"http://localhost:{port}"))
                 content.append(html)
 
         @scenario(weight=100)
