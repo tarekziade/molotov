@@ -1,7 +1,5 @@
 import multiprocess
 import asyncio
-import random
-import string
 import os
 import signal
 
@@ -10,7 +8,6 @@ from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.application import Application
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.layout import (
     FormattedTextControl,
     HSplit,
@@ -23,23 +20,28 @@ from prompt_toolkit.layout.controls import UIContent, UIControl
 from molotov import __version__
 from molotov.util import printable_error
 
-title = HTML(f"<b>Molotov v{__version__}</b> Ctrl+C to  abort.")
+
+TITLE = HTML(f"<b>Molotov v{__version__}</b> Ctrl+C to  abort.")
 
 
-class TerminalController(UIControl):
-    def __init__(self, progress_bar, size=25):
-        self.progress_bar = progress_bar
-        self._key_bindings = create_key_bindings()
-        self.manager = multiprocess.Manager()
-        self.data = self.manager.list()
+class UIControlWithKeys(UIControl):
+    def __init__(self, size=25):
+        super().__init__()
         self.size = size
         self._key_bindings = create_key_bindings()
 
     def is_focusable(self) -> bool:
         return True  # Make sure that the key bindings work.
 
-    def get_key_bindings(self) -> KeyBindings:
+    def get_key_bindings(self):
         return self._key_bindings
+
+
+class TerminalController(UIControlWithKeys):
+    def __init__(self, size=25):
+        super().__init__(size)
+        self.manager = multiprocess.Manager()
+        self.data = self.manager.list()
 
     def write(self, data):
         self.data.append(data)
@@ -61,9 +63,6 @@ class TerminalController(UIControl):
         return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
 
 
-E = KeyPressEvent
-
-
 def create_key_bindings():
     kb = KeyBindings()
 
@@ -79,21 +78,10 @@ def create_key_bindings():
     return kb
 
 
-kb = create_key_bindings()
-
-
-class RunStatus(UIControl):
-    def __init__(self, progress_bar):
-        self.progress_bar = progress_bar
-        self.data = multiprocess.Queue()
+class RunStatus(UIControlWithKeys):
+    def __init__(self, size=25):
+        super().__init__(size)
         self.update({})
-        self._key_bindings = create_key_bindings()
-
-    def get_key_bindings(self) -> KeyBindings:
-        return self._key_bindings
-
-    def is_focusable(self) -> bool:
-        return True  # Make sure that the key bindings work.
 
     def update(self, results):
         self.ok = results.get("OK", 0)
@@ -112,24 +100,13 @@ class RunStatus(UIControl):
         return UIContent(get_line=get_line, line_count=1, show_cursor=False)
 
 
-def get_random_string(length):
-    # choose from all lowercase letter
-    letters = string.ascii_lowercase
-    result_str = "".join(random.choice(letters) for i in range(length))
-    return result_str
-
-
-class ProgressBar:
-    def __init__(
-        self,
-        title,
-        key_bindings,
-    ):
-        self.title = title
-        self.terminal = TerminalController(self)
-        self.status = RunStatus(self)
-        self.errors = TerminalController(self)
-        self.key_bindings = key_bindings
+class MolotovApp:
+    def __init__(self):
+        self.title = TITLE
+        self.terminal = TerminalController()
+        self.status = RunStatus()
+        self.errors = TerminalController()
+        self.key_bindings = create_key_bindings()
 
     async def start(self):
         title_toolbar = Window(
@@ -180,21 +157,18 @@ class SharedConsole(object):
         self._creator = os.getpid()
         self._stop = False
         self._max_lines_displayed = max_lines_displayed
-        self.pb = ProgressBar(
-            title=title,
-            key_bindings=kb,
-        )
-        self.terminal = self.pb.terminal
-        self.errors = self.pb.errors
-        self.status = self.pb.status
+        self.ui = MolotovApp()
+        self.terminal = self.ui.terminal
+        self.errors = self.ui.errors
+        self.status = self.ui.status
         self.started = False
 
     async def start(self):
-        await self.pb.start()
+        await self.ui.start()
         self.started = True
 
     async def stop(self):
-        await self.pb.stop()
+        await self.ui.stop()
         self.started = False
 
     def print_results(self, results):
