@@ -99,6 +99,7 @@ class Runner(object):
                 self._procs.append(job)
 
             async def run(quiet, console):
+                await self.console.start()
                 while len(self._procs) > 0:
                     if not quiet:
                         console.print(self.display_results(), end="\r")
@@ -110,7 +111,7 @@ class Runner(object):
                 await self.eventer.stop()
 
             tasks = [
-                self.ensure_future(self.console.display()),
+                self.ensure_future(self.console.start()),
                 self.ensure_future(self._send_workers_event(1)),
                 self.ensure_future(run(args.quiet, self.console)),
             ]
@@ -193,7 +194,7 @@ class Runner(object):
             if not self.args.quiet:
                 fut = self._display_results(self.args.console_update)
                 update = self.ensure_future(fut)
-                display = self.ensure_future(self.console.display())
+                display = self.ensure_future(self.console.start())
                 display = self.gather(update, display)
                 self._tasks.append(display)
 
@@ -232,9 +233,18 @@ class Runner(object):
         return pat % (ok, fail, workers)
 
     async def _display_results(self, update_interval):
+        while not self.console.started:
+            await asyncio.sleep(0.1)
+
         while not is_stopped():
-            self.console.print(self.display_results(), end="\r")
+            results = {
+                "OK": self._results["OK"].value,
+                "FAILED": self._results["FAILED"].value,
+                "WORKER": self._results["WORKER"].value,
+            }
+            self.console.print_results(results)
             await cancellable_sleep(update_interval)
+
         await self.console.stop()
 
     async def _send_workers_event(self, update_interval):

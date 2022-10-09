@@ -37,10 +37,14 @@ class Worker(object):
         self._setup = get_fixture("setup")
         self._teardown = get_fixture("teardown")
 
+    def print(self, line):
+        self.console.print(f"[W:{self.wid}] {line}")
+
     async def send_event(self, event, **options):
         await self.eventer.send_event(event, wid=self.wid, **options)
 
     async def run(self):
+        self.print(f"Starting")
         await asyncio.sleep(0)
         if self.delay > 0.0:
             await cancellable_sleep(self.delay)
@@ -81,7 +85,7 @@ class Worker(object):
             options = {}
         elif not isinstance(options, dict):
             msg = "The setup function needs to return a dict"
-            self.console.print(msg)
+            self.print(msg)
             raise FixtureError(msg)
 
         return options
@@ -132,6 +136,8 @@ class Worker(object):
             stop(why=e)
             return
 
+        self.print("Setting up session")
+
         async with get_session(
             self.loop, self.console, verbose, self.statsd, **options
         ) as session:
@@ -145,7 +151,11 @@ class Worker(object):
                 stop(why=e)
                 return
 
+            self.print("Running scenarios")
+
             while self._may_run():
+                if self.count % 10 == 0:
+                    self.print(f"Ran {self.count} scenarios")
                 step_start = _now()
                 get_context(session).step = self.count
                 result = await self.step(self.count, session, scenario=single)
@@ -170,6 +180,7 @@ class Worker(object):
                     # forces a context switch
                     await asyncio.sleep(0)
 
+            self.print("Done!")
             await self.session_teardown(session)
 
     def teardown(self):
@@ -231,9 +242,9 @@ class Worker(object):
             return 1
         except Exception as exc:
             await self.send_event("scenario_failure", scenario=scenario, exception=exc)
-            if self.args.verbose > 0:
-                self.console.print_error(exc)
-                await self.console.flush()
+            self.print("Failure!")
+            self.console.print_error(exc)
+
             return exc
 
         return -1

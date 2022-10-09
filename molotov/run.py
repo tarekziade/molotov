@@ -10,7 +10,9 @@ from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import expand_options, OptionError, printable_error
-from molotov.sharedconsole import SharedConsole
+
+# from molotov.sharedconsole import SharedConsole
+from molotov.ncurse import SharedConsole
 
 
 PYPY = platform.python_implementation() == "PyPy"
@@ -245,9 +247,6 @@ def run(args, stream=None):
 
     args.shared_console = SharedConsole(interval=args.console_update, stream=stream)
 
-    if not args.quiet:
-        direct_print(stream, HELLO)
-
     if args.use_extension:
         for extension in args.use_extension:
             if not args.quiet:
@@ -274,7 +273,9 @@ def run(args, stream=None):
             module = import_module(args.scenario)
         except (ImportError, ValueError) as e:
             direct_print(stream, "Cannot import %r" % args.scenario)
-            direct_print(stream, "\n".join(printable_error(e)))
+            direct_print(stream, "Try `molotov molotov.dummy`")
+            direct_print(stream, "*** Bye ***")
+            raise
             sys.exit(1)
         sys.path.insert(0, os.path.dirname(module.__file__))
 
@@ -312,6 +313,7 @@ def run(args, stream=None):
     res = _dict(res)
 
     if not args.quiet:
+        direct_print(stream, HELLO)
         if args.sizing:
             if res["REACHED"] == 1:
                 direct_print(stream, _SIZING % res)
@@ -319,6 +321,7 @@ def run(args, stream=None):
                 direct_print(stream, "Sizing was not finished. (interrupted)")
         else:
             direct_print(stream, "SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r" % res)
+
         direct_print(stream, "*** Bye ***")
         if args.fail is not None and res["FAILED"] >= args.fail:
             sys.exit(1)

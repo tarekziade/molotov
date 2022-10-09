@@ -1,0 +1,222 @@
+import multiprocess
+import asyncio
+import random
+import string
+import os
+import signal
+
+from prompt_toolkit import HTML
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.application import Application
+from prompt_toolkit.formatted_text import to_formatted_text
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from prompt_toolkit.layout import (
+    FormattedTextControl,
+    HSplit,
+    Layout,
+    VSplit,
+    Window,
+)
+from prompt_toolkit.layout.controls import UIContent, UIControl
+
+from molotov import __version__
+from molotov.util import printable_error
+
+title = HTML(f"<b>Molotov v{__version__}</b> Ctrl+C to  abort.")
+
+
+class TerminalController(UIControl):
+    def __init__(self, progress_bar, size=25):
+        self.progress_bar = progress_bar
+        self._key_bindings = create_key_bindings()
+        self.manager = multiprocess.Manager()
+        self.data = self.manager.list()
+        self.size = size
+        self._key_bindings = create_key_bindings()
+
+    def is_focusable(self) -> bool:
+        return True  # Make sure that the key bindings work.
+
+    def get_key_bindings(self) -> KeyBindings:
+        return self._key_bindings
+
+    def write(self, data):
+        self.data.append(data)
+        if len(self.data) > self.size:
+            self.data = self.data[-self.size :]
+
+    def create_content(self, width, height):
+        items = ["\n"]
+
+        for line in self.data:
+            items.append(line)
+
+        lines = "".join(items).split("\n")
+        items = [to_formatted_text(HTML(line)) for line in lines]
+
+        def get_line(i: int):
+            return items[i]
+
+        return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
+
+
+E = KeyPressEvent
+
+
+def create_key_bindings():
+    kb = KeyBindings()
+
+    @kb.add("c-l")
+    def _clear(event):
+        event.app.renderer.clear()
+
+    @kb.add("c-c")
+    def _interrupt(event):
+        event.app.exit()
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    return kb
+
+
+kb = create_key_bindings()
+
+
+class RunStatus(UIControl):
+    def __init__(self, progress_bar):
+        self.progress_bar = progress_bar
+        self.data = multiprocess.Queue()
+        self.update({})
+        self._key_bindings = create_key_bindings()
+
+    def get_key_bindings(self) -> KeyBindings:
+        return self._key_bindings
+
+    def is_focusable(self) -> bool:
+        return True  # Make sure that the key bindings work.
+
+    def update(self, results):
+        self.ok = results.get("OK", 0)
+        self.failed = results.get("FAILED", 0)
+        self.worker = results.get("WORKER", 0)
+
+    def formatted(self):
+        return to_formatted_text(
+            HTML(f"SUCCESS: {self.ok}, FAILED: {self.failed}, WORKERS: {self.worker}")
+        )
+
+    def create_content(self, width: int, height: int) -> UIContent:
+        def get_line(i: int) -> StyleAndTextTuples:
+            return self.formatted()
+
+        return UIContent(get_line=get_line, line_count=1, show_cursor=False)
+
+
+def get_random_string(length):
+    # choose from all lowercase letter
+    letters = string.ascii_lowercase
+    result_str = "".join(random.choice(letters) for i in range(length))
+    return result_str
+
+
+class ProgressBar:
+    def __init__(
+        self,
+        title,
+        key_bindings,
+    ):
+        self.title = title
+        self.terminal = TerminalController(self)
+        self.status = RunStatus(self)
+        self.errors = TerminalController(self)
+        self.key_bindings = key_bindings
+
+    async def start(self):
+        title_toolbar = Window(
+            FormattedTextControl(lambda: self.title),
+            height=1,
+            style="class:title",
+        )
+
+        bottom_toolbar = Window(
+            content=self.status,
+            style="class:bottom-toolbar",
+            height=1,
+        )
+
+        terminal = Window(content=self.terminal, height=self.terminal.size + 2)
+        errors = Window(content=self.errors, height=self.errors.size + 2)
+
+        self.app = Application(
+            min_redraw_interval=0.05,
+            layout=Layout(
+                HSplit(
+                    [
+                        title_toolbar,
+                        VSplit([terminal, Window(width=4, char=" || "), errors]),
+                        bottom_toolbar,
+                    ]
+                )
+            ),
+            style=None,
+            key_bindings=self.key_bindings,
+            refresh_interval=0.3,
+            color_depth=None,
+            output=None,
+            input=None,
+            erase_when_done=True,
+        )
+
+        self.task = asyncio.ensure_future(self.app.run_async())
+
+    async def stop(self):
+        self.app.exit()
+
+
+class SharedConsole(object):
+    def __init__(self, interval=0.1, max_lines_displayed=20, stream=None):
+        self._interval = interval
+        self._stop = True
+        self._creator = os.getpid()
+        self._stop = False
+        self._max_lines_displayed = max_lines_displayed
+        self.pb = ProgressBar(
+            title=title,
+            key_bindings=kb,
+        )
+        self.terminal = self.pb.terminal
+        self.errors = self.pb.errors
+        self.status = self.pb.status
+        self.started = False
+
+    async def start(self):
+        await self.pb.start()
+        self.started = True
+
+    async def stop(self):
+        await self.pb.stop()
+        self.started = False
+
+    def print_results(self, results):
+        self.status.update(results)
+
+    def print(self, line):
+        line += "\n"
+        if os.getpid() != self._creator:
+            line = "[%d] %s" % (os.getpid(), line)
+        self.terminal.write(line)
+
+    def print_error(self, error, tb=None):
+        for line in printable_error(error, tb):
+            line += "\n"
+            self.errors.write(line)
+
+    def print_block(self, start, callable, end="OK"):
+        if os.getpid() != self._creator:
+            prefix = "[%d] " % os.getpid()
+        else:
+            prefix = ""
+        self.terminal.write(prefix + start + "...\n")
+        res = callable()
+        self.terminal.write(prefix + "OK\n")
+        return res
