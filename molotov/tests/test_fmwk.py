@@ -1,5 +1,7 @@
 import os
 import signal
+from unittest.mock import patch
+
 from molotov.session import get_session
 from molotov.runner import Runner
 from molotov.worker import Worker
@@ -19,7 +21,6 @@ from molotov.tests.support import (
     TestLoop,
     async_test,
     dedicatedloop,
-    serialize,
     catch_sleep,
     coserver,
 )
@@ -233,8 +234,9 @@ class TestFmwk(TestLoop):
         self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
+    @patch('molotov.sharedconsole.SharedConsole.print')
     @async_test
-    async def test_setup_session_failure(self, loop, console, results):
+    async def test_setup_session_failure(self, console_print, loop, console, results):
         @setup_session()
         async def _setup_session(wid, session):
             json_request("http://invalid")
@@ -247,7 +249,7 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
 
         await w.run()
-        output = await serialize(console)
+        output = ''.join(console_print.call_args.args)
         expected = (
             "Name or service not known" in output
             or "nodename nor servname provided" in output  # NOQA

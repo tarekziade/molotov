@@ -50,16 +50,6 @@ def event_loop(no_create=False):
     return asyncio.get_event_loop()
 
 
-async def serialize(console):
-    res = []
-    while True:
-        try:
-            res.append(console._stream.get(block=True, timeout=_TIMEOUT))
-        except Empty:
-            break
-    return "".join(res)
-
-
 class RequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/redirect":
@@ -283,7 +273,6 @@ def async_test(func):
         kw["loop"] = loop
         kw["console"] = console
         kw["results"] = results
-
         fut = asyncio.ensure_future(func(*args, **kw))
         try:
             loop.run_until_complete(fut)
