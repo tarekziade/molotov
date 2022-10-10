@@ -10,9 +10,7 @@ from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import expand_options, OptionError, printable_error
-
-# from molotov.sharedconsole import SharedConsole
-from molotov.ncurse import SharedConsole
+from molotov.sharedconsole import SharedConsole
 
 
 PYPY = platform.python_implementation() == "PyPy"

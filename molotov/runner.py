@@ -2,14 +2,20 @@ from contextlib import suppress
 import signal
 import asyncio
 import os
-from collections import defaultdict
 import multiprocess
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
-from molotov.util import cancellable_sleep, stop, is_stopped, set_timer, event_loop
+from molotov.util import (
+    cancellable_sleep,
+    stop,
+    is_stopped,
+    set_timer,
+    event_loop,
+    SharedTasks,
+)
 from molotov.worker import Worker
 
 
@@ -25,7 +31,7 @@ class Runner(object):
         # the stastd client gets initialized after we fork
         # processes in case -p was used
         self.statsd = None
-        self._tasks = defaultdict(list)
+        self._tasks = SharedTasks()
         self._procs = []
         self._results = SharedCounters(
             "WORKER",
@@ -60,19 +66,13 @@ class Runner(object):
     def ensure_future(self, coro):
         return asyncio.ensure_future(coro, loop=self.loop)
 
-    def append_task(self, task):
-        self._tasks[os.getpid()].append(task)
-
-    def get_tasks(self):
-        return self._tasks[os.getpid()]
-
     def __call__(self):
         if not self.args.quiet:
             fut = self._display_results(self.args.console_update)
             update = self.ensure_future(fut)
-            self.append_task(update)
+            self._tasks.append(update)
 
-        self.append_task(self.ensure_future(self._send_workers_event(1)))
+        self._tasks.append(self.ensure_future(self._send_workers_event(1)))
 
         global_setup = get_fixture("global_setup")
         if global_setup is not None:
@@ -130,7 +130,7 @@ class Runner(object):
 
     def _shutdown(self, signal, frame):
         stop()
-        self._kill_tasks()
+        self._tasks.cancel_all()
         # send sigterms
         for proc in self._procs:
             proc.terminate()
@@ -197,7 +197,7 @@ class Runner(object):
         self._set_statsd()
 
         if self.args.original_pid == os.getpid():
-            self.append_task(self.ensure_future(self._send_workers_event(1)))
+            self._tasks.append(self.ensure_future(self._send_workers_event(1)))
 
         workers = self.gather(*self._runner())
 
@@ -208,27 +208,15 @@ class Runner(object):
             stop()
 
         workers.add_done_callback(_stop)
-        self.append_task(workers)
+        self._tasks.append(workers)
 
         try:
-            self.loop.run_until_complete(self.gather(*self.get_tasks()))
+            self.loop.run_until_complete(self.gather(*self._tasks))
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
                 self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
-            self._kill_tasks()
+            self._tasks.cancel_all()
             self.loop.close()
-
-    def _kill_tasks(self):
-        cancellable_sleep.cancel_all()
-        for task in reversed(self.get_tasks()):
-            with suppress(asyncio.CancelledError):
-                task.cancel()
-        for task in self.get_tasks():
-            del task
-        self.reset_tasks()
-
-    def reset_tasks(self):
-        self._tasks[os.getpid()][:] = []
 
     async def _display_results(self, update_interval):
         if self.args.original_pid != os.getpid():
