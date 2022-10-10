@@ -44,7 +44,7 @@ class Worker(object):
         await self.eventer.send_event(event, wid=self.wid, **options)
 
     async def run(self):
-        self.print(f"Starting")
+        self.print("Starting")
         await asyncio.sleep(0)
         if self.delay > 0.0:
             await cancellable_sleep(self.delay)

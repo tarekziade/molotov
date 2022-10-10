@@ -21,7 +21,9 @@ from molotov import __version__
 from molotov.util import printable_error
 
 
-TITLE = HTML(f"<b>Molotov v{__version__}</b> Ctrl+C to  abort.")
+TITLE = HTML(
+    f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>"
+)
 
 
 class UIControlWithKeys(UIControl):
@@ -46,7 +48,7 @@ class TerminalController(UIControlWithKeys):
     def write(self, data):
         self.data.append(data)
         if len(self.data) > self.size:
-            self.data = self.data[-self.size :]
+            self.data[:] = self.data[-self.size :]
 
     def create_content(self, width, height):
         items = ["\n"]
@@ -81,16 +83,29 @@ def create_key_bindings():
 class RunStatus(UIControlWithKeys):
     def __init__(self, size=25):
         super().__init__(size)
-        self.update({})
+        self.ok = multiprocess.Value("i", 0)
+        self.failed = multiprocess.Value("i", 0)
+        self.worker = multiprocess.Value("i", 0)
+        self.process = multiprocess.Value("i", 0)
 
     def update(self, results):
-        self.ok = results.get("OK", 0)
-        self.failed = results.get("FAILED", 0)
-        self.worker = results.get("WORKER", 0)
+        if "OK" in results:
+            self.ok.value = results["OK"].value
+        if "FAILED" in results:
+            self.failed.value = results["FAILED"].value
+        if "WORKER" in results:
+            self.worker.value = results["WORKER"].value
+        if "PROCESS" in results:
+            self.process.value = results["PROCESS"].value
 
     def formatted(self):
         return to_formatted_text(
-            HTML(f"SUCCESS: {self.ok}, FAILED: {self.failed}, WORKERS: {self.worker}")
+            HTML(
+                f'<style fg="green" bg="#cecece">SUCCESS: {self.ok.value} </style>'
+                f'<style fg="red" bg="#cecece"> FAILED: {self.failed.value} </style>'
+                f" WORKERS: {self.worker.value}"
+                f" PROCESSES: {self.process.value}"
+            )
         )
 
     def create_content(self, width: int, height: int) -> UIContent:
@@ -147,7 +162,10 @@ class MolotovApp:
         self.task = asyncio.ensure_future(self.app.run_async())
 
     async def stop(self):
-        self.app.exit()
+        try:
+            self.app.exit()
+        except Exception:
+            pass
 
 
 class SharedConsole(object):
@@ -177,17 +195,18 @@ class SharedConsole(object):
     def print(self, line):
         line += "\n"
         if os.getpid() != self._creator:
-            line = "[%d] %s" % (os.getpid(), line)
+            line = f'<style fg="#cecece">[P:{os.getpid()}]</style> {line}'
         self.terminal.write(line)
 
     def print_error(self, error, tb=None):
         for line in printable_error(error, tb):
-            line += "\n"
+            line = f'<style fg="gray">{line}</style>' + "\n"
             self.errors.write(line)
+        self.errors.write("\n")
 
     def print_block(self, start, callable, end="OK"):
         if os.getpid() != self._creator:
-            prefix = "[%d] " % os.getpid()
+            prefix = f'<style fg="#cecece">[P:{os.getpid()}]</style>'
         else:
             prefix = ""
         self.terminal.write(prefix + start + "...\n")
