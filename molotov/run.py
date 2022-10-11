@@ -17,7 +17,9 @@ PYPY = platform.python_implementation() == "PyPy"
 
 
 def _parser():
-    parser = argparse.ArgumentParser(description="Load test.")
+    parser = argparse.ArgumentParser(
+        description="Load test.", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     parser.add_argument(
         "scenario",
@@ -256,7 +258,7 @@ def run(args, stream=None):
             else:
                 try:
                     import_module(extension)
-                except (ImportError, ValueError) as e:
+                except Exception as e:
                     direct_print(stream, "Cannot import %r" % extension)
                     direct_print(stream, "\n".join(printable_error(e)))
                     sys.exit(1)
@@ -269,12 +271,12 @@ def run(args, stream=None):
     else:
         try:
             module = import_module(args.scenario)
-        except (ImportError, ValueError) as e:
+        except Exception:
             direct_print(stream, "Cannot import %r" % args.scenario)
             direct_print(stream, "Try `molotov molotov.dummy`")
             direct_print(stream, "*** Bye ***")
-            raise
             sys.exit(1)
+
         sys.path.insert(0, os.path.dirname(module.__file__))
 
     if len(get_scenarios()) == 0:

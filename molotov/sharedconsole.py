@@ -27,9 +27,9 @@ TITLE = HTML(
 
 
 class UIControlWithKeys(UIControl):
-    def __init__(self, size=25):
+    def __init__(self, max_lines=25):
         super().__init__()
-        self.size = size
+        self.max_lines = max_lines
         self._key_bindings = create_key_bindings()
 
     def is_focusable(self) -> bool:
@@ -40,15 +40,15 @@ class UIControlWithKeys(UIControl):
 
 
 class TerminalController(UIControlWithKeys):
-    def __init__(self, size=25):
-        super().__init__(size)
+    def __init__(self, max_lines=25):
+        super().__init__(max_lines)
         self.manager = multiprocess.Manager()
         self.data = self.manager.list()
 
     def write(self, data):
         self.data.append(data)
-        if len(self.data) > self.size:
-            self.data[:] = self.data[-self.size :]
+        if len(self.data) > self.max_lines:
+            self.data[:] = self.data[-self.max_lines :]
 
     def create_content(self, width, height):
         items = ["\n"]
@@ -81,8 +81,8 @@ def create_key_bindings():
 
 
 class RunStatus(UIControlWithKeys):
-    def __init__(self, size=25):
-        super().__init__(size)
+    def __init__(self, max_lines=25):
+        super().__init__(max_lines)
         self.ok = multiprocess.Value("i", 0)
         self.failed = multiprocess.Value("i", 0)
         self.worker = multiprocess.Value("i", 0)
@@ -116,12 +116,14 @@ class RunStatus(UIControlWithKeys):
 
 
 class MolotovApp:
-    def __init__(self):
+    def __init__(self, refresh_interval=0.3, max_lines=25):
         self.title = TITLE
-        self.terminal = TerminalController()
+        self.terminal = TerminalController(max_lines)
         self.status = RunStatus()
-        self.errors = TerminalController()
+        self.errors = TerminalController(max_lines)
         self.key_bindings = create_key_bindings()
+        self.refresh_interval = refresh_interval
+        self.max_lines = max_lines
 
     async def start(self):
         title_toolbar = Window(
@@ -136,8 +138,8 @@ class MolotovApp:
             height=1,
         )
 
-        terminal = Window(content=self.terminal, height=self.terminal.size + 2)
-        errors = Window(content=self.errors, height=self.errors.size + 2)
+        terminal = Window(content=self.terminal, height=self.max_lines + 2)
+        errors = Window(content=self.errors, height=self.max_lines + 2)
 
         self.app = Application(
             min_redraw_interval=0.05,
@@ -152,7 +154,7 @@ class MolotovApp:
             ),
             style=None,
             key_bindings=self.key_bindings,
-            refresh_interval=0.3,
+            refresh_interval=self.refresh_interval,
             color_depth=None,
             output=None,
             input=None,
@@ -169,13 +171,13 @@ class MolotovApp:
 
 
 class SharedConsole(object):
-    def __init__(self, interval=0.1, max_lines_displayed=20, stream=None):
+    def __init__(self, interval=0.3, max_lines_displayed=25, stream=None):
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
         self._stop = False
         self._max_lines_displayed = max_lines_displayed
-        self.ui = MolotovApp()
+        self.ui = MolotovApp(refresh_interval=interval, max_lines=max_lines_displayed)
         self.terminal = self.ui.terminal
         self.errors = self.ui.errors
         self.status = self.ui.status

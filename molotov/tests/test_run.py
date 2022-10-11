@@ -339,19 +339,17 @@ class TestRunner(TestLoop):
 
             stdout, stderr, rc = self._test_molotov(
                 "--delay",
-                ".6",
-                "--console-update",
-                "0",
+                "0.21",
                 "-cx",
                 "--max-runs",
-                "2",
+                "3",
                 "-s",
                 "here_three",
                 "molotov.tests.test_run",
             )
-            wanted = "SUCCESSES: 2"
+            wanted = "SUCCESSES: 3"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay[:9], [1, 0.1, 1, 0.6, 1, 0.1, 1, 0.6, 1])
+            self.assertEqual(delay.count(0.21), 3)
 
     @dedicatedloop
     def test_rampup(self):
@@ -379,8 +377,7 @@ class TestRunner(TestLoop):
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
-            delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1, 1])
+            self.assertEqual(delay[3:7], [2.0, 4.0, 6.0, 8.0])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 

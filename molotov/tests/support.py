@@ -12,7 +12,6 @@ from io import StringIO
 import http.server
 import socketserver
 import pytest
-from queue import Empty
 from unittest.mock import patch
 
 import multiprocess
@@ -114,6 +113,7 @@ def run_server():
     start = time.time()
     connected = False
     port = parent.recv()
+    parent.close()
     os.environ["TEST_PORT"] = str(port)
 
     while time.time() - start < 5 and not connected:
@@ -131,26 +131,15 @@ def run_server():
     return p, port
 
 
-_CO = {"clients": 0, "server": None}
-
-
 @contextmanager
 def coserver():
-    if _CO["clients"] == 0:
-        process, port = run_server()
-        _CO["server"] = process, port
-
-    _CO["clients"] += 1
+    process, port = run_server()
     try:
         yield port
     finally:
-        _CO["clients"] -= 1
-        if _CO["clients"] == 0:
-            p = _CO["server"][0]
-            os.kill(p.pid, signal.SIGTERM)
-            p.join(timeout=1.0)
-            p.terminate()
-            _CO["server"] = None
+        os.kill(process.pid, signal.SIGTERM)
+        process.join(timeout=1.0)
+        process.terminate()
 
 
 def _respkw():

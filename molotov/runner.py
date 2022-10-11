@@ -1,4 +1,3 @@
-from contextlib import suppress
 import signal
 import asyncio
 import os
@@ -67,13 +66,6 @@ class Runner(object):
         return asyncio.ensure_future(coro, loop=self.loop)
 
     def __call__(self):
-        if not self.args.quiet:
-            fut = self._display_results(self.args.console_update)
-            update = self.ensure_future(fut)
-            self._tasks.append(update)
-
-        self._tasks.append(self.ensure_future(self._send_workers_event(1)))
-
         global_setup = get_fixture("global_setup")
         if global_setup is not None:
             try:
@@ -83,6 +75,12 @@ class Runner(object):
                 self.console.print_error(e)
                 raise
 
+        if not self.args.quiet:
+            fut = self._display_results(self.args.console_update)
+            update = self.ensure_future(fut)
+            self._tasks.append(update)
+
+        self._tasks.append(self.ensure_future(self._send_workers_event(1)))
         try:
             return self._launch_processes()
         finally:

@@ -234,7 +234,7 @@ class TestFmwk(TestLoop):
         self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print_error")
     @async_test
     async def test_setup_session_failure(self, console_print, loop, console, results):
         @setup_session()
@@ -249,7 +249,7 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
 
         await w.run()
-        output = ''.join(console_print.call_args.args)
+        output = str(console_print.call_args.args[0])
         expected = (
             "Name or service not known" in output
             or "nodename nor servname provided" in output  # NOQA
@@ -331,8 +331,11 @@ class TestFmwk(TestLoop):
         results = Runner(args)()
         self.assertEqual(results["OK"], 1)
 
+    @patch("molotov.sharedconsole.SharedConsole.print_error")
     @async_test
-    async def test_session_shutdown_exception(self, loop, console, results):
+    async def test_session_shutdown_exception(
+        self, console_print, loop, console, results
+    ):
         @teardown_session()
         async def _teardown_session(wid, session):
             raise Exception("bleh")
@@ -345,8 +348,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
 
-        output = await serialize(console)
-        self.assertTrue("Exception" in output, output)
+        output = str(console_print.call_args.args[0])
+        self.assertTrue("bleh" in output, output)
         self.assertEqual(results["FAILED"], 0)
 
     @dedicatedloop

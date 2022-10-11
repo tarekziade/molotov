@@ -1,5 +1,6 @@
+from unittest.mock import patch
 from molotov.listeners import BaseListener, EventSender
-from molotov.tests.support import TestLoop, async_test, serialize
+from molotov.tests.support import TestLoop, async_test
 
 
 class MyBuggyListener(BaseListener):
@@ -23,16 +24,16 @@ class TestListeners(TestLoop):
         eventer = EventSender(console)
         eventer.add_listener(listener)
         await eventer.send_event("my_event", value=42)
-        await serialize(console)
-
         self.assertTrue(listener.fired)
         self.assertEqual(listener.value, 42)
 
+    @patch("molotov.sharedconsole.SharedConsole.print_error")
     @async_test
-    async def test_buggy_listener(self, loop, console, results):
+    async def test_buggy_listener(self, console_print, loop, console, results):
         listener = MyBuggyListener()
         eventer = EventSender(console)
         eventer.add_listener(listener)
         await eventer.send_event("my_event")
-        resp = await serialize(console)
+        resp = str(console_print.call_args.args[0])
+
         self.assertTrue("Bam" in resp)

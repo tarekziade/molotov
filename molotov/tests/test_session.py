@@ -10,7 +10,6 @@ from molotov.tests.support import coserver, Response, Request
 from molotov.tests.support import TestLoop, async_test
 
 
-
 class TestLoggedClientSession(TestLoop):
     def _get_session(self, *args, **kw):
         return molotov.session.get_session(*args, **kw)
@@ -46,8 +45,7 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_encoding(self, console_print, loop, console, results):
 
@@ -59,12 +57,11 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         wanted = "can't display this body"
         self.assertTrue(wanted in res)
 
-
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_request(self, console_print, loop, console, results):
         with coserver() as port:
@@ -72,10 +69,10 @@ class TestLoggedClientSession(TestLoop):
                 async with session.get(f"http://localhost:{port}") as resp:
                     self.assertEqual(resp.status, 200)
 
-            res = ''.join(console_print.call_args.args)
+            res = "".join(console_print.call_args.args)
             self.assertTrue("Directory listing" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_not_verbose(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=1) as session:
@@ -88,10 +85,10 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertEqual(res, "")
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_gzipped_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -102,10 +99,10 @@ class TestLoggedClientSession(TestLoop):
             req.headers["Content-Encoding"] = "gzip"
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("Binary" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -116,10 +113,10 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("File" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_binary_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -130,10 +127,10 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("File" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_gzipped_response(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -145,10 +142,10 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("Binary" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_cantread_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -158,10 +155,10 @@ class TestLoggedClientSession(TestLoop):
             )
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("display this body" in res, res)
 
-    @patch('molotov.sharedconsole.SharedConsole.print')
+    @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
     async def test_old_request_version(self, console_print, loop, console, results):
 
@@ -181,5 +178,5 @@ class TestLoggedClientSession(TestLoop):
                 req.body = req.body._value
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = ''.join(console_print.call_args.args)
+        res = "".join(console_print.call_args.args)
         self.assertTrue("ok man" in res, res)

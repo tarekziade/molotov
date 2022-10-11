@@ -7,7 +7,8 @@ import os
 import asyncio
 import time
 import threading
-from collections import defaultdict, MutableSequence
+from collections import defaultdict
+from collections.abc import MutableSequence
 from contextlib import suppress
 
 from aiohttp import ClientSession, __version__
