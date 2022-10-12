@@ -1,7 +1,9 @@
 import multiprocess
+import multiprocessing
 import asyncio
 import os
 import signal
+import sys
 
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -42,7 +44,11 @@ class UIControlWithKeys(UIControl):
 class TerminalController(UIControlWithKeys):
     def __init__(self, max_lines=25):
         super().__init__(max_lines)
-        self.manager = multiprocess.Manager()
+        # in Python 3.19 this will fail using `multiprocess` so we use `multiprocessing`
+        if sys.version_info.minor >= 10:
+            self.manager = multiprocessing.Manager()
+        else:
+            self.manager = multiprocess.Manager()
         self.data = self.manager.list()
 
     def write(self, data):

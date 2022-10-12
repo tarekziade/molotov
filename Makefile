@@ -24,3 +24,10 @@ test: build
 
 docs:  build
 	$(BIN)/tox -e docs
+
+$(BIN)/black:
+	$(BIN)/pip install black
+
+black: $(BIN)/black
+	$(BIN)/black setup.py molotov/
+	$(BIN)/flake8  molotov/

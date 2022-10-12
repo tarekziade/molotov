@@ -92,6 +92,8 @@ class Runner(object):
                     # we can't stop the teardown process
                     self.console.print_error(e)
 
+            self._shutdown(None, None)
+
     def _launch_processes(self):
         args = self.args
         signal.signal(signal.SIGINT, self._shutdown)
