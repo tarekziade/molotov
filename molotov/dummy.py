@@ -2,6 +2,15 @@
 """
 import molotov
 import random
+from time import sleep
+
+
+@molotov.global_setup()
+def starting(args):
+    print("This is a dummy load test that runs against example.com")
+    print("Some random failures were added on purpose (1%)")
+    print("The test will start the Molotov console in 5 secs")
+    sleep(5)
 
 
 @molotov.scenario()
