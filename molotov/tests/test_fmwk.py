@@ -1,6 +1,5 @@
 import os
 import signal
-from unittest.mock import patch
 
 from molotov.session import get_session
 from molotov.runner import Runner
