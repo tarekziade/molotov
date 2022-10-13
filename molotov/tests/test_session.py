@@ -7,7 +7,7 @@ from molotov.listeners import BaseListener
 import molotov.session
 from molotov.session import get_eventer
 from molotov.tests.support import coserver, Response, Request
-from molotov.tests.support import TestLoop, async_test
+from molotov.tests.support import TestLoop, async_test, patch_print
 
 
 class TestLoggedClientSession(TestLoop):
@@ -45,7 +45,7 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_encoding(self, console_print, loop, console, results):
 
@@ -57,11 +57,11 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         wanted = "can't display this body"
         self.assertTrue(wanted in res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_request(self, console_print, loop, console, results):
         with coserver() as port:
@@ -69,10 +69,10 @@ class TestLoggedClientSession(TestLoop):
                 async with session.get(f"http://localhost:{port}") as resp:
                     self.assertEqual(resp.status, 200)
 
-            res = "".join(console_print.call_args.args)
+            res = console_print()
             self.assertTrue("Directory listing" in res, res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_not_verbose(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=1) as session:
@@ -85,9 +85,9 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        self.assertEqual(console_print.call_args, None)
+        self.assertEqual(console_print(), "")
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_gzipped_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -98,10 +98,10 @@ class TestLoggedClientSession(TestLoop):
             req.headers["Content-Encoding"] = "gzip"
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         self.assertTrue("Binary" in res, res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -112,10 +112,10 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         self.assertTrue("File" in res, res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_binary_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -126,10 +126,10 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = "".join(console_print.call_args.args)
-        self.assertTrue("File" in res, res)
+        calls = console_print()
+        self.assertTrue("File" in calls, calls)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_gzipped_response(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -141,10 +141,10 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         self.assertTrue("Binary" in res, res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_cantread_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -154,10 +154,10 @@ class TestLoggedClientSession(TestLoop):
             )
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         self.assertTrue("display this body" in res, res)
 
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch_print
     @async_test
     async def test_old_request_version(self, console_print, loop, console, results):
 
@@ -177,5 +177,5 @@ class TestLoggedClientSession(TestLoop):
                 req.body = req.body._value
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = "".join(console_print.call_args.args)
+        res = console_print()
         self.assertTrue("ok man" in res, res)

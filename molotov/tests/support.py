@@ -367,3 +367,33 @@ def catch_sleep(calls=None):
 
     with patch("asyncio.sleep", _slept):
         yield calls
+
+
+def patch_print(func):
+    @patch("molotov.sharedconsole.SharedConsole.print")
+    def _test(self, console_print, *args, **kw):
+        def _get_output():
+            calls = []
+            for call in console_print.call_args_list:
+                args, kwargs = call
+                calls.append(args[0])
+            return "".join(calls)
+
+        return func(self, _get_output, *args, **kw)
+
+    return _test
+
+
+def patch_errors(func):
+    @patch("molotov.sharedconsole.SharedConsole.print_error")
+    def _test(self, console_print, *args, **kw):
+        def _get_output():
+            calls = []
+            for call in console_print.call_args_list:
+                args, kwargs = call
+                calls.append(str(args[0]))
+            return "".join(calls)
+
+        return func(self, _get_output, *args, **kw)
+
+    return _test
