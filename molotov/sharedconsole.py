@@ -46,6 +46,7 @@ class TerminalController(UIControlWithKeys):
         super().__init__(max_lines)
         # in Python 3.19 this will fail using `multiprocess` so we use `multiprocessing`
         if sys.version_info.minor >= 10:
+            # XXX but this one is sooooo slow
             self.manager = multiprocessing.Manager()
         else:
             self.manager = multiprocess.Manager()

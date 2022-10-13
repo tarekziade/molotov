@@ -5,6 +5,7 @@ import os
 import re
 import io
 import multiprocess
+from unittest.mock import patch
 
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
@@ -14,8 +15,8 @@ OUTPUT = """\
 one
 two
 3
-TypeError\\("unsupported operand type(.*)?
-TypeError\\("unsupported operand type.*"""
+<style fg="gray">TypeError\\("unsupported operand type(.*)?
+<style fg="gray">TypeError\\("unsupported operand type.*"""
 
 
 # pre-forked variable
@@ -34,7 +35,7 @@ def run_worker(input):
 
     with catch_output() as (stdout, stderr):
         loop = asyncio.new_event_loop()
-        fut = asyncio.ensure_future(_CONSOLE.display(), loop=loop)
+        fut = asyncio.ensure_future(_CONSOLE.start(), loop=loop)
         loop.run_until_complete(fut)
         loop.close()
 
@@ -48,6 +49,13 @@ class TestSharedConsole(unittest.TestCase):
         test_loop = asyncio.get_event_loop()
         stream = io.StringIO()
         console = SharedConsole(interval=0.0, stream=stream)
+
+        written = []
+        def _write(data):
+            written.append(data)
+
+        console.terminal.write = _write
+        console.errors.write = _write
 
         async def add_lines():
             console.print("one")
@@ -63,12 +71,12 @@ class TestSharedConsole(unittest.TestCase):
 
         with catch_output() as (stdout, stderr):
             adder = asyncio.ensure_future(add_lines())
-            displayer = asyncio.ensure_future(console.display())
+            displayer = asyncio.ensure_future(console.start())
             test_loop.run_until_complete(asyncio.gather(adder, displayer))
 
-        stream.seek(0)
-        output = stream.read()
         test_loop.close()
+        output = ''.join(written)
+
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 
     @unittest.skipIf(os.name == "nt", "win32")
@@ -90,7 +98,7 @@ class TestSharedConsole(unittest.TestCase):
 
         with catch_output() as (stdout, stderr):
             stop = asyncio.ensure_future(stop())
-            display = asyncio.ensure_future(_CONSOLE.display())
+            display = asyncio.ensure_future(_CONSOLE.start())
             test_loop.run_until_complete(asyncio.gather(stop, display))
 
         output = stdout.read()

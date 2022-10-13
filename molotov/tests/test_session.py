@@ -85,8 +85,7 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = "".join(console_print.call_args.args)
-        self.assertEqual(res, "")
+        self.assertEqual(console_print.call_args, None)
 
     @patch("molotov.sharedconsole.SharedConsole.print")
     @async_test
