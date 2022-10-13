@@ -41,8 +41,7 @@ class TestSlave(TestLoop):
         if os.environ.get("CI") is not None:
             return
         output = out[0].read()
-        self.assertTrue("Preparing 1 worker..." in output, output)
-        self.assertTrue("OK" in output, output)
+        self.assertTrue("This is the end" in output, output)
 
     @dedicatedloop
     @mock.patch("molotov.slave.check_call", new=check_call)
