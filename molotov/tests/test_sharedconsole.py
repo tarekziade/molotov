@@ -5,7 +5,6 @@ import os
 import re
 import io
 import multiprocess
-from unittest.mock import patch
 
 from molotov.sharedconsole import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
@@ -51,6 +50,7 @@ class TestSharedConsole(unittest.TestCase):
         console = SharedConsole(interval=0.0, stream=stream)
 
         written = []
+
         def _write(data):
             written.append(data)
 
@@ -75,7 +75,7 @@ class TestSharedConsole(unittest.TestCase):
             test_loop.run_until_complete(asyncio.gather(adder, displayer))
 
         test_loop.close()
-        output = ''.join(written)
+        output = "".join(written)
 
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 

@@ -89,8 +89,8 @@ class Runner(object):
                 try:
                     global_teardown()
                 except Exception as e:
-                    # we can't stop the teardown process
-                    self.console.print_error(e)
+                    # we can't stop the teardown process and the ui is down
+                    print(e)
 
             self._shutdown(None, None)
 
