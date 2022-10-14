@@ -24,6 +24,7 @@ def create_virtualenv(virtualenv, python):
 
 
 def install_reqs(reqfile):
+    check_call('./venv/bin/pip install --upgrade pip', shell=True)
     check_call("./venv/bin/pip install -r %s" % reqfile, shell=True)
 
 
