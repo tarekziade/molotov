@@ -66,7 +66,7 @@ class TestQuickStart(TestLoop):
         self.assertEqual(result, ["Makefile", "loadtest.py", "molotov.json"])
 
         os.chdir(self.location)
-        with set_args("molotov", "-cxv", "--max-runs", "1"):
+        with set_args("molotov", "-xv", "--max-runs", "1"):
             try:
                 run.main()
             except SystemExit:

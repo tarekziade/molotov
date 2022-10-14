@@ -2,6 +2,7 @@ import multiprocess
 import asyncio
 import os
 import signal
+import sys
 
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -44,11 +45,15 @@ class TerminalController(UIControlWithKeys):
         super().__init__(max_lines)
         self.manager = multiprocess.Manager()
         self.data = self.manager.list()
+        self._closed = False
 
     def close(self):
+        self._closed = True
         self.manager.shutdown()
 
     def write(self, data):
+        if self._closed:
+            return
         self.data.append(data)
         if len(self.data) > self.max_lines:
             self.data[:] = self.data[-self.max_lines :]
@@ -56,16 +61,40 @@ class TerminalController(UIControlWithKeys):
     def create_content(self, width, height):
         items = ["\n"]
 
-        for line in self.data:
-            items.append(line)
-
-        lines = "".join(items).split("\n")
-        items = [to_formatted_text(HTML(line)) for line in lines]
+        def format_items():
+            lines = "".join(items).split("\n")
+            items[:] = [to_formatted_text(HTML(line)) for line in lines]
 
         def get_line(i: int):
             return items[i]
 
+        if self._closed:
+            items.append("data stream closed!")
+            format_items()
+            return UIContent(
+                get_line=get_line, line_count=len(items), show_cursor=False
+            )
+
+        for line in self.data:
+            items.append(line)
+
+        format_items()
         return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
+
+
+class SimpleController:
+    def __init__(self):
+        self.data = multiprocess.Queue()
+
+    def close(self):
+        pass
+
+    def write(self, data):
+        self.data.put(data)
+
+    def dump(self):
+        while not self.data.empty():
+            yield self.data.get()
 
 
 def create_key_bindings():
@@ -119,16 +148,38 @@ class RunStatus(UIControlWithKeys):
 
 
 class MolotovApp:
-    def __init__(self, refresh_interval=0.3, max_lines=25):
+    def __init__(self, refresh_interval=0.3, max_lines=25, simple_console=False):
         self.title = TITLE
-        self.terminal = TerminalController(max_lines)
+        self.simple_console = simple_console
+        if simple_console:
+            self.terminal = SimpleController()
+            self.errors = SimpleController()
+        else:
+            self.terminal = TerminalController(max_lines)
+            self.errors = TerminalController(max_lines)
         self.status = RunStatus()
-        self.errors = TerminalController(max_lines)
         self.key_bindings = create_key_bindings()
         self.refresh_interval = refresh_interval
         self.max_lines = max_lines
+        self._running = False
+
+    async def refresh_console(self):
+        while self._running:
+            for line in self.terminal.dump():
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            for line in self.errors.dump():
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            await asyncio.sleep(self.refresh_interval)
 
     async def start(self):
+        self._running = True
+
+        if self.simple_console:
+            self.task = asyncio.ensure_future(self.refresh_console())
+            return
+
         title_toolbar = Window(
             FormattedTextControl(lambda: self.title),
             height=1,
@@ -164,25 +215,39 @@ class MolotovApp:
             erase_when_done=True,
         )
 
+        def _handle_exception(*args, **kw):
+            pass
+
+        self.app._handle_exception = _handle_exception
         self.task = asyncio.ensure_future(self.app.run_async())
 
     async def stop(self):
-        try:
-            self.app.exit()
-        except Exception:
-            pass
+        self._running = False
+        await asyncio.sleep(0)
+
+        if not self.simple_console:
+            try:
+                self.app.exit()
+            except Exception:
+                pass
         self.terminal.close()
         self.errors.close()
+        await self.task
 
 
 class SharedConsole(object):
-    def __init__(self, interval=0.3, max_lines_displayed=25, stream=None):
+    def __init__(self, interval=0.3, max_lines_displayed=25, simple_console=False):
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
         self._stop = False
         self._max_lines_displayed = max_lines_displayed
-        self.ui = MolotovApp(refresh_interval=interval, max_lines=max_lines_displayed)
+        self._simple_console = simple_console
+        self.ui = MolotovApp(
+            refresh_interval=interval,
+            max_lines=max_lines_displayed,
+            simple_console=simple_console,
+        )
         self.terminal = self.ui.terminal
         self.errors = self.ui.errors
         self.status = self.ui.status
@@ -202,12 +267,18 @@ class SharedConsole(object):
     def print(self, line):
         line += "\n"
         if os.getpid() != self._creator:
-            line = f'<style fg="#cecece">[P:{os.getpid()}]</style> {line}'
+            if self._simple_console:
+                line = f"[P:{os.getpid()}]</style> {line}"
+            else:
+                line = f'<style fg="#cecece">[P:{os.getpid()}]</style> {line}'
         self.terminal.write(line)
 
     def print_error(self, error, tb=None):
         for line in printable_error(error, tb):
-            line = f'<style fg="gray">{line}</style>' + "\n"
+            if self._simple_console:
+                line += "\n"
+            else:
+                line = f'<style fg="gray">{line}</style>\n'
             self.errors.write(line)
         self.errors.write("\n")
 

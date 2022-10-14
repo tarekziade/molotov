@@ -135,7 +135,7 @@ def _parser():
         "-c",
         "--console",
         action="store_true",
-        default=True,
+        default=False,
         help="Use simple console for feedback",
     )
 
@@ -245,7 +245,9 @@ def run(args, stream=None):
     if stream is None:
         stream = sys.stdout
 
-    args.shared_console = SharedConsole(interval=args.console_update, stream=stream)
+    args.shared_console = SharedConsole(
+        interval=args.console_update, simple_console=args.console
+    )
 
     if args.use_extension:
         for extension in args.use_extension:

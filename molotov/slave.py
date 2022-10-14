@@ -19,11 +19,7 @@ def clone_repo(github):
 
 def create_virtualenv(virtualenv, python):
     # XXX security
-    if sys.version_info.minor > 7:
-        cmd = "%s -m venv venv" % python
-    else:
-        cmd = "%s --python %s venv" % (virtualenv, python)
-
+    cmd = "%s -m venv venv" % python
     check_call(cmd, shell=True)
 
 

@@ -3,7 +3,6 @@ import asyncio
 import sys
 import os
 import re
-import io
 import multiprocess
 
 from molotov.sharedconsole import SharedConsole
@@ -46,8 +45,7 @@ class TestSharedConsole(unittest.TestCase):
     @dedicatedloop
     def test_simple_usage(self):
         test_loop = asyncio.get_event_loop()
-        stream = io.StringIO()
-        console = SharedConsole(interval=0.0, stream=stream)
+        console = SharedConsole(interval=0.0)
 
         written = []
 

@@ -219,7 +219,7 @@ class TestLoop(unittest.TestCase):
         args.processes = 1
         args.debug = True
         args.workers = 1
-        args.console = True
+        args.console = False
         args.statsd = False
         args.single_mode = None
         args.single_run = False
