@@ -5,7 +5,7 @@ import os
 import re
 import multiprocess
 
-from molotov.sharedconsole import SharedConsole
+from molotov.ui.console import SharedConsole
 from molotov.tests.support import dedicatedloop, catch_output
 
 

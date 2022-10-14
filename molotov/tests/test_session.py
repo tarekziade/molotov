@@ -7,7 +7,7 @@ from molotov.listeners import BaseListener
 import molotov.session
 from molotov.session import get_eventer
 from molotov.tests.support import coserver, Response, Request
-from molotov.tests.support import TestLoop, async_test, patch_print
+from molotov.tests.support import TestLoop, async_test, patch_print, patch_errors
 
 
 class TestLoggedClientSession(TestLoop):
@@ -45,7 +45,7 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_encoding(self, console_print, loop, console, results):
 
@@ -61,7 +61,7 @@ class TestLoggedClientSession(TestLoop):
         wanted = "can't display this body"
         self.assertTrue(wanted in res)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_request(self, console_print, loop, console, results):
         with coserver() as port:
@@ -87,7 +87,7 @@ class TestLoggedClientSession(TestLoop):
 
         self.assertEqual(console_print(), "")
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_gzipped_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -101,7 +101,7 @@ class TestLoggedClientSession(TestLoop):
         res = console_print()
         self.assertTrue("Binary" in res, res)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -115,7 +115,7 @@ class TestLoggedClientSession(TestLoop):
         res = console_print()
         self.assertTrue("File" in res, res)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_binary_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -129,7 +129,7 @@ class TestLoggedClientSession(TestLoop):
         calls = console_print()
         self.assertTrue("File" in calls, calls)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_gzipped_response(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -144,7 +144,7 @@ class TestLoggedClientSession(TestLoop):
         res = console_print()
         self.assertTrue("Binary" in res, res)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_cantread_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
@@ -157,7 +157,7 @@ class TestLoggedClientSession(TestLoop):
         res = console_print()
         self.assertTrue("display this body" in res, res)
 
-    @patch_print
+    @patch_errors
     @async_test
     async def test_old_request_version(self, console_print, loop, console, results):
 

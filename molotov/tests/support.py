@@ -21,7 +21,7 @@ from molotov.api import _SCENARIO, _FIXTURES
 from molotov import util
 from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
-from molotov.sharedconsole import SharedConsole
+from molotov.ui.console import SharedConsole
 from molotov.sharedcounter import SharedCounters
 
 
@@ -370,7 +370,7 @@ def catch_sleep(calls=None):
 
 
 def patch_print(func):
-    @patch("molotov.sharedconsole.SharedConsole.print")
+    @patch("molotov.ui.console.SharedConsole.print")
     def _test(self, console_print, *args, **kw):
         def _get_output():
             calls = []
@@ -385,7 +385,7 @@ def patch_print(func):
 
 
 def patch_errors(func):
-    @patch("molotov.sharedconsole.SharedConsole.print_error")
+    @patch("molotov.ui.console.SharedConsole.print_error")
     def _test(self, console_print, *args, **kw):
         def _get_output():
             calls = []
