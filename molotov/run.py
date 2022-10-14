@@ -246,7 +246,9 @@ def run(args, stream=None):
         stream = sys.stdout
 
     args.shared_console = SharedConsole(
-        interval=args.console_update, simple_console=args.console
+        interval=args.console_update,
+        simple_console=args.console,
+        single_process=args.processes == 1,
     )
 
     if args.use_extension:

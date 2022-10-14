@@ -1,4 +1,5 @@
 import multiprocess
+import queue
 import asyncio
 import os
 import signal
@@ -41,15 +42,20 @@ class UIControlWithKeys(UIControl):
 
 
 class TerminalController(UIControlWithKeys):
-    def __init__(self, max_lines=25):
+    def __init__(self, max_lines=25, single_process=True):
         super().__init__(max_lines)
-        self.manager = multiprocess.Manager()
-        self.data = self.manager.list()
+        self.single_process = single_process
+        if not single_process:
+            self.manager = multiprocess.Manager()
+            self.data = self.manager.list()
+        else:
+            self.data = list()
         self._closed = False
 
     def close(self):
         self._closed = True
-        self.manager.shutdown()
+        if not self.single_process:
+            self.manager.shutdown()
 
     def write(self, data):
         if self._closed:
@@ -83,8 +89,11 @@ class TerminalController(UIControlWithKeys):
 
 
 class SimpleController:
-    def __init__(self):
-        self.data = multiprocess.Queue()
+    def __init__(self, single_process=True):
+        if single_process:
+            self.data = queue.Queue()
+        else:
+            self.data = multiprocess.Queue()
 
     def close(self):
         pass
@@ -112,13 +121,25 @@ def create_key_bindings():
     return kb
 
 
+class Int:
+    def __init__(self, value=0):
+        self.value = value
+
+
 class RunStatus(UIControlWithKeys):
-    def __init__(self, max_lines=25):
+    def __init__(self, max_lines=25, single_process=True):
         super().__init__(max_lines)
-        self.ok = multiprocess.Value("i", 0)
-        self.failed = multiprocess.Value("i", 0)
-        self.worker = multiprocess.Value("i", 0)
-        self.process = multiprocess.Value("i", 0)
+        self.single_process = single_process
+        if self.single_process:
+            self.ok = Int(0)
+            self.failed = Int(0)
+            self.worker = Int(0)
+            self.process = Int(0)
+        else:
+            self.ok = multiprocess.Value("i", 0)
+            self.failed = multiprocess.Value("i", 0)
+            self.worker = multiprocess.Value("i", 0)
+            self.process = multiprocess.Value("i", 0)
 
     def update(self, results):
         if "OK" in results:
@@ -148,16 +169,23 @@ class RunStatus(UIControlWithKeys):
 
 
 class MolotovApp:
-    def __init__(self, refresh_interval=0.3, max_lines=25, simple_console=False):
+    def __init__(
+        self,
+        refresh_interval=0.3,
+        max_lines=25,
+        simple_console=False,
+        single_process=True,
+    ):
         self.title = TITLE
+        self.single_process = single_process
         self.simple_console = simple_console
         if simple_console:
-            self.terminal = SimpleController()
-            self.errors = SimpleController()
+            self.terminal = SimpleController(single_process)
+            self.errors = SimpleController(single_process)
         else:
-            self.terminal = TerminalController(max_lines)
-            self.errors = TerminalController(max_lines)
-        self.status = RunStatus()
+            self.terminal = TerminalController(max_lines, single_process)
+            self.errors = TerminalController(max_lines, single_process)
+        self.status = RunStatus(single_process)
         self.key_bindings = create_key_bindings()
         self.refresh_interval = refresh_interval
         self.max_lines = max_lines
@@ -236,7 +264,13 @@ class MolotovApp:
 
 
 class SharedConsole(object):
-    def __init__(self, interval=0.3, max_lines_displayed=25, simple_console=False):
+    def __init__(
+        self,
+        interval=0.3,
+        max_lines_displayed=25,
+        simple_console=False,
+        single_process=True,
+    ):
         self._interval = interval
         self._stop = True
         self._creator = os.getpid()
@@ -247,6 +281,7 @@ class SharedConsole(object):
             refresh_interval=interval,
             max_lines=max_lines_displayed,
             simple_console=simple_console,
+            single_process=single_process,
         )
         self.terminal = self.ui.terminal
         self.errors = self.ui.errors
