@@ -42,10 +42,9 @@ def run_worker(input):
 
 
 class TestSharedConsole(unittest.TestCase):
-    @unittest.skipIf("CI" in os.environ, "GH action")
+    @unittest.skipIf("GITHUB_ACTIONS" in os.environ, "GH action")
     @dedicatedloop
     def test_simple_usage(self):
-        raise Exception(str(os.environ))
         test_loop = asyncio.get_event_loop()
         console = SharedConsole(interval=0.0)
 
@@ -80,7 +79,7 @@ class TestSharedConsole(unittest.TestCase):
         self.assertTrue(re.match(OUTPUT, output, re.S | re.M) is not None, output)
 
     @unittest.skipIf(os.name == "nt", "win32")
-    @unittest.skipIf("CI" in os.environ, "GH action")
+    @unittest.skipIf("GITHUB_ACTIONS" in os.environ, "GH action")
     @dedicatedloop
     def test_multiprocess(self):
         test_loop = asyncio.get_event_loop()
