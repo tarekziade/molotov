@@ -225,13 +225,7 @@ class Runner(object):
         await self.console.start()
 
         while not is_stopped():
-            results = {
-                "OK": self._results["OK"],
-                "FAILED": self._results["FAILED"],
-                "WORKER": self._results["WORKER"],
-                "PROCESS": self._results["PROCESS"],
-            }
-            self.console.print_results(results)
+            self.console.print_results(self._results.to_dict())
             await cancellable_sleep(update_interval)
 
         await self.console.stop()

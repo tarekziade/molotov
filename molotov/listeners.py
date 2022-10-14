@@ -63,8 +63,7 @@ class StdoutListener(BaseListener):
     async def on_sending_request(self, session, request):
         if self.verbose < 2:
             return
-        raw = ">" * 45
-        raw += "\n" + request.method + " " + str(request.url)
+        raw = "\n" + request.method + " " + str(request.url)
         if len(request.headers) > 0:
             headers = "\n".join("%s: %s" % (k, v) for k, v in request.headers.items())
             raw += "\n" + headers
@@ -74,13 +73,12 @@ class StdoutListener(BaseListener):
             str_body = await self._body2str(request.body)
             raw += "\n\n" + str_body + "\n"
 
-        self.console.print(raw)
+        self.console.print_error(raw)
 
     async def on_response_received(self, session, response, request):
         if self.verbose < 2:
             return
-        raw = "\n" + "=" * 45 + "\n"
-        raw += "HTTP/1.1 %d %s\n" % (response.status, response.reason)
+        raw = "HTTP/1.1 %d %s\n" % (response.status, response.reason)
         items = response.headers.items()
         headers = "\n".join("{}: {}".format(k, v) for k, v in items)
         raw += headers
@@ -100,8 +98,9 @@ class StdoutListener(BaseListener):
             else:
                 raw += "\n\n"
 
-        raw += "\n" + "<" * 45 + "\n"
-        self.console.print(raw)
+        self.console.print_error(raw)
+        self.console.print_error("")
+        self.console.print_error("")
 
 
 class CustomListener(object):

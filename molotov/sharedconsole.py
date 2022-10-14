@@ -6,7 +6,6 @@ import signal
 import sys
 
 from prompt_toolkit import HTML
-from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.application import Application
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
@@ -28,22 +27,58 @@ TITLE = HTML(
 )
 
 
-class UIControlWithKeys(UIControl):
-    def __init__(self, max_lines=25):
+def create_key_bindings():
+    kb = KeyBindings()
+
+    @kb.add("c-l")
+    def _clear(event):
+        event.app.renderer.clear()
+
+    @kb.add("c-c")
+    def _interrupt(event):
+        event.app.exit()
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    return kb
+
+
+class BaseController(UIControl):
+    def __init__(self, max_lines=25, add_style=True):
         super().__init__()
+        self._creator = os.getpid()
         self.max_lines = max_lines
+        self._add_style = add_style
         self._key_bindings = create_key_bindings()
 
-    def is_focusable(self) -> bool:
-        return True  # Make sure that the key bindings work.
+    def create_content(self, width, height):
+        raise NotImplementedError
+
+    def is_focusable(self):
+        return True
 
     def get_key_bindings(self):
         return self._key_bindings
 
+    def write(self, data):
+        raise NotImplementedError
 
-class TerminalController(UIControlWithKeys):
+    def write_line(self, data, fg=None):
+        if self._add_style and fg is not None:
+            data = f'<style fg="{fg}">{data}</style>'
+
+        # pid header
+        if os.getpid() != self._creator:
+            if not self._add_style:
+                data = f"[P:{os.getpid()} {data}"
+            else:
+                data = f'<style fg="#cecece">[P:{os.getpid()}]</style> {data}'
+
+        self.write(f"{data}\n")
+
+
+class TerminalController(BaseController):
     def __init__(self, max_lines=25, single_process=True):
-        super().__init__(max_lines)
+        super().__init__(max_lines, add_style=True)
         self.single_process = single_process
         if not single_process:
             self.manager = multiprocess.Manager()
@@ -88,8 +123,9 @@ class TerminalController(UIControlWithKeys):
         return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
 
 
-class SimpleController:
-    def __init__(self, single_process=True):
+class SimpleController(BaseController):
+    def __init__(self, max_lines, single_process=True):
+        super().__init__(max_lines, add_style=False)
         if single_process:
             self.data = queue.Queue()
         else:
@@ -106,63 +142,26 @@ class SimpleController:
             yield self.data.get()
 
 
-def create_key_bindings():
-    kb = KeyBindings()
-
-    @kb.add("c-l")
-    def _clear(event):
-        event.app.renderer.clear()
-
-    @kb.add("c-c")
-    def _interrupt(event):
-        event.app.exit()
-        os.kill(os.getpid(), signal.SIGTERM)
-
-    return kb
-
-
-class Int:
-    def __init__(self, value=0):
-        self.value = value
-
-
-class RunStatus(UIControlWithKeys):
-    def __init__(self, max_lines=25, single_process=True):
+class RunStatus(BaseController):
+    def __init__(self, max_lines=25):
         super().__init__(max_lines)
-        self.single_process = single_process
-        if self.single_process:
-            self.ok = Int(0)
-            self.failed = Int(0)
-            self.worker = Int(0)
-            self.process = Int(0)
-        else:
-            self.ok = multiprocess.Value("i", 0)
-            self.failed = multiprocess.Value("i", 0)
-            self.worker = multiprocess.Value("i", 0)
-            self.process = multiprocess.Value("i", 0)
+        self._status = {}
 
     def update(self, results):
-        if "OK" in results:
-            self.ok.value = results["OK"].value
-        if "FAILED" in results:
-            self.failed.value = results["FAILED"].value
-        if "WORKER" in results:
-            self.worker.value = results["WORKER"].value
-        if "PROCESS" in results:
-            self.process.value = results["PROCESS"].value
+        self._status.update(results)
 
     def formatted(self):
         return to_formatted_text(
             HTML(
-                f'<style fg="green" bg="#cecece">SUCCESS: {self.ok.value} </style>'
-                f'<style fg="red" bg="#cecece"> FAILED: {self.failed.value} </style>'
-                f" WORKERS: {self.worker.value}"
-                f" PROCESSES: {self.process.value}"
+                f'<style fg="green" bg="#cecece">SUCCESS: {self._status.get("OK", 0)} </style>'
+                f'<style fg="red" bg="#cecece"> FAILED: {self._status.get("FAILED", 0)} </style>'
+                f' WORKERS: {self._status.get("WORKER", 0)}'
+                f' PROCESSES: {self._status.get("PROCESS", 0)}'
             )
         )
 
     def create_content(self, width: int, height: int) -> UIContent:
-        def get_line(i: int) -> StyleAndTextTuples:
+        def get_line(i):
             return self.formatted()
 
         return UIContent(get_line=get_line, line_count=1, show_cursor=False)
@@ -180,12 +179,12 @@ class MolotovApp:
         self.single_process = single_process
         self.simple_console = simple_console
         if simple_console:
-            self.terminal = SimpleController(single_process)
-            self.errors = SimpleController(single_process)
+            controller_klass = SimpleController
         else:
-            self.terminal = TerminalController(max_lines, single_process)
-            self.errors = TerminalController(max_lines, single_process)
-        self.status = RunStatus(single_process)
+            controller_klass = TerminalController
+        self.terminal = controller_klass(max_lines, single_process)
+        self.errors = controller_klass(max_lines, single_process)
+        self.status = RunStatus()
         self.key_bindings = create_key_bindings()
         self.refresh_interval = refresh_interval
         self.max_lines = max_lines
@@ -299,30 +298,26 @@ class SharedConsole(object):
     def print_results(self, results):
         self.status.update(results)
 
-    def print(self, line):
-        line += "\n"
-        if os.getpid() != self._creator:
-            if self._simple_console:
-                line = f"[P:{os.getpid()}]</style> {line}"
-            else:
-                line = f'<style fg="#cecece">[P:{os.getpid()}]</style> {line}'
-        self.terminal.write(line)
+    def print(self, data):
+        for line in data.split("\n"):
+            line = line.strip()
+            self.terminal.write_line(line)
 
     def print_error(self, error, tb=None):
+        if isinstance(error, str):
+            for line in error.split("\n"):
+                line = line.strip()
+                self.errors.write_line(line, fg="gray")
+            return
+
         for line in printable_error(error, tb):
-            if self._simple_console:
-                line += "\n"
-            else:
-                line = f'<style fg="gray">{line}</style>\n'
-            self.errors.write(line)
-        self.errors.write("\n")
+            self.errors.write_line(line, fg="gray")
+
+        self.errors.write_line("", fg="gray")
 
     def print_block(self, start, callable, end="OK"):
-        if os.getpid() != self._creator:
-            prefix = f'<style fg="#cecece">[P:{os.getpid()}]</style>'
-        else:
-            prefix = ""
-        self.terminal.write(prefix + start + "...\n")
-        res = callable()
-        self.terminal.write(prefix + "OK\n")
-        return res
+        self.terminal.write_line(f"{start}...")
+        try:
+            return callable()
+        finally:
+            self.terminal.write_line("OK")
