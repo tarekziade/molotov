@@ -45,6 +45,7 @@ class TestSharedConsole(unittest.TestCase):
     @unittest.skipIf("CI" in os.environ, "GH action")
     @dedicatedloop
     def test_simple_usage(self):
+        raise Exception(str(os.environ))
         test_loop = asyncio.get_event_loop()
         console = SharedConsole(interval=0.0)
 
