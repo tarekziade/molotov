@@ -22,7 +22,7 @@ from molotov import util
 from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
 from molotov.ui.console import SharedConsole
-from molotov.sharedcounter import SharedCounters
+from molotov.shared.counter import Counters
 
 
 HERE = os.path.dirname(__file__)
@@ -247,7 +247,7 @@ def async_test(func):
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
         console = SharedConsole(interval=0)
-        results = SharedCounters(
+        results = Counters(
             "WORKER",
             "REACHED",
             "RATIO",

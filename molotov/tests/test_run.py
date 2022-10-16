@@ -26,7 +26,7 @@ from molotov.tests.support import (
 )
 from molotov.tests.statsd import run_server, stop_server
 from molotov.run import run, main
-from molotov.sharedcounter import SharedCounters
+from molotov.shared.counter import Counters
 from molotov.util import request, json_request, set_timer
 from molotov.session import get_context
 from molotov import __version__
@@ -413,7 +413,7 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def test_sizing_multiprocess(self):
-        counters = SharedCounters("OK", "FAILED")
+        counters = Counters("OK", "FAILED")
 
         with catch_sleep():
 
@@ -532,7 +532,7 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def _test_sizing_multiprocess_interrupted(self):
 
-        counters = SharedCounters("OK", "FAILED")
+        counters = Counters("OK", "FAILED")
 
         @scenario()
         async def sizer(session):

@@ -1,7 +1,7 @@
 import multiprocess
 
 
-class SharedCounter(object):
+class Counter(object):
     """A multi-process compatible counter."""
 
     def __init__(self, name):
@@ -27,7 +27,7 @@ class SharedCounter(object):
         return self.__cmp__(other) <= 0
 
     def __cmp__(self, other):
-        if isinstance(other, SharedCounter):
+        if isinstance(other, Counter):
             other = other.value
         if not isinstance(other, int):
             raise TypeError(other)
@@ -38,7 +38,7 @@ class SharedCounter(object):
         return -1
 
     def __repr__(self):
-        return "<SharedCounter %d>" % self._val.value
+        return "<Counter %d>" % self._val.value
 
     def __iadd__(self, other):
         self.__add__(other)
@@ -50,7 +50,7 @@ class SharedCounter(object):
 
     def __add__(self, other):
         with self._val.get_lock():
-            if isinstance(other, SharedCounter):
+            if isinstance(other, Counter):
                 other = other.value
             if not isinstance(other, int):
                 raise NotImplementedError()
@@ -66,20 +66,20 @@ class SharedCounter(object):
     @value.setter
     def value(self, _value):
         with self._val.get_lock():
-            if isinstance(_value, SharedCounter):
+            if isinstance(_value, Counter):
                 _value = _value.value
             if not isinstance(_value, int):
                 raise TypeError(_value)
             self._val.value = _value
 
 
-class SharedCounters(object):
-    """Mapping of SharedCounter items."""
+class Counters(object):
+    """Mapping of Counter items."""
 
     def __init__(self, *keys):
         self._counters = {}
         for key in keys:
-            self._counters[key] = SharedCounter(key)
+            self._counters[key] = Counter(key)
 
     def to_dict(self):
         return dict([(key, value.value) for key, value in self._counters.items()])

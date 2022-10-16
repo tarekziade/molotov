@@ -6,14 +6,13 @@ import multiprocess
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
-from molotov.sharedcounter import SharedCounters
+from molotov.shared import Counters, Tasks
 from molotov.util import (
     cancellable_sleep,
     stop,
     is_stopped,
     set_timer,
     event_loop,
-    SharedTasks,
 )
 from molotov.worker import Worker
 
@@ -30,9 +29,9 @@ class Runner(object):
         # the stastd client gets initialized after we fork
         # processes in case -p was used
         self.statsd = None
-        self._tasks = SharedTasks()
+        self._tasks = Tasks()
         self._procs = []
-        self._results = SharedCounters(
+        self._results = Counters(
             "WORKER",
             "REACHED",
             "RATIO",
