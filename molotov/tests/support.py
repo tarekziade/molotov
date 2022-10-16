@@ -12,7 +12,6 @@ from io import StringIO
 import http.server
 import socketserver
 import pytest
-from queue import Empty
 from unittest.mock import patch
 
 import multiprocess
@@ -22,7 +21,7 @@ from molotov.api import _SCENARIO, _FIXTURES
 from molotov import util
 from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
-from molotov.sharedconsole import SharedConsole
+from molotov.ui.console import SharedConsole
 from molotov.sharedcounter import SharedCounters
 
 
@@ -48,16 +47,6 @@ def event_loop(no_create=False):
             asyncio.set_event_loop(loop)
             return loop
     return asyncio.get_event_loop()
-
-
-async def serialize(console):
-    res = []
-    while True:
-        try:
-            res.append(console._stream.get(block=True, timeout=_TIMEOUT))
-        except Empty:
-            break
-    return "".join(res)
 
 
 class RequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -124,6 +113,7 @@ def run_server():
     start = time.time()
     connected = False
     port = parent.recv()
+    parent.close()
     os.environ["TEST_PORT"] = str(port)
 
     while time.time() - start < 5 and not connected:
@@ -141,26 +131,15 @@ def run_server():
     return p, port
 
 
-_CO = {"clients": 0, "server": None}
-
-
 @contextmanager
 def coserver():
-    if _CO["clients"] == 0:
-        process, port = run_server()
-        _CO["server"] = process, port
-
-    _CO["clients"] += 1
+    process, port = run_server()
     try:
         yield port
     finally:
-        _CO["clients"] -= 1
-        if _CO["clients"] == 0:
-            p = _CO["server"][0]
-            os.kill(p.pid, signal.SIGTERM)
-            p.join(timeout=1.0)
-            p.terminate()
-            _CO["server"] = None
+        os.kill(process.pid, signal.SIGTERM)
+        process.join(timeout=1.0)
+        process.terminate()
 
 
 def _respkw():
@@ -240,7 +219,7 @@ class TestLoop(unittest.TestCase):
         args.processes = 1
         args.debug = True
         args.workers = 1
-        args.console = True
+        args.console = False
         args.statsd = False
         args.single_mode = None
         args.single_run = False
@@ -283,7 +262,6 @@ def async_test(func):
         kw["loop"] = loop
         kw["console"] = console
         kw["results"] = results
-
         fut = asyncio.ensure_future(func(*args, **kw))
         try:
             loop.run_until_complete(fut)
@@ -389,3 +367,33 @@ def catch_sleep(calls=None):
 
     with patch("asyncio.sleep", _slept):
         yield calls
+
+
+def patch_print(func):
+    @patch("molotov.ui.console.SharedConsole.print")
+    def _test(self, console_print, *args, **kw):
+        def _get_output():
+            calls = []
+            for call in console_print.call_args_list:
+                args, kwargs = call
+                calls.append(args[0])
+            return "".join(calls)
+
+        return func(self, _get_output, *args, **kw)
+
+    return _test
+
+
+def patch_errors(func):
+    @patch("molotov.ui.console.SharedConsole.print_error")
+    def _test(self, console_print, *args, **kw):
+        def _get_output():
+            calls = []
+            for call in console_print.call_args_list:
+                args, kwargs = call
+                calls.append(str(args[0]))
+            return "".join(calls)
+
+        return func(self, _get_output, *args, **kw)
+
+    return _test

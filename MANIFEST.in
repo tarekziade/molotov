@@ -12,3 +12,4 @@ include Makefile
 include molotov/tests/molotov.json
 include molotov/quickstart/Makefile
 include molotov/quickstart/molotov.json
+include molotov/quickstart/loadtest.py

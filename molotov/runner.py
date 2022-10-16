@@ -1,15 +1,20 @@
-from contextlib import suppress
 import signal
 import asyncio
 import os
-
 import multiprocess
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
 from molotov.stats import get_statsd_client
 from molotov.sharedcounter import SharedCounters
-from molotov.util import cancellable_sleep, stop, is_stopped, set_timer, event_loop
+from molotov.util import (
+    cancellable_sleep,
+    stop,
+    is_stopped,
+    set_timer,
+    event_loop,
+    SharedTasks,
+)
 from molotov.worker import Worker
 
 
@@ -25,7 +30,7 @@ class Runner(object):
         # the stastd client gets initialized after we fork
         # processes in case -p was used
         self.statsd = None
-        self._tasks = []
+        self._tasks = SharedTasks()
         self._procs = []
         self._results = SharedCounters(
             "WORKER",
@@ -38,6 +43,7 @@ class Runner(object):
             "MAX_WORKERS",
             "SETUP_FAILED",
             "SESSION_SETUP_FAILED",
+            "PROCESS",
         )
         self.eventer = EventSender(self.console)
 
@@ -69,6 +75,12 @@ class Runner(object):
                 self.console.print_error(e)
                 raise
 
+        if not self.args.quiet:
+            fut = self._display_results(self.args.console_update)
+            update = self.ensure_future(fut)
+            self._tasks.append(update)
+
+        self._tasks.append(self.ensure_future(self._send_workers_event(1)))
         try:
             return self._launch_processes()
         finally:
@@ -77,8 +89,10 @@ class Runner(object):
                 try:
                     global_teardown()
                 except Exception as e:
-                    # we can't stop the teardown process
-                    self.console.print_error(e)
+                    # we can't stop the teardown process and the ui is down
+                    print(e)
+
+            self._shutdown(None, None)
 
     def _launch_processes(self):
         args = self.args
@@ -94,27 +108,21 @@ class Runner(object):
                 p = multiprocess.Process(target=self._process)
                 jobs.append(p)
                 p.start()
+                self._results["PROCESS"] += 1
 
             for job in jobs:
                 self._procs.append(job)
 
             async def run(quiet, console):
                 while len(self._procs) > 0:
-                    if not quiet:
-                        console.print(self.display_results(), end="\r")
                     for job in jobs:
                         if job.exitcode is not None and job in self._procs:
                             self._procs.remove(job)
+                            self._results["PROCESS"] -= 1
                     await cancellable_sleep(args.console_update)
-                await self.console.stop()
                 await self.eventer.stop()
 
-            tasks = [
-                self.ensure_future(self.console.display()),
-                self.ensure_future(self._send_workers_event(1)),
-                self.ensure_future(run(args.quiet, self.console)),
-            ]
-            self.loop.run_until_complete(self.gather(*tasks))
+            self.loop.run_until_complete(run(args.quiet, self.console))
         else:
             self._process()
 
@@ -122,7 +130,7 @@ class Runner(object):
 
     def _shutdown(self, signal, frame):
         stop()
-        self._kill_tasks()
+        self._tasks.cancel_all()
         # send sigterms
         for proc in self._procs:
             proc.terminate()
@@ -190,12 +198,6 @@ class Runner(object):
 
         if self.args.original_pid == os.getpid():
             self._tasks.append(self.ensure_future(self._send_workers_event(1)))
-            if not self.args.quiet:
-                fut = self._display_results(self.args.console_update)
-                update = self.ensure_future(fut)
-                display = self.ensure_future(self.console.display())
-                display = self.gather(update, display)
-                self._tasks.append(display)
 
         workers = self.gather(*self._runner())
 
@@ -213,28 +215,19 @@ class Runner(object):
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
                 self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
-            self._kill_tasks()
+            self._tasks.cancel_all()
             self.loop.close()
 
-    def _kill_tasks(self):
-        cancellable_sleep.cancel_all()
-        for task in reversed(self._tasks):
-            with suppress(asyncio.CancelledError):
-                task.cancel()
-        for task in self._tasks:
-            del task
-        self._tasks[:] = []
-
-    def display_results(self):
-        ok, fail = self._results["OK"].value, self._results["FAILED"].value
-        workers = self._results["WORKER"].value
-        pat = "SUCCESSES: %s | FAILURES: %s | WORKERS: %s"
-        return pat % (ok, fail, workers)
-
     async def _display_results(self, update_interval):
+        if self.args.original_pid != os.getpid():
+            raise IOError("Wrong process")
+
+        await self.console.start()
+
         while not is_stopped():
-            self.console.print(self.display_results(), end="\r")
+            self.console.print_results(self._results.to_dict())
             await cancellable_sleep(update_interval)
+
         await self.console.stop()
 
     async def _send_workers_event(self, update_interval):

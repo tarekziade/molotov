@@ -128,7 +128,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_main(self):
-        with set_args("molotov", "-cq", "-d", "1", "molotov/tests/example.py"):
+        with set_args("molotov", "-q", "-d", "1", "molotov/tests/example.py"):
             main()
 
     def _test_molotov(self, *args):
@@ -154,7 +154,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_config_no_scenario(self):
-        stdout, stderr, rc = self._test_molotov("-c", "--config", _CONFIG, "DONTEXIST")
+        stdout, stderr, rc = self._test_molotov("--config", _CONFIG, "DONTEXIST")
         wanted = "Can't find 'DONTEXIST' in the config"
         self.assertTrue(wanted in stdout)
 
@@ -166,7 +166,7 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def test_config_no_scenario_found(self):
-        stdout, stderr, rc = self._test_molotov("-c", "molotov.tests.test_run")
+        stdout, stderr, rc = self._test_molotov("molotov.tests.test_run")
         wanted = "No scenario was found"
         self.assertTrue(wanted in stdout)
 
@@ -176,9 +176,7 @@ class TestRunner(TestLoop):
         async def not_me(session):
             _RES.append(3)
 
-        stdout, stderr, rc = self._test_molotov(
-            "-c", "-s", "blah", "molotov.tests.test_run"
-        )
+        stdout, stderr, rc = self._test_molotov("-s", "blah", "molotov.tests.test_run")
         wanted = "Can't find"
         self.assertTrue(wanted in stdout)
 
@@ -193,7 +191,7 @@ class TestRunner(TestLoop):
             _RES.append(4)
 
         stdout, stderr, rc = self._test_molotov(
-            "-cx", "--max-runs", "2", "-s", "me", "molotov.tests.test_run"
+            "-x", "--max-runs", "2", "-s", "me", "molotov.tests.test_run"
         )
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
@@ -206,7 +204,7 @@ class TestRunner(TestLoop):
             _RES.append(3)
 
         stdout, stderr, rc = self._test_molotov(
-            "-cx", "--max-runs", "2", "-s", "here_three", "molotov.tests.test_run"
+            "-x", "--max-runs", "2", "-s", "here_three", "molotov.tests.test_run"
         )
         wanted = "SUCCESSES: 2"
         self.assertTrue(wanted in stdout)
@@ -218,7 +216,7 @@ class TestRunner(TestLoop):
             _RES.append(3)
 
         stdout, stderr, rc = self._test_molotov(
-            "-cx",
+            "-x",
             "--max-runs",
             "2",
             "--fail",
@@ -238,7 +236,7 @@ class TestRunner(TestLoop):
             assert False
 
         stdout, stderr, rc = self._test_molotov(
-            "-cx",
+            "-x",
             "--max-runs",
             "2",
             "--fail",
@@ -265,7 +263,7 @@ class TestRunner(TestLoop):
 
         with patch("builtins.__import__", side_effect=import_mock):
             stdout, stderr, rc = self._test_molotov(
-                "-cx",
+                "-x",
                 "--max-runs",
                 "2",
                 "-s",
@@ -292,7 +290,7 @@ class TestRunner(TestLoop):
 
         with patch("builtins.__import__", side_effect=import_mock):
             stdout, stderr, rc = self._test_molotov(
-                "-cx",
+                "-x",
                 "--max-runs",
                 "2",
                 "--console-update",
@@ -318,7 +316,7 @@ class TestRunner(TestLoop):
             _RES.append(3)
 
         stdout, stderr, rc = self._test_molotov(
-            "-cx",
+            "-x",
             "--max-runs",
             "2",
             "-s",
@@ -339,19 +337,17 @@ class TestRunner(TestLoop):
 
             stdout, stderr, rc = self._test_molotov(
                 "--delay",
-                ".6",
-                "--console-update",
-                "0",
-                "-cx",
+                "0.21",
+                "-x",
                 "--max-runs",
-                "2",
+                "3",
                 "-s",
                 "here_three",
                 "molotov.tests.test_run",
             )
-            wanted = "SUCCESSES: 2"
+            wanted = "SUCCESSES: 3"
             self.assertTrue(wanted in stdout, stdout)
-            self.assertEqual(delay[:9], [1, 0.1, 1, 0.6, 1, 0.1, 1, 0.6, 1])
+            self.assertEqual(delay.count(0.21), 3)
 
     @dedicatedloop
     def test_rampup(self):
@@ -368,7 +364,7 @@ class TestRunner(TestLoop):
                 "5",
                 "--console-update",
                 "0",
-                "-cx",
+                "-x",
                 "--max-runs",
                 "2",
                 "-s",
@@ -379,8 +375,7 @@ class TestRunner(TestLoop):
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
-            delay = [d for d in delay if d != 0]
-            self.assertEqual(delay, [1, 2.0, 4.0, 6.0, 8.0, 1, 1, 1])
+            self.assertEqual(delay[3:7], [2.0, 4.0, 6.0, 8.0])
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 

@@ -7,7 +7,7 @@ from molotov.listeners import BaseListener
 import molotov.session
 from molotov.session import get_eventer
 from molotov.tests.support import coserver, Response, Request
-from molotov.tests.support import TestLoop, async_test, serialize
+from molotov.tests.support import TestLoop, async_test, patch_print, patch_errors
 
 
 class TestLoggedClientSession(TestLoop):
@@ -33,7 +33,6 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        await serialize(console)
         self.assertEqual(lis.responses, [response])
 
     @async_test
@@ -46,10 +45,10 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        await serialize(console)
-
+    @patch_errors
     @async_test
-    async def test_encoding(self, loop, console, results):
+    async def test_encoding(self, console_print, loop, console, results):
+
         async with self._get_session(loop, console, verbose=2) as session:
             request = Request()
             binary_body = b"MZ\x90\x00\x03\x00\x00\x00\x04\x00"
@@ -58,22 +57,24 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = await serialize(console)
+        res = console_print()
         wanted = "can't display this body"
         self.assertTrue(wanted in res)
 
+    @patch_errors
     @async_test
-    async def test_request(self, loop, console, results):
+    async def test_request(self, console_print, loop, console, results):
         with coserver() as port:
             async with self._get_session(loop, console, verbose=2) as session:
                 async with session.get(f"http://localhost:{port}") as resp:
                     self.assertEqual(resp.status, 200)
 
-            res = await serialize(console)
+            res = console_print()
             self.assertTrue("Directory listing" in res, res)
 
+    @patch_print
     @async_test
-    async def test_not_verbose(self, loop, console, results):
+    async def test_not_verbose(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=1) as session:
             req = ClientRequest("GET", URL("http://example.com"), loop=loop)
             await get_eventer(session).send_event("sending_request", request=req)
@@ -84,11 +85,11 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = await serialize(console)
-        self.assertEqual(res, "")
+        self.assertEqual(console_print(), "")
 
+    @patch_errors
     @async_test
-    async def test_gzipped_request(self, loop, console, results):
+    async def test_gzipped_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             binary_body = gzip.compress(b"some gzipped data")
             req = ClientRequest(
@@ -97,11 +98,12 @@ class TestLoggedClientSession(TestLoop):
             req.headers["Content-Encoding"] = "gzip"
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = await serialize(console)
+        res = console_print()
         self.assertTrue("Binary" in res, res)
 
+    @patch_errors
     @async_test
-    async def test_file_request(self, loop, console, results):
+    async def test_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             with open(__file__) as f:
                 req = ClientRequest(
@@ -110,11 +112,12 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = await serialize(console)
+        res = console_print()
         self.assertTrue("File" in res, res)
 
+    @patch_errors
     @async_test
-    async def test_binary_file_request(self, loop, console, results):
+    async def test_binary_file_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             with open(__file__, "rb") as f:
                 req = ClientRequest(
@@ -123,11 +126,12 @@ class TestLoggedClientSession(TestLoop):
                 req.headers["Content-Encoding"] = "something/bin"
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = await serialize(console)
-        self.assertTrue("File" in res, res)
+        calls = console_print()
+        self.assertTrue("File" in calls, calls)
 
+    @patch_errors
     @async_test
-    async def test_gzipped_response(self, loop, console, results):
+    async def test_gzipped_response(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             request = Request()
             binary_body = gzip.compress(b"some gzipped data")
@@ -137,11 +141,12 @@ class TestLoggedClientSession(TestLoop):
                 "response_received", response=response, request=request
             )
 
-        res = await serialize(console)
+        res = console_print()
         self.assertTrue("Binary" in res, res)
 
+    @patch_errors
     @async_test
-    async def test_cantread_request(self, loop, console, results):
+    async def test_cantread_request(self, console_print, loop, console, results):
         async with self._get_session(loop, console, verbose=2) as session:
             binary_body = gzip.compress(b"some gzipped data")
             req = ClientRequest(
@@ -149,11 +154,12 @@ class TestLoggedClientSession(TestLoop):
             )
             await get_eventer(session).send_event("sending_request", request=req)
 
-        res = await serialize(console)
+        res = console_print()
         self.assertTrue("display this body" in res, res)
 
+    @patch_errors
     @async_test
-    async def test_old_request_version(self, loop, console, results):
+    async def test_old_request_version(self, console_print, loop, console, results):
 
         orig_import = __import__
 
@@ -171,5 +177,5 @@ class TestLoggedClientSession(TestLoop):
                 req.body = req.body._value
                 await get_eventer(session).send_event("sending_request", request=req)
 
-        res = await serialize(console)
+        res = console_print()
         self.assertTrue("ok man" in res, res)

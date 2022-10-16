@@ -10,14 +10,16 @@ from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import expand_options, OptionError, printable_error
-from molotov.sharedconsole import SharedConsole
+from molotov.ui.console import SharedConsole
 
 
 PYPY = platform.python_implementation() == "PyPy"
 
 
 def _parser():
-    parser = argparse.ArgumentParser(description="Load test.")
+    parser = argparse.ArgumentParser(
+        description="Load test.", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     parser.add_argument(
         "scenario",
@@ -133,7 +135,7 @@ def _parser():
         "-c",
         "--console",
         action="store_true",
-        default=True,
+        default=False,
         help="Use simple console for feedback",
     )
 
@@ -243,10 +245,11 @@ def run(args, stream=None):
     if stream is None:
         stream = sys.stdout
 
-    args.shared_console = SharedConsole(interval=args.console_update, stream=stream)
-
-    if not args.quiet:
-        direct_print(stream, HELLO)
+    args.shared_console = SharedConsole(
+        interval=args.console_update,
+        simple_console=args.console,
+        single_process=args.processes == 1,
+    )
 
     if args.use_extension:
         for extension in args.use_extension:
@@ -259,7 +262,7 @@ def run(args, stream=None):
             else:
                 try:
                     import_module(extension)
-                except (ImportError, ValueError) as e:
+                except Exception as e:
                     direct_print(stream, "Cannot import %r" % extension)
                     direct_print(stream, "\n".join(printable_error(e)))
                     sys.exit(1)
@@ -272,10 +275,12 @@ def run(args, stream=None):
     else:
         try:
             module = import_module(args.scenario)
-        except (ImportError, ValueError) as e:
+        except Exception:
             direct_print(stream, "Cannot import %r" % args.scenario)
-            direct_print(stream, "\n".join(printable_error(e)))
+            direct_print(stream, "Try `molotov molotov.dummy`")
+            direct_print(stream, "*** Bye ***")
             sys.exit(1)
+
         sys.path.insert(0, os.path.dirname(module.__file__))
 
     if len(get_scenarios()) == 0:
@@ -312,6 +317,7 @@ def run(args, stream=None):
     res = _dict(res)
 
     if not args.quiet:
+        direct_print(stream, HELLO)
         if args.sizing:
             if res["REACHED"] == 1:
                 direct_print(stream, _SIZING % res)
@@ -319,6 +325,7 @@ def run(args, stream=None):
                 direct_print(stream, "Sizing was not finished. (interrupted)")
         else:
             direct_print(stream, "SUCCESSES: %(OK)d | FAILURES: %(FAILED)d\r" % res)
+
         direct_print(stream, "*** Bye ***")
         if args.fail is not None and res["FAILED"] >= args.fail:
             sys.exit(1)

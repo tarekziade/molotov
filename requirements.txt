@@ -1,3 +1,4 @@
 aiohttp==3.7.4
 aiodogstatsd==0.16.0
 multiprocess==0.70.13
+prompt_toolkit==3.0.31

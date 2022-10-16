@@ -19,15 +19,12 @@ def clone_repo(github):
 
 def create_virtualenv(virtualenv, python):
     # XXX security
-    if sys.version_info.minor > 7:
-        cmd = "%s -m venv venv" % python
-    else:
-        cmd = "%s --python %s venv" % (virtualenv, python)
-
+    cmd = "%s -m venv venv" % python
     check_call(cmd, shell=True)
 
 
 def install_reqs(reqfile):
+    check_call('./venv/bin/pip install --upgrade pip', shell=True)
     check_call("./venv/bin/pip install -r %s" % reqfile, shell=True)
 
 

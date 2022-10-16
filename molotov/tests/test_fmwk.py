@@ -1,5 +1,6 @@
 import os
 import signal
+
 from molotov.session import get_session
 from molotov.runner import Runner
 from molotov.worker import Worker
@@ -19,9 +20,9 @@ from molotov.tests.support import (
     TestLoop,
     async_test,
     dedicatedloop,
-    serialize,
     catch_sleep,
     coserver,
+    patch_errors,
 )
 
 
@@ -233,8 +234,9 @@ class TestFmwk(TestLoop):
         self.assertEqual(results["FAILED"], 0)
         self.assertEqual(len(res), 1)
 
+    @patch_errors
     @async_test
-    async def test_setup_session_failure(self, loop, console, results):
+    async def test_setup_session_failure(self, console_print, loop, console, results):
         @setup_session()
         async def _setup_session(wid, session):
             json_request("http://invalid")
@@ -247,7 +249,7 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
 
         await w.run()
-        output = await serialize(console)
+        output = console_print()
         expected = (
             "Name or service not known" in output
             or "nodename nor servname provided" in output  # NOQA
@@ -329,8 +331,11 @@ class TestFmwk(TestLoop):
         results = Runner(args)()
         self.assertEqual(results["OK"], 1)
 
+    @patch_errors
     @async_test
-    async def test_session_shutdown_exception(self, loop, console, results):
+    async def test_session_shutdown_exception(
+        self, console_print, loop, console, results
+    ):
         @teardown_session()
         async def _teardown_session(wid, session):
             raise Exception("bleh")
@@ -343,8 +348,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop, args=args)
         await w.run()
 
-        output = await serialize(console)
-        self.assertTrue("Exception" in output, output)
+        output = console_print()
+        self.assertTrue("bleh" in output, output)
         self.assertEqual(results["FAILED"], 0)
 
     @dedicatedloop
