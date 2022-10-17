@@ -41,11 +41,15 @@ class SharedConsole(object):
         self.status.update(results)
 
     def print(self, data):
+        if self.terminal is None:
+            return
         for line in data.split("\n"):
             line = line.strip()
             self.terminal.write_line(line)
 
     def print_error(self, error, tb=None):
+        if self.errors is None:
+            return
         if isinstance(error, str):
             for line in error.split("\n"):
                 line = line.strip()
@@ -58,6 +62,9 @@ class SharedConsole(object):
         self.errors.write_line("", fg="gray")
 
     def print_block(self, start, callable, end="OK"):
+        if self.terminal is None:
+            return callable()
+
         self.terminal.write_line(f"{start}...")
         try:
             return callable()

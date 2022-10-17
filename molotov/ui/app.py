@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import shutil
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.layout import (
@@ -33,6 +34,11 @@ class MolotovApp:
         simple_console=False,
         single_process=True,
     ):
+        term_size = shutil.get_terminal_size((80, 25))
+        if max_lines > (term_size.lines - 10):
+            max_lines = term_size.lines - 10
+
+        self.max_lines = max_lines
         self.title = TITLE
         self.single_process = single_process
         self.simple_console = simple_console
@@ -40,12 +46,14 @@ class MolotovApp:
             controller_klass = SimpleController
         else:
             controller_klass = TerminalController
-        self.terminal = controller_klass(max_lines, single_process)
-        self.errors = controller_klass(max_lines, single_process)
+        if max_lines >= 0:
+            self.terminal = controller_klass(max_lines, single_process)
+            self.errors = controller_klass(max_lines, single_process)
+        else:
+            self.terminal = self.errors = None
         self.status = RunStatus()
         self.key_bindings = create_key_bindings()
         self.refresh_interval = refresh_interval
-        self.max_lines = max_lines
         self._running = False
 
     async def refresh_console(self):
@@ -77,20 +85,21 @@ class MolotovApp:
             height=1,
         )
 
-        terminal = Window(content=self.terminal, height=self.max_lines + 2)
-        errors = Window(content=self.errors, height=self.max_lines + 2)
+        if self.terminal is not None:
+            terminal = Window(content=self.terminal, height=self.max_lines + 2)
+            errors = Window(content=self.errors, height=self.max_lines + 2)
+            splits = [
+                title_toolbar,
+                VSplit([terminal, Window(width=4, char=" || "), errors]),
+                bottom_toolbar,
+            ]
+
+        else:
+            splits = [title_toolbar, bottom_toolbar]
 
         self.app = Application(
             min_redraw_interval=0.05,
-            layout=Layout(
-                HSplit(
-                    [
-                        title_toolbar,
-                        VSplit([terminal, Window(width=4, char=" || "), errors]),
-                        bottom_toolbar,
-                    ]
-                )
-            ),
+            layout=Layout(HSplit(splits)),
             style=None,
             key_bindings=self.key_bindings,
             refresh_interval=self.refresh_interval,
