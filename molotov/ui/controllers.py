@@ -18,7 +18,6 @@ def create_key_bindings():
 
     @kb.add("c-c")
     def _interrupt(event):
-        event.app.exit()
         os.kill(os.getpid(), signal.SIGTERM)
 
     return kb

@@ -115,6 +115,11 @@ class MolotovApp:
                 self.app.exit()
             except Exception:
                 pass
+
+            # shows back the cursor
+            sys.stdout.write("\033[?25h")
+            sys.stdout.flush()
+
         self.terminal.close()
         self.errors.close()
         await self.task
