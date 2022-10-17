@@ -1,19 +1,14 @@
 import asyncio
-import time
 from inspect import isgenerator
 
 from molotov.listeners import EventSender
 from molotov.session import get_session, get_context
 from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
-from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop
+from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop, now
 
 
 class FixtureError(Exception):
     pass
-
-
-def _now():
-    return int(time.time())
 
 
 class Worker(object):
@@ -62,7 +57,7 @@ class Worker(object):
     def _may_run(self):
         if is_stopped():
             return False
-        if _now() - self.worker_start > self.args.duration:
+        if now() - self.worker_start > self.args.duration:
             return False
         if self._exhausted:
             return False
@@ -127,7 +122,7 @@ class Worker(object):
             single = None
 
         self.count = 1
-        self.worker_start = _now()
+        self.worker_start = now()
 
         try:
             options = await self.setup()
@@ -156,7 +151,7 @@ class Worker(object):
             while self._may_run():
                 if self.count % 10 == 0:
                     self.print(f"Ran {self.count} scenarios")
-                step_start = _now()
+                step_start = now()
                 get_context(session).step = self.count
                 result = await self.step(self.count, session, scenario=single)
                 if result == 1:

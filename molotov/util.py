@@ -225,3 +225,7 @@ def printable_error(error, tb=None):
     for line in printed.readlines():
         printable.append(line.rstrip("\n"))
     return printable
+
+
+def now():
+    return int(time.time())
