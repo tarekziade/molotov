@@ -121,7 +121,11 @@ class Runner(object):
                     await cancellable_sleep(args.console_update)
                 await self.eventer.stop()
 
-            self.loop.run_until_complete(run(args.quiet, self.console))
+            try:
+                self.loop.run_until_complete(run(args.quiet, self.console))
+            finally:
+                stop()
+                self.loop.run_until_complete(self._tasks.cancel_all())
         else:
             self._process()
 
@@ -129,7 +133,6 @@ class Runner(object):
 
     def _shutdown(self, signal, frame):
         stop()
-        self._tasks.cancel_all()
         # send sigterms
         for proc in self._procs:
             proc.terminate()
@@ -175,6 +178,8 @@ class Runner(object):
             async def _duration_killer():
                 cancelled = object()
                 res = await cancellable_sleep(self.args.duration, result=cancelled)
+                await self.eventer.stop()
+
                 if res is cancelled or (res and not res.canceled()):
                     self._shutdown(None, None)
                     await asyncio.sleep(0)
@@ -214,7 +219,7 @@ class Runner(object):
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
                 self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
-            self._tasks.cancel_all()
+            self.loop.run_until_complete(self._tasks.cancel_all())
             self.loop.close()
 
     async def _display_results(self, update_interval):

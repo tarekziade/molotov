@@ -375,7 +375,7 @@ class TestRunner(TestLoop):
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
-            self.assertEqual(delay[3:7], [2.0, 4.0, 6.0, 8.0])
+            self.assertTrue(set([2.0, 4.0, 6.0, 8.0]).issubset(set(delay)))
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 

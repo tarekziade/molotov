@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import shutil
+import io
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.layout import (
@@ -41,6 +42,13 @@ class MolotovApp:
         self.max_lines = max_lines
         self.title = TITLE
         self.single_process = single_process
+        if not simple_console:
+            try:
+                sys.stdin.fileno()
+            except io.UnsupportedOperation:
+                # This is not a terminal
+                simple_console = True
+
         self.simple_console = simple_console
         if simple_console:
             controller_klass = SimpleController
@@ -128,7 +136,7 @@ class MolotovApp:
             # shows back the cursor
             sys.stdout.write("\033[?25h")
             sys.stdout.flush()
-
+        else:
+            await self.task
         self.terminal.close()
         self.errors.close()
-        await self.task
