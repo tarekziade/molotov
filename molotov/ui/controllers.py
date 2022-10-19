@@ -2,7 +2,9 @@ import multiprocess
 import queue
 import os
 import signal
+from datetime import datetime
 
+import humanize
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
@@ -130,17 +132,20 @@ class RunStatus(BaseController):
     def __init__(self, max_lines=25):
         super().__init__(max_lines)
         self._status = {}
+        self._started = datetime.now()
 
     def update(self, results):
         self._status.update(results)
 
     def formatted(self):
+        delta = datetime.now() - self._started
         return to_formatted_text(
             HTML(
                 f'<style fg="green" bg="#cecece">SUCCESS: {self._status.get("OK", 0)} </style>'
                 f'<style fg="red" bg="#cecece"> FAILED: {self._status.get("FAILED", 0)} </style>'
                 f' WORKERS: {self._status.get("WORKER", 0)}'
-                f' PROCESSES: {self._status.get("PROCESS", 0)}'
+                f' PROCESSES: {self._status.get("PROCESS", 0)} '
+                f'<style fg="blue" bg="#cecece"> ELAPSED: {humanize.precisedelta(delta)}</style>'
             )
         )
 

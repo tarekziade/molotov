@@ -119,6 +119,7 @@ class Runner(object):
                 stop()
                 self.loop.run_until_complete(self._tasks.cancel_all())
         else:
+            self._results["PROCESS"] = 1
             self._process()
 
         return self._results
