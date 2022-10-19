@@ -305,13 +305,14 @@ class TestFmwk(TestLoop):
         @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
+            await asyncio.sleep(0.1)
 
         args = self.get_args()
         results = Runner(args)()
 
         self.assertEqual(res, ["BYE WORKER", "BYE"])
-        self.assertEqual(results["FAILED"], 0)
-        self.assertEqual(results["OK"], 1)
+        self.assertEqual(results["FAILED"], 1)
+        self.assertEqual(results["OK"], 0)
 
     @dedicatedloop
     def test_shutdown_exception(self):
@@ -326,10 +327,11 @@ class TestFmwk(TestLoop):
         @scenario(weight=100)
         async def test_two(session):
             os.kill(os.getpid(), signal.SIGTERM)
+            await asyncio.sleep(0.1)
 
         args = self.get_args()
         results = Runner(args)()
-        self.assertEqual(results["OK"], 1)
+        self.assertEqual(results["OK"], 0)
 
     @patch_errors
     @async_test
