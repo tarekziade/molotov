@@ -34,13 +34,21 @@ class Tasks(MutableSequence):
     def __str__(self):
         return str(self._get_tasks())
 
+    def ensure_future(self, coro):
+        fut = asyncio.ensure_future(coro)
+        self.append(fut)
+        return fut
+
+    async def gather(self):
+        return await asyncio.gather(*self._get_tasks())
+
     async def cancel_all(self):
         cancellable_sleep.cancel_all()
         for task in reversed(self._get_tasks()):
-            with suppress(asyncio.CancelledError):
-                task.cancel()
-                await task
-
+            if not task.done():
+                with suppress(asyncio.CancelledError):
+                    task.cancel()
+                    await task
         for task in self._get_tasks():
             del task
         self.reset_tasks()

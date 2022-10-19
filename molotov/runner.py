@@ -2,6 +2,7 @@ import signal
 import asyncio
 import os
 import multiprocess
+import functools
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
@@ -52,17 +53,8 @@ class Runner(object):
         else:
             self.statsd = None
 
-    def run_coro(self, coro):
-        if not self.loop.is_running():
-            raise Exception("Loop is not running")
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-        return future.result()
-
     def gather(self, *futures):
         return asyncio.gather(*futures, return_exceptions=True)
-
-    def ensure_future(self, coro):
-        return asyncio.ensure_future(coro, loop=self.loop)
 
     def __call__(self):
         global_setup = get_fixture("global_setup")
@@ -75,11 +67,9 @@ class Runner(object):
                 raise
 
         if not self.args.quiet:
-            fut = self._display_results(self.args.console_update)
-            update = self.ensure_future(fut)
-            self._tasks.append(update)
+            self._tasks.ensure_future(self._display_results(self.args.console_update))
 
-        self._tasks.append(self.ensure_future(self._send_workers_event(1)))
+        self._tasks.ensure_future(self._send_workers_event(1))
         try:
             return self._launch_processes()
         finally:
@@ -91,12 +81,14 @@ class Runner(object):
                     # we can't stop the teardown process and the ui is down
                     print(e)
 
-            self._shutdown(None, None)
+            self._shutdown()
 
     def _launch_processes(self):
         args = self.args
-        signal.signal(signal.SIGINT, self._shutdown)
-        signal.signal(signal.SIGTERM, self._shutdown)
+        self.loop.add_signal_handler(signal.SIGTERM, self._shutdown)
+        self.loop.add_signal_handler(
+            signal.SIGINT, functools.partial(os.kill, os.getpid(), signal.SIGTERM)
+        )
         args.original_pid = os.getpid()
 
         if args.processes > 1:
@@ -131,13 +123,15 @@ class Runner(object):
 
         return self._results
 
-    def _shutdown(self, signal, frame):
+    def _shutdown(self):
+        if is_stopped():
+            return
         stop()
         # send sigterms
         for proc in self._procs:
             proc.terminate()
 
-    def _runner(self):
+    def create_workers(self):
         args = self.args
 
         def _prepare():
@@ -157,8 +151,8 @@ class Runner(object):
                     delay,
                     self.loop,
                 )
-                f = self.ensure_future(worker.run())
-                tasks.append(f)
+
+                tasks.append(asyncio.ensure_future(worker.run()))
                 delay += step
             return tasks
 
@@ -181,18 +175,15 @@ class Runner(object):
                 await self.eventer.stop()
 
                 if res is cancelled or (res and not res.canceled()):
-                    self._shutdown(None, None)
+                    self._shutdown()
                     await asyncio.sleep(0)
 
-            _duration_killer = self.ensure_future(_duration_killer())
-        else:
-            _duration_killer = None
+            self._tasks.ensure_future(_duration_killer())
 
         if self.args.processes > 1:
-            signal.signal(signal.SIGINT, self._shutdown)
-            signal.signal(signal.SIGTERM, self._shutdown)
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
+            self.loop.add_signal_handler(signal.SIGTERM, self._shutdown)
 
         if self.args.debug:
             self.console.print("**** RUNNING IN DEBUG MODE == SLOW ****")
@@ -201,24 +192,21 @@ class Runner(object):
         self._set_statsd()
 
         if self.args.original_pid == os.getpid():
-            self._tasks.append(self.ensure_future(self._send_workers_event(1)))
+            self._tasks.ensure_future(self._send_workers_event(1))
 
-        workers = self.gather(*self._runner())
-
-        def _stop(cb):
-            if _duration_killer is not None:
-                if not _duration_killer.done():
-                    _duration_killer.cancel()
+        def _stop(*args):
             stop()
 
-        workers.add_done_callback(_stop)
-        self._tasks.append(workers)
-
+        workers_tasks = self.create_workers()
+        gathered = self.gather(*workers_tasks)
+        gathered.add_done_callback(_stop)
         try:
-            self.loop.run_until_complete(self.gather(*self._tasks))
+            self.loop.run_until_complete(gathered)
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
-                self.loop.run_until_complete(self.ensure_future(self.statsd.close()))
+                self.loop.run_until_complete(
+                    self._tasks.ensure_future(self.statsd.close())
+                )
             self.loop.run_until_complete(self._tasks.cancel_all())
             self.loop.close()
 

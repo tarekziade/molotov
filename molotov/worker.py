@@ -149,6 +149,8 @@ class Worker(object):
             self.print("Running scenarios")
 
             while self._may_run():
+                await asyncio.sleep(0)
+
                 if self.count % 10 == 0:
                     self.print(f"Ran {self.count} scenarios")
                 step_start = now()
@@ -162,6 +164,8 @@ class Worker(object):
                     self.results["MINUTE_FAILED"] += 1
                     if exception:
                         stop(why=result)
+
+                await asyncio.sleep(0)
 
                 if not is_stopped() and self._reached_tolerance(step_start):
                     stop()

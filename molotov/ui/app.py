@@ -69,9 +69,13 @@ class MolotovApp:
             for line in self.terminal.dump():
                 sys.stdout.write(line)
                 sys.stdout.flush()
+
+            await asyncio.sleep(0)
+
             for line in self.errors.dump():
                 sys.stdout.write(line)
                 sys.stdout.flush()
+
             await asyncio.sleep(self.refresh_interval)
 
     async def start(self):

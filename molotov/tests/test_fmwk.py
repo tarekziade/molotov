@@ -309,9 +309,9 @@ class TestFmwk(TestLoop):
         args = self.get_args()
         results = Runner(args)()
 
-        self.assertEqual(results["OK"], 1)
-        self.assertEqual(results["FAILED"], 0)
         self.assertEqual(res, ["BYE WORKER", "BYE"])
+        self.assertEqual(results["FAILED"], 0)
+        self.assertEqual(results["OK"], 1)
 
     @dedicatedloop
     def test_shutdown_exception(self):

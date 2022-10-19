@@ -76,9 +76,12 @@ class TerminalController(BaseController):
     def write(self, data):
         if self._closed:
             return
-        self.data.append(data)
-        if len(self.data) > self.max_lines:
-            self.data[:] = self.data[-self.max_lines :]
+        try:
+            self.data.append(data)
+            if len(self.data) > self.max_lines:
+                self.data[:] = self.data[-self.max_lines :]
+        except BrokenPipeError:
+            pass
 
     def create_content(self, width, height):
         items = ["\n"]
