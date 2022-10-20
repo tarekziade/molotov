@@ -2,11 +2,8 @@
 molotov
 =======
 
-.. image:: http://coveralls.io/repos/github/loads/molotov/badge.svg?branch=master
-   :target: https://coveralls.io/github/loads/molotov?branch=master
-
-.. image:: http://travis-ci.org/loads/molotov.svg?branch=master
-   :target: https://travis-ci.org/loads/molotov
+.. image:: https://github.com/tarekziade/molotov/actions/workflows/ci.yml/badge.svg?branch=main
+   :target:https://github.com/tarekziade/molotov/actions/workflows/ci.yml?query=branch%3Amain
 
 .. image:: http://readthedocs.org/projects/molotov/badge/?version=latest
    :target: https://molotov.readthedocs.io
