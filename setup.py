@@ -12,6 +12,7 @@ install_requires = [
     "multiprocess",
     "humanize",
     "prompt_toolkit",
+    "psutil"
 ]
 
 description = ""

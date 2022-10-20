@@ -18,4 +18,11 @@ async def scenario_one(session):
     async with session.get("http://example.com") as resp:
         if random.randint(1, 100) == 5:
             raise AssertionError("Failed")
+        from base64 import b64encode
+        from os import urandom
+
+        for i in range(1000):
+            random_bytes = urandom(64)
+            token = b64encode(random_bytes).decode("utf-8")
+
         assert resp.status == 200
