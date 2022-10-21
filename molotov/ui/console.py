@@ -4,7 +4,7 @@ from molotov.util import printable_error
 from molotov.ui.app import MolotovApp
 
 
-class SharedConsole(object):
+class Console(object):
     def __init__(
         self,
         interval=0.3,

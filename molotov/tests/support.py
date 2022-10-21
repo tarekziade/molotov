@@ -21,7 +21,7 @@ from molotov.api import _SCENARIO, _FIXTURES
 from molotov import util
 from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
-from molotov.ui.console import SharedConsole
+from molotov.ui.console import Console
 from molotov.shared.counter import Counters
 
 
@@ -234,7 +234,7 @@ class TestLoop(unittest.TestCase):
         args.disable_dns_resolve = False
 
         if console is None:
-            console = SharedConsole(interval=0)
+            console = Console(interval=0)
         args.shared_console = console
         return args
 
@@ -246,7 +246,7 @@ def async_test(func):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
-        console = SharedConsole(interval=0)
+        console = Console(interval=0)
         results = Counters(
             "WORKER",
             "REACHED",
@@ -370,7 +370,7 @@ def catch_sleep(calls=None):
 
 
 def patch_print(func):
-    @patch("molotov.ui.console.SharedConsole.print")
+    @patch("molotov.ui.console.Console.print")
     def _test(self, console_print, *args, **kw):
         def _get_output():
             calls = []
@@ -385,7 +385,7 @@ def patch_print(func):
 
 
 def patch_errors(func):
-    @patch("molotov.ui.console.SharedConsole.print_error")
+    @patch("molotov.ui.console.Console.print_error")
     def _test(self, console_print, *args, **kw):
         def _get_output():
             calls = []

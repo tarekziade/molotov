@@ -10,7 +10,7 @@ from molotov.runner import Runner
 from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
 from molotov.util import expand_options, OptionError, printable_error
-from molotov.ui.console import SharedConsole
+from molotov.ui.console import Console
 
 
 PYPY = platform.python_implementation() == "PyPy"
@@ -245,7 +245,7 @@ def run(args, stream=None):
     if stream is None:
         stream = sys.stdout
 
-    args.shared_console = SharedConsole(
+    args.shared_console = Console(
         interval=args.console_update,
         simple_console=args.console,
         single_process=args.processes == 1,

@@ -5,7 +5,7 @@ import os
 import re
 import multiprocess
 
-from molotov.ui.console import SharedConsole
+from molotov.ui.console import Console
 from molotov.tests.support import dedicatedloop, catch_output
 
 
@@ -18,7 +18,7 @@ two
 
 
 # pre-forked variable
-_CONSOLE = SharedConsole(interval=0.0)
+_CONSOLE = Console(interval=0.0)
 _PROC = []
 
 
@@ -41,12 +41,12 @@ def run_worker(input):
     assert stdout == "", stdout
 
 
-class TestSharedConsole(unittest.TestCase):
+class TestConsole(unittest.TestCase):
     @unittest.skipIf("GITHUB_ACTIONS" in os.environ, "GH action")
     @dedicatedloop
     def test_simple_usage(self):
         test_loop = asyncio.get_event_loop()
-        console = SharedConsole(interval=0.0)
+        console = Console(interval=0.0)
 
         written = []
 
