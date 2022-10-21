@@ -19,13 +19,15 @@ all requests made by Molotov:
 
 .. code-block:: bash
 
-    $ molotov --use-extension molotov/tests/example6.py --max-runs 10 loadtest.py
-    **** Molotov v1.4. Happy breaking! ****
-    Loading extension 'molotov/tests/example6.py'
-    Preparing 50 workers...
+    $ molotov --use-extension molotov/tests/example6.py --max-runs 10 loadtest.py -c
+    Loading extension '../molotov/tests/example6.py'
+    Preparing 1 worker...
     OK
-    SUCCESSES: 447 | FAILURES: 45 | WORKERS: 15
-    Average response time 19ms
-    SUCCESSES: 451 | FAILURES: 49
-    *** Bye ***
+    [W:0] Starting
+    [W:0] Setting up session
+    [W:0] Running scenarios
 
+    Average response time 16ms
+    **** Molotov v2.6. Happy breaking! ****
+    SUCCESSES: 10 | FAILURES: 0
+    *** Bye ***
