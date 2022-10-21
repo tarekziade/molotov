@@ -1,10 +1,12 @@
 CHANGELOG
 =========
 
-2.6
+2.6 - 2022-10-21
+----------------
 
 - Switch from multiprocessing_on_dill to multiprocess (#139)
 - Switched to prompt_toolkit (#148)
+
 
 2.5 - 2022-09-25
 ----------------
