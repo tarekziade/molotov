@@ -92,7 +92,7 @@ highlight_language = 'python3'
 html_theme_options = {
     'logo': 'logo.png',
     'description': 'Load Testing Tool',
-    'github_user': 'loads',
+    'github_user': 'tarekziade',
     'github_repo': 'molotov',
     'github_button': True,
     'github_type': 'star',

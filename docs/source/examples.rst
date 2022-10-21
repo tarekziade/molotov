@@ -3,7 +3,7 @@ Examples
 
 These scripts are examples we use in the tests.
 
-You can find them in https://github.com/loads/molotov/tree/master/molotov/tests
+You can find them in https://github.com/tarekziade/molotov/tree/master/molotov/tests
 
 
 .. literalinclude:: ../../molotov/tests/example.py

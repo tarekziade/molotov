@@ -21,7 +21,7 @@ Example:
 
 .. code-block:: bash
 
-    $ moloslave https://github.com/loads/molotov test
+    $ moloslave https://github.com/tarekziade/molotov test
 
 This will simply run **molotov** with the options from the json file.
 
