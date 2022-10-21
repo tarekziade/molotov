@@ -44,7 +44,7 @@ If that worked, you should now have a **molotov** command-line.
 .. code-block:: bash
 
     (venv) $ molotov --version
-    2.0
+    2.6
 
 
 Running one scenario
@@ -67,25 +67,33 @@ A scenario needs to be a coroutine and gets a **session** instance that
 can be used to query a server.
 
 In our example we query https://example.com and make sure it returns
-a 200. Let's run it in console mode just once with --single-run:
+a 200. Let's run it in console mode just once with `--single-run -c`:
 
 .. code-block:: bash
 
-    (venv) $  molotov --single-run loadtest.py
+    (venv) $  molotov --single-run -c loadtest.py
     **** Molotov v2.0. Happy breaking! ****
     Preparing 1 workers...OK
     SUCCESSES: 1 | FAILURES: 0  | WORKERS: 1
     *** Bye ***
 
-It worked! Let's try for 3 seconds now:
+It worked!
+
+.. note::
+
+   If you get a cryptic `certificate verify failed` error, make sure
+   your Python installation has the root SSL certificates installed. This is
+   usually done by installing `certifi`
+
+Let's try for 30 seconds now with the console application (so without `-c`).
 
 .. code-block:: bash
 
-    (venv) $  molotov -d 3 -x loadtest.py
-    **** Molotov v2.0. Happy breaking! ****
-    Preparing 1 workers...OK
-    SUCCESSES: 26 | FAILURES: 0 | WORKERS: 1
-    *** Bye ***
+    (venv) $  molotov -d 30 -x loadtest.py
+
+You should see a nice application UI with live updates.
+
+.. image:: _static/molotov-tutorial.png
 
 Notice that you can stop the test anytime with Ctrl+C.
 
@@ -95,11 +103,7 @@ workers:
 
 .. code-block:: bash
 
-    (venv) $ molotov -w 10 -d 2 -x loadtest.py
-    **** Molotov v2.0. Happy breaking! ****
-    Preparing 10 workers...OK
-    SUCCESSES: 110 | FAILURES: 0 | WORKERS: 10
-    *** Bye ***
+    (venv) $ molotov -w 10 -d 30 -x loadtest.py
 
 Molotov can also run several processes in parallel, each one running its
 own set of workers. Let's try with 4 processes and 10 workers. Virtually
@@ -107,15 +111,7 @@ it means the level of concurrency will be 40:
 
 .. code-block:: bash
 
-    (venv) $ molotov -w 10 -p 4 -d 2 -x loadtest.py
-    **** Molotov v2.0. Happy breaking! ****
-    Forking 4 processes
-    [44553] Preparing 10 workers...OK
-    [44554] Preparing 10 workers...OK
-    [44555] Preparing 10 workers...OK
-    [44556] Preparing 10 workers...OK
-    SUCCESSES: 80 | FAILURES: 0
-    *** Bye ***
+    (venv) $ molotov -w 10 -p 4 -d 30 -x loadtest.py
 
 You can usually raise the number of workers to a few hundreds, and the
 number of processes to a few dozens. Depending how fast the server
