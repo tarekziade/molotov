@@ -5,6 +5,7 @@ import signal
 from datetime import datetime
 
 import humanize
+import psutil
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
@@ -133,12 +134,27 @@ class RunStatus(BaseController):
         super().__init__(max_lines)
         self._status = {}
         self._started = datetime.now()
+        self._p = psutil.Process()
 
     def update(self, results):
         self._status.update(results)
 
+    def get_resource_usage(self):
+        rss = self._p.memory_info().rss
+        cpu_percent = self._p.cpu_percent()
+
+        for child in self._p.children(recursive=True):
+            rss += child.memory_info().rss
+            cpu_percent += child.cpu_percent()
+
+        if cpu_percent > 0:
+            cpu_percent = cpu_percent / psutil.cpu_count()
+        return {"rss": rss, "cpu_percent": cpu_percent}
+
     def formatted(self):
         delta = datetime.now() - self._started
+        resources = self.get_resource_usage()
+
         return to_formatted_text(
             HTML(
                 f'<style fg="green" bg="#cecece">SUCCESS: {self._status.get("OK", 0)} </style>'
@@ -146,6 +162,7 @@ class RunStatus(BaseController):
                 f' WORKERS: {self._status.get("WORKER", 0)}'
                 f' PROCESSES: {self._status.get("PROCESS", 0)} '
                 f'<style fg="blue" bg="#cecece"> ELAPSED: {humanize.precisedelta(delta)}</style>'
+                f' CPU% {resources["cpu_percent"]} MEM {humanize.naturalsize(resources["rss"])}'
             )
         )
 

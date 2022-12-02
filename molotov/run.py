@@ -96,7 +96,7 @@ def _parser():
         "--console-update",
         help="Delay between each console update",
         type=float,
-        default=0.2,
+        default=0.5,
     )
 
     parser.add_argument(

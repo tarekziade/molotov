@@ -30,7 +30,7 @@ TITLE = HTML(
 class MolotovApp:
     def __init__(
         self,
-        refresh_interval=0.3,
+        refresh_interval=0.5,
         max_lines=25,
         simple_console=False,
         single_process=True,
