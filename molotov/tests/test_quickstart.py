@@ -8,7 +8,7 @@ from molotov.tests.support import set_args, TestLoop, dedicatedloop
 
 class TestQuickStart(TestLoop):
     def setUp(self):
-        super(TestQuickStart, self).setUp()
+        super().setUp()
         self._curdir = os.getcwd()
         self.tempdir = tempfile.mkdtemp()
         self.location = os.path.join(self.tempdir, "new")
@@ -17,7 +17,7 @@ class TestQuickStart(TestLoop):
     def tearDown(self):
         os.chdir(self._curdir)
         shutil.rmtree(self.tempdir)
-        super(TestQuickStart, self).tearDown()
+        super().tearDown()
 
     def _input(self, text):
         if self._answers == []:

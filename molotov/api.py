@@ -81,8 +81,7 @@ def pick_scenario(worker_id=0, step_id=0):
 
 
 def next_scenario():
-    for scenario in get_scenarios():
-        yield scenario
+    yield from get_scenarios()
 
 
 def scenario_picker():

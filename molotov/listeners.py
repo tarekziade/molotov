@@ -11,7 +11,7 @@ _FILE = "**** File content ****"
 _COMPRESSED = ("gzip", "compress", "deflate", "identity", "br")
 
 
-class BaseListener(object):
+class BaseListener:
     async def __call__(self, event, **options):
         attr = getattr(self, "on_" + event, None)
         if attr is not None:
@@ -65,7 +65,7 @@ class StdoutListener(BaseListener):
             return
         raw = "\n" + request.method + " " + str(request.url)
         if len(request.headers) > 0:
-            headers = "\n".join("%s: %s" % (k, v) for k, v in request.headers.items())
+            headers = "\n".join("{}: {}".format(k, v) for k, v in request.headers.items())
             raw += "\n" + headers
         if request.headers.get("Content-Encoding") in _COMPRESSED:
             raw += "\n\n" + _BINARY + "\n"
@@ -80,7 +80,7 @@ class StdoutListener(BaseListener):
             return
         raw = "HTTP/1.1 %d %s\n" % (response.status, response.reason)
         items = response.headers.items()
-        headers = "\n".join("{}: {}".format(k, v) for k, v in items)
+        headers = "\n".join(f"{k}: {v}" for k, v in items)
         raw += headers
         if response.headers.get("Content-Encoding") in _COMPRESSED:
             raw += "\n\n" + _BINARY
@@ -103,7 +103,7 @@ class StdoutListener(BaseListener):
         self.console.print_error("")
 
 
-class CustomListener(object):
+class CustomListener:
     def __init__(self, fixture):
         self.fixture = fixture
 
@@ -111,7 +111,7 @@ class CustomListener(object):
         await self.fixture(event, **options)
 
 
-class EventSender(object):
+class EventSender:
     def __init__(self, console, listeners=None):
         self.console = console
         if listeners is None:

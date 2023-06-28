@@ -21,7 +21,7 @@ def _input(msg):
 def _prompt(text, default, validator=None):
     while True:
         try:
-            res = _input(_PREFIX + "%s [%s]: " % (text, default))
+            res = _input(_PREFIX + "{} [{}]: ".format(text, default))
             if not res and default:
                 res = default
 
@@ -52,7 +52,7 @@ def _parser():
 
 
 def _copy_file(name, target_dir):
-    print("…copying %r in %r" % (name, target_dir))
+    print("…copying {!r} in {!r}".format(name, target_dir))
     target = os.path.join(target_dir, name)
     if os.path.exists(target):
         print("%r already exists. Cowardly stopping here" % target)

@@ -12,7 +12,7 @@ This Molotov script has:
 import molotov
 
 
-class SomeObject(object):
+class SomeObject:
     """Does something smart in real life with the async loop."""
 
     def __init__(self, loop):
