@@ -1,2 +1,2 @@
 -r tox-pypy-requirements.txt
-uvloop
+uvloop==0.17.0
