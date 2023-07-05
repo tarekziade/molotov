@@ -1,7 +1,7 @@
 import multiprocess
 
 
-class Counter(object):
+class Counter:
     """A multi-process compatible counter."""
 
     def __init__(self, name):
@@ -73,7 +73,7 @@ class Counter(object):
             self._val.value = _value
 
 
-class Counters(object):
+class Counters:
     """Mapping of Counter items."""
 
     def __init__(self, *keys):
@@ -82,7 +82,7 @@ class Counters(object):
             self._counters[key] = Counter(key)
 
     def to_dict(self):
-        return dict([(key, value.value) for key, value in self._counters.items()])
+        return {key: value.value for key, value in self._counters.items()}
 
     def items(self):
         return self._counters.items()

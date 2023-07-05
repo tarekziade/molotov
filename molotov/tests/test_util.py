@@ -16,7 +16,7 @@ class Args:
 
 class TestUtil(unittest.TestCase):
     def setUp(self):
-        super(TestUtil, self).setUp()
+        super().setUp()
         _VARS.clear()
 
     def test_config(self):

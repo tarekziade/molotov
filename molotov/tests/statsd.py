@@ -36,7 +36,7 @@ class ServerProto:
             print(exc)
 
 
-class UDPServer(object):
+class UDPServer:
     def __init__(self, host, port, conn):
         self.host = host
         self.port = port

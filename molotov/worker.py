@@ -11,7 +11,7 @@ class FixtureError(Exception):
     pass
 
 
-class Worker(object):
+class Worker:
     """ "The Worker class creates a Session and runs scenario."""
 
     def __init__(self, wid, results, console, args, statsd=None, delay=0, loop=None):

@@ -18,7 +18,7 @@ from molotov.util import (
 from molotov.worker import Worker
 
 
-class Runner(object):
+class Runner:
     """Manages processes & workers and grabs results."""
 
     def __init__(self, args, loop=None):
@@ -213,7 +213,7 @@ class Runner(object):
 
     async def _display_results(self, update_interval):
         if self.args.original_pid != os.getpid():
-            raise IOError("Wrong process")
+            raise OSError("Wrong process")
 
         await self.console.start()
 

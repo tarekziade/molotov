@@ -64,7 +64,7 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             except SystemExit:
                 pass
             return
-        return super(RequestHandler, self).do_GET()
+        return super().do_GET()
 
     def do_POST(self):
         content_length = int(self.headers["Content-Length"])

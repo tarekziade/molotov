@@ -40,7 +40,7 @@ _RES2 = {}
 
 class TestRunner(TestLoop):
     def setUp(self):
-        super(TestRunner, self).setUp()
+        super().setUp()
         _RES[:] = []
         _RES2.clear()
 
@@ -375,7 +375,7 @@ class TestRunner(TestLoop):
             # we have 5 workers and a ramp-up
             # the first one starts immediatly, then each worker
             # sleeps 2 seconds more.
-            self.assertTrue(set([2.0, 4.0, 6.0, 8.0]).issubset(set(delay)))
+            self.assertTrue({2.0, 4.0, 6.0, 8.0}.issubset(set(delay)))
             wanted = "SUCCESSES: 10"
             self.assertTrue(wanted in stdout, stdout)
 
@@ -799,7 +799,7 @@ class TestRunner(TestLoop):
                 boundary = "----WebKitFormBoundaryFTE"
                 headers = {
                     "X-CSRFToken": "sometoken",
-                    "Content-Type": "multipart/form-data; boundary={}".format(boundary),
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
                 }
                 data = json.dumps({"1": "xxx"})
 
