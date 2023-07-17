@@ -7,3 +7,4 @@ Contributors:
 
 - Dmitri Pribysh
 - Stefano Rivera
+- Vinit Kumar
