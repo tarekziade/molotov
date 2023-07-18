@@ -1,7 +1,7 @@
 molotov
 =======
 
-Simple Python 3.7+ tool to write load tests.
+Simple Python 3.8+ tool to write load tests.
 
 Based on `asyncio <https://docs.python.org/3/library/asyncio.html>`_,
 `aiohttp.client <http://aiohttp.readthedocs.io/en/stable/client.html>`_.
