@@ -3,22 +3,22 @@ name: CI
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
-          - 'pypy-3.8'
-          - 'pypy-3.9'
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "pypy-3.8"
+          - "pypy-3.9"
       fail-fast: false
     name: Test on Python ${{ matrix.python-version }}
     steps:

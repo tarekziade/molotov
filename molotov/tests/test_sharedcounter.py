@@ -39,7 +39,7 @@ class TestCounters(unittest.TestCase):
         self.assertRaises(NotImplementedError, _t)
 
         def _c():
-            Counter("ok") != 6.3
+            Counter("ok") != 6.3  # noqa
 
         self.assertRaises(TypeError, _c)
 

@@ -107,7 +107,7 @@ class TestRunner(TestLoop):
             async def here_two(session):
                 statsd = get_context(session).statsd
                 if statsd is not None:
-                    for i in range(10):
+                    for _i in range(10):
                         statsd.increment("user.online")
                     await asyncio.sleep(0)
 
@@ -233,7 +233,7 @@ class TestRunner(TestLoop):
     def test_fail_mode_fail(self):
         @scenario(weight=10)
         async def here_three(session):
-            assert False
+            raise AssertionError()
 
         stdout, stderr, rc = self._test_molotov(
             "-x",

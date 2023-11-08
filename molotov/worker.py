@@ -74,7 +74,7 @@ class Worker:
             options = await self._setup(self.wid, self.args)
         except Exception as e:
             self.console.print_error(e)
-            raise FixtureError(str(e))
+            raise FixtureError(str(e)) from e
 
         if options is None:
             options = {}
@@ -92,7 +92,7 @@ class Worker:
             await self._session_setup(self.wid, session)
         except Exception as e:
             self.console.print_error(e)
-            raise FixtureError(str(e))
+            raise FixtureError(str(e)) from e
 
     async def session_teardown(self, session):
         if self._session_teardown is None:

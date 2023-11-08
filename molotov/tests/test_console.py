@@ -27,7 +27,7 @@ def run_worker(input):
         _PROC.append(os.getpid())
     _CONSOLE.print("hello")
     try:
-        3 + ""
+        3 + ""  # noqa
     except Exception:
         _CONSOLE.print_error("meh")
 
@@ -61,7 +61,7 @@ class TestConsole(unittest.TestCase):
             console.print("two")
             console.print("3")
             try:
-                1 + "e"
+                1 + "e"  # noqa
             except Exception as e:
                 console.print_error(e)
                 console.print_error(e, sys.exc_info()[2])

@@ -1,3 +1,5 @@
+select = ["E4", "E7", "E9", "F", "B"]
+
 exclude = [
     ".git",
     "bin",

@@ -95,7 +95,7 @@ class Runner:
             if not args.quiet:
                 self.console.print("Forking %d processes" % args.processes)
             jobs = []
-            for i in range(args.processes):
+            for _i in range(args.processes):
                 p = multiprocess.Process(target=self._process)
                 jobs.append(p)
                 p.start()

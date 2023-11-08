@@ -69,8 +69,8 @@ def expand_options(config, scenario, args):
     if not isinstance(config, str):
         try:
             config = json.loads(config.read())
-        except Exception:
-            raise OptionError("Can't parse %r" % config)
+        except Exception as err:
+            raise OptionError("Can't parse %r" % config) from err
     else:
         if not os.path.exists(config):
             raise OptionError("Can't find %r" % config)
@@ -78,8 +78,8 @@ def expand_options(config, scenario, args):
         with open(config) as f:
             try:
                 config = json.loads(f.read())
-            except ValueError:
-                raise OptionError("Can't parse %r" % config)
+            except ValueError as err:
+                raise OptionError("Can't parse %r" % config) from err
 
     if "molotov" not in config:
         raise OptionError("Bad config -- no molotov key")
