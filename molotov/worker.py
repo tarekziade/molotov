@@ -133,9 +133,7 @@ class Worker:
 
         self.print("Setting up session")
 
-        async with get_session(
-            self.loop, self.console, verbose, self.statsd, **options
-        ) as session:
+        async with get_session(self.loop, self.console, verbose, self.statsd, **options) as session:
             await asyncio.sleep(0)
             get_context(session).args = self.args
             get_context(session).worker_id = self.wid

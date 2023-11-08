@@ -41,9 +41,7 @@ def _parser():
         help="Name of a single scenario to run once.",
     )
 
-    parser.add_argument(
-        "--config", default=None, type=str, help="Point to a JSON config file."
-    )
+    parser.add_argument("--config", default=None, type=str, help="Point to a JSON config file.")
 
     parser.add_argument(
         "--version",
@@ -64,31 +62,18 @@ def _parser():
         "--verbose",
         action="count",
         default=0,
-        help=(
-            "Verbosity level. -v will display "
-            "tracebacks. -vv requests and responses."
-        ),
+        help=("Verbosity level. -v will display " "tracebacks. -vv requests and responses."),
     )
 
-    parser.add_argument(
-        "-w", "--workers", help="Number of workers", type=int, default=1
-    )
+    parser.add_argument("-w", "--workers", help="Number of workers", type=int, default=1)
 
-    parser.add_argument(
-        "--ramp-up", help="Ramp-up time in seconds", type=float, default=0.0
-    )
+    parser.add_argument("--ramp-up", help="Ramp-up time in seconds", type=float, default=0.0)
 
-    parser.add_argument(
-        "--sizing", help="Autosizing", action="store_true", default=False
-    )
+    parser.add_argument("--sizing", help="Autosizing", action="store_true", default=False)
 
-    parser.add_argument(
-        "--sizing-tolerance", help="Sizing tolerance", type=float, default=5.0
-    )
+    parser.add_argument("--sizing-tolerance", help="Sizing tolerance", type=float, default=5.0)
 
-    parser.add_argument(
-        "--delay", help="Delay between each worker run", type=float, default=0.0
-    )
+    parser.add_argument("--delay", help="Delay between each worker run", type=float, default=0.0)
 
     parser.add_argument(
         "--console-update",
@@ -97,21 +82,13 @@ def _parser():
         default=0.2,
     )
 
-    parser.add_argument(
-        "-p", "--processes", help="Number of processes", type=int, default=1
-    )
+    parser.add_argument("-p", "--processes", help="Number of processes", type=int, default=1)
 
-    parser.add_argument(
-        "-d", "--duration", help="Duration in seconds", type=int, default=86400
-    )
+    parser.add_argument("-d", "--duration", help="Duration in seconds", type=int, default=86400)
 
-    parser.add_argument(
-        "-r", "--max-runs", help="Maximum runs per worker", type=int, default=None
-    )
+    parser.add_argument("-r", "--max-runs", help="Maximum runs per worker", type=int, default=None)
 
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", default=False, help="Quiet"
-    )
+    parser.add_argument("-q", "--quiet", action="store_true", default=False, help="Quiet")
 
     parser.add_argument(
         "-x",
@@ -137,9 +114,7 @@ def _parser():
         help="Use simple console for feedback",
     )
 
-    parser.add_argument(
-        "--statsd", help="Activates statsd", action="store_true", default=False
-    )
+    parser.add_argument("--statsd", help="Activates statsd", action="store_true", default=False)
 
     parser.add_argument(
         "--statsd-address",
@@ -148,9 +123,7 @@ def _parser():
         default="udp://localhost:8125",
     )
 
-    parser.add_argument(
-        "--uvloop", help="Use uvloop", default=False, action="store_true"
-    )
+    parser.add_argument("--uvloop", help="Use uvloop", default=False, action="store_true")
 
     parser.add_argument(
         "--use-extension",
@@ -296,9 +269,7 @@ def run(args, stream=None):
 
     if args.single_mode:
         if get_scenario(args.single_mode) is None:
-            direct_print(
-                stream, "Can't find %r in registered scenarii" % args.single_mode
-            )
+            direct_print(stream, "Can't find %r in registered scenarii" % args.single_mode)
             sys.exit(1)
 
     res = Runner(args)()

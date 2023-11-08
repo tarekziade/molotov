@@ -206,9 +206,7 @@ class Runner:
             self.loop.run_until_complete(gathered)
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
-                self.loop.run_until_complete(
-                    self._tasks.ensure_future(self.statsd.close())
-                )
+                self.loop.run_until_complete(self._tasks.ensure_future(self.statsd.close()))
             self.loop.run_until_complete(self._tasks.cancel_all())
             self.loop.close()
 
