@@ -1,7 +1,7 @@
 import os
 
-from molotov.util import printable_error
 from molotov.ui.app import MolotovApp
+from molotov.util import printable_error
 
 
 class Console:

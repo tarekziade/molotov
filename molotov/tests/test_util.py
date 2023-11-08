@@ -1,10 +1,10 @@
+import json
+import os
+import unittest
 from io import StringIO
 from tempfile import mkstemp
-import json
-import unittest
-import os
-from molotov.util import expand_options, OptionError, set_var, get_var, _VARS
 
+from molotov.util import _VARS, OptionError, expand_options, get_var, set_var
 
 _HERE = os.path.dirname(__file__)
 config = os.path.join(_HERE, "..", "..", "molotov.json")

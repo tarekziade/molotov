@@ -1,8 +1,8 @@
 """ Molotov-based test.
 """
 import json
-from molotov import scenario, setup, global_setup, teardown, global_teardown
 
+from molotov import global_setup, global_teardown, scenario, setup, teardown
 
 # This is the service you want to load test
 _API = "http://localhost:8080"

@@ -1,13 +1,21 @@
 import gzip
-from aiohttp.client_reqrep import ClientRequest
-from yarl import URL
 from unittest.mock import patch
 
-from molotov.listeners import BaseListener
+from aiohttp.client_reqrep import ClientRequest
+from yarl import URL
+
 import molotov.session
+from molotov.listeners import BaseListener
 from molotov.session import get_eventer
-from molotov.tests.support import coserver, Response, Request
-from molotov.tests.support import TestLoop, async_test, patch_print, patch_errors
+from molotov.tests.support import (
+    Request,
+    Response,
+    TestLoop,
+    async_test,
+    coserver,
+    patch_errors,
+    patch_print,
+)
 
 
 class TestLoggedClientSession(TestLoop):

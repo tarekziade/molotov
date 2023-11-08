@@ -4,9 +4,9 @@ This Molotov script show how you can print
 the average response time.
 
 """
-import molotov
 import time
 
+import molotov
 
 _T = {}
 

@@ -1,29 +1,29 @@
-import sys
-import signal
-import os
 import asyncio
-import unittest
-import time
-from contextlib import contextmanager
 import functools
+import http.server
+import os
+import signal
+import socketserver
+import sys
+import time
+import unittest
 from collections import namedtuple
+from contextlib import contextmanager
 from http.client import HTTPConnection
 from io import StringIO
-import http.server
-import socketserver
-import pytest
 from unittest.mock import patch
 
 import multiprocess
+import pytest
 from aiohttp.client_reqrep import URL
 from multidict import CIMultiDict
-from molotov.api import _SCENARIO, _FIXTURES
+
 from molotov import util
+from molotov.api import _FIXTURES, _SCENARIO
 from molotov.run import PYPY
 from molotov.session import LoggedClientRequest, LoggedClientResponse
-from molotov.ui.console import Console
 from molotov.shared.counter import Counters
-
+from molotov.ui.console import Console
 
 HERE = os.path.dirname(__file__)
 

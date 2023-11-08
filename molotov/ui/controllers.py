@@ -1,10 +1,10 @@
-import multiprocess
-import queue
 import os
+import queue
 import signal
 from datetime import datetime
 
 import humanize
+import multiprocess
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings

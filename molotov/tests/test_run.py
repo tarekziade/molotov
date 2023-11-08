@@ -1,36 +1,35 @@
-import unittest
-import time
-import random
-import os
-import signal
 import asyncio
-from unittest.mock import patch
-import re
-from collections import defaultdict
-import json
 import io
+import json
+import os
+import random
+import re
+import signal
+import time
+import unittest
+from collections import defaultdict
+from unittest.mock import patch
 
 import aiohttp
 
-from molotov.api import scenario, global_setup
+from molotov import __version__
+from molotov.api import global_setup, scenario
+from molotov.run import main, run
+from molotov.session import get_context
+from molotov.shared.counter import Counters
+from molotov.tests.statsd import run_server, stop_server
 from molotov.tests.support import (
     TestLoop,
+    catch_sleep,
+    co_catch_output,
     coserver,
     dedicatedloop,
+    dedicatedloop_noclose,
+    only_pypy,
     set_args,
     skip_pypy,
-    only_pypy,
-    catch_sleep,
-    dedicatedloop_noclose,
-    co_catch_output,
 )
-from molotov.tests.statsd import run_server, stop_server
-from molotov.run import run, main
-from molotov.shared.counter import Counters
-from molotov.util import request, json_request, set_timer
-from molotov.session import get_context
-from molotov import __version__
-
+from molotov.util import json_request, request, set_timer
 
 _HERE = os.path.dirname(__file__)
 _CONFIG = os.path.join(_HERE, "molotov.json")

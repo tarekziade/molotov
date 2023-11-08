@@ -1,7 +1,6 @@
-import random
-import functools
 import asyncio
-
+import functools
+import random
 
 _SCENARIO = {}
 

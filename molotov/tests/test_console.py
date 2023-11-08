@@ -1,13 +1,13 @@
-import unittest
 import asyncio
-import sys
 import os
 import re
+import sys
+import unittest
+
 import multiprocess
 
+from molotov.tests.support import catch_output, dedicatedloop
 from molotov.ui.console import Console
-from molotov.tests.support import dedicatedloop, catch_output
-
 
 OUTPUT = """\
 one

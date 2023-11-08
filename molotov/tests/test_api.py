@@ -1,4 +1,4 @@
-from molotov.api import pick_scenario, scenario, get_scenarios, setup
+from molotov.api import get_scenarios, pick_scenario, scenario, setup
 from molotov.tests.support import TestLoop, async_test
 
 

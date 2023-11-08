@@ -1,17 +1,15 @@
-import os
-import sys
 import argparse
+import os
 import platform
-
+import sys
 from importlib import import_module
-from importlib.util import spec_from_file_location, module_from_spec
+from importlib.util import module_from_spec, spec_from_file_location
 
-from molotov.runner import Runner
-from molotov.api import get_scenarios, get_scenario
 from molotov import __version__
-from molotov.util import expand_options, OptionError, printable_error
+from molotov.api import get_scenario, get_scenarios
+from molotov.runner import Runner
 from molotov.ui.console import Console
-
+from molotov.util import OptionError, expand_options, printable_error
 
 PYPY = platform.python_implementation() == "PyPy"
 

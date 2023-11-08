@@ -1,9 +1,9 @@
-import sys
-import shutil
-import os
 import argparse
-from molotov import __version__
+import os
+import shutil
+import sys
 
+from molotov import __version__
 
 _DEFAULTS = {"target_dir": "."}
 _PREFIX = "> "

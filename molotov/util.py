@@ -1,15 +1,14 @@
-from io import StringIO
-import traceback
-import sys
+import asyncio
 import functools
 import json
 import os
-import asyncio
-import time
+import sys
 import threading
+import time
+import traceback
+from io import StringIO
 
 from aiohttp import ClientSession, __version__
-
 
 _DNS_CACHE = {}
 _STOP = False

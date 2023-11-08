@@ -1,13 +1,12 @@
-from time import perf_counter
 import socket
-from types import SimpleNamespace
 from collections import namedtuple
+from time import perf_counter
+from types import SimpleNamespace
 
-from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector, TraceConfig
+from aiohttp.client import ClientRequest, ClientResponse, ClientSession
 
-from molotov.listeners import StdoutListener, EventSender
-
+from molotov.listeners import EventSender, StdoutListener
 
 _HOST = socket.gethostname()
 

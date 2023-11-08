@@ -1,19 +1,20 @@
-import signal
 import asyncio
-import os
-import multiprocess
 import functools
+import os
+import signal
+
+import multiprocess
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
-from molotov.stats import get_statsd_client
 from molotov.shared import Counters, Tasks
+from molotov.stats import get_statsd_client
 from molotov.util import (
     cancellable_sleep,
-    stop,
+    event_loop,
     is_stopped,
     set_timer,
-    event_loop,
+    stop,
 )
 from molotov.worker import Worker
 

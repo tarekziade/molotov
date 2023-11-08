@@ -1,8 +1,9 @@
 import os
 import unittest
-import multiprocess
-from molotov.shared.counter import Counters, Counter
 
+import multiprocess
+
+from molotov.shared.counter import Counter, Counters
 
 # pre-forked variable
 _DATA = Counters("test")

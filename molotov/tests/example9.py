@@ -1,8 +1,9 @@
 """
 Molotov scripts can import modules from the same dir
 """
-from molotov import scenario
 from mylib import get_url
+
+from molotov import scenario
 
 
 @scenario(weight=1)

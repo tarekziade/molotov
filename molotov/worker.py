@@ -1,10 +1,10 @@
 import asyncio
 from inspect import isgenerator
 
+from molotov.api import get_fixture, get_scenario, next_scenario, pick_scenario
 from molotov.listeners import EventSender
-from molotov.session import get_session, get_context
-from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
-from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop, now
+from molotov.session import get_context, get_session
+from molotov.util import cancellable_sleep, get_timer, is_stopped, now, set_timer, stop
 
 
 class FixtureError(Exception):

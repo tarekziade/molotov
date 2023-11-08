@@ -1,15 +1,17 @@
+import argparse
 import json
 import os
-import sys
-import argparse
-from subprocess import check_call
-import tempfile
 import shutil
 import site
+import sys
+import tempfile
+from subprocess import check_call
+
 import pkg_resources
 
 from molotov import __version__
-from molotov.run import main as run, _parser
+from molotov.run import _parser
+from molotov.run import main as run
 
 
 def clone_repo(github):
