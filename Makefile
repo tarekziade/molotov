@@ -25,9 +25,10 @@ test: build
 docs:  build
 	$(BIN)/tox -e docs
 
-$(BIN)/black:
-	$(BIN)/pip install black
+$(BIN)/ruff:
+	$(BIN)/pip install ruff
 
-black: $(BIN)/black
-	$(BIN)/black setup.py molotov/
-	$(BIN)/flake8  molotov/
+ruff: $(BIN)/ruff
+	$(BIN)/ruff check setup.py molotov/
+	$(BIN)/ruff format setup.py molotov/*.py
+

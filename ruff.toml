@@ -1,0 +1,6 @@
+exclude = [
+    ".git",
+    "bin",
+]
+
+line-length = 100
