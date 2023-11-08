@@ -1,5 +1,5 @@
 import asyncio
-from inspect import isgenerator
+from inspect import isgenerator, signature
 
 from molotov.api import get_fixture, get_scenario, next_scenario, pick_scenario
 from molotov.listeners import EventSender
@@ -14,7 +14,16 @@ class FixtureError(Exception):
 class Worker:
     """ "The Worker class creates a Session and runs scenario."""
 
-    def __init__(self, wid, results, console, args, statsd=None, delay=0, loop=None):
+    def __init__(
+        self,
+        wid,
+        results,
+        console,
+        args,
+        statsd=None,
+        delay=0,
+        loop=None,
+    ):
         self.wid = wid
         self.results = results
         self.console = console
@@ -31,6 +40,7 @@ class Worker:
         self._session_teardown = get_fixture("teardown_session")
         self._setup = get_fixture("setup")
         self._teardown = get_fixture("teardown")
+        self._active_sessions = {}
 
     def print(self, line):
         self.console.print(f"[W:{self.wid}] {line}")
@@ -94,14 +104,48 @@ class Worker:
             self.console.print_error(e)
             raise FixtureError(str(e)) from e
 
-    async def session_teardown(self, session):
+    async def session_teardown(self):
         if self._session_teardown is None:
             return
-        try:
-            await self._session_teardown(self.wid, session)
-        except Exception as e:
-            # we can't stop the teardown process
-            self.console.print_error(e)
+        for _, session in self._active_sessions.items():
+            try:
+                await self._session_teardown(self.wid, session)
+            except Exception as e:
+                # we can't stop the teardown process
+                self.console.print_error(e)
+            finally:
+                try:
+                    await session.close()
+                except Exception:
+                    pass
+
+    async def _get_session(self, kind, **options):
+        if kind in self._active_sessions:
+            session = self._active_sessions[kind]
+        else:
+            self.print(f"Setting up session of kind {kind}")
+            # needs creation
+            session = get_session(
+                self.loop,
+                self.console,
+                self.args.verbose,
+                self.statsd,
+                kind=kind,
+                **options,
+            )
+
+            get_context(session).args = self.args
+            get_context(session).worker_id = self.wid
+            try:
+                await self.session_setup(session)
+            except FixtureError as e:
+                self.results["SESSION_SETUP_FAILED"] += 1
+                stop(why=e)
+                return
+            self._active_sessions[kind] = session
+
+        get_context(session).step = self.count
+        return session
 
     async def _run(self):
         if self.statsd and not self.statsd.connected:
@@ -111,7 +155,6 @@ class Worker:
             except Exception as e:
                 print(e)
 
-        verbose = self.args.verbose
         exception = self.args.exception
 
         if self.args.single_mode:
@@ -131,50 +174,36 @@ class Worker:
             stop(why=e)
             return
 
-        self.print("Setting up session")
+        self.print("Running scenarios")
 
-        async with get_session(self.loop, self.console, verbose, self.statsd, **options) as session:
-            await asyncio.sleep(0)
-            get_context(session).args = self.args
-            get_context(session).worker_id = self.wid
-            try:
-                await self.session_setup(session)
-            except FixtureError as e:
-                self.results["SESSION_SETUP_FAILED"] += 1
-                stop(why=e)
-                return
+        while self._may_run():
+            if self.count % 10 == 0:
+                self.print(f"Ran {self.count} scenarios")
+            step_start = now()
+            result = await self.step(self.count, scenario=single, options=options)
+            if result == 1:
+                self.results["OK"] += 1
+                self.results["MINUTE_OK"] += 1
+            elif result != 0:
+                self.results["FAILED"] += 1
+                self.results["MINUTE_FAILED"] += 1
+                if exception:
+                    stop(why=result)
 
-            self.print("Running scenarios")
+            if not is_stopped() and self._reached_tolerance(step_start):
+                stop()
+                cancellable_sleep.cancel_all()
+                break
 
-            while self._may_run():
-                if self.count % 10 == 0:
-                    self.print(f"Ran {self.count} scenarios")
-                step_start = now()
-                get_context(session).step = self.count
-                result = await self.step(self.count, session, scenario=single)
-                if result == 1:
-                    self.results["OK"] += 1
-                    self.results["MINUTE_OK"] += 1
-                elif result != 0:
-                    self.results["FAILED"] += 1
-                    self.results["MINUTE_FAILED"] += 1
-                    if exception:
-                        stop(why=result)
+            self.count += 1
+            if self.args.delay > 0.0:
+                await cancellable_sleep(self.args.delay)
+            else:
+                # forces a context switch
+                await asyncio.sleep(0)
 
-                if not is_stopped() and self._reached_tolerance(step_start):
-                    stop()
-                    cancellable_sleep.cancel_all()
-                    break
-
-                self.count += 1
-                if self.args.delay > 0.0:
-                    await cancellable_sleep(self.args.delay)
-                else:
-                    # forces a context switch
-                    await asyncio.sleep(0)
-
-            self.print("Done!")
-            await self.session_teardown(session)
+        self.print("Done!")
+        await self.session_teardown()
 
     def teardown(self):
         if self._teardown is None:
@@ -211,7 +240,7 @@ class Worker:
 
         return reached
 
-    async def step(self, step_id, session, scenario=None):
+    async def step(self, step_id, scenario=None, options=None):
         """single scenario call.
 
         When it returns 1, it works. -1 the script failed,
@@ -225,9 +254,13 @@ class Worker:
             except StopIteration:
                 self._exhausted = True
                 return 0
+
+        func = scenario["func"]
+        session_kind = signature(func).parameters.get("session_factory", "http")
+        session = await self._get_session(session_kind, **options)
         try:
             await self.send_event("scenario_start", scenario=scenario)
-            await scenario["func"](session, *scenario["args"], **scenario["kw"])
+            await func(session, *scenario["args"], **scenario["kw"])
             await self.send_event("scenario_success", scenario=scenario)
 
             if scenario["delay"] > 0.0:
@@ -239,5 +272,3 @@ class Worker:
             self.console.print_error(exc)
 
             return exc
-
-        return -1

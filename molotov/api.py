@@ -131,6 +131,25 @@ def _fixture(name, coroutine=True, multiple=False):
     return __fixture
 
 
+_SESSION_FACTORY = {}
+
+
+def create_session(kind, loop, console, verbose, statsd, **kw):
+    return _SESSION_FACTORY[kind](loop, console, verbose, statsd, **kw)
+
+
+def session_factory(kind):
+    def _session(func):
+        @functools.wraps(func)
+        def __session(*args, **kw):
+            return func(*args, **kw)
+
+        return __session
+
+    _SESSION_FACTORY[kind] = _session
+    return _session
+
+
 def setup():
     """Called once per worker startup.
 
