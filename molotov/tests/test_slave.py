@@ -1,14 +1,14 @@
 import os
-import pytest
-from unittest import mock
-import tempfile
 import subprocess
-from shutil import copytree, copyfile
+import tempfile
+from shutil import copyfile, copytree
+from unittest import mock
+
+import pytest
 
 from molotov import __version__
 from molotov.slave import main
 from molotov.tests.support import TestLoop, dedicatedloop, set_args
-
 
 _REPO = "https://github.com/loads/molotov"
 NO_INTERNET = os.environ.get("NO_INTERNET") is not None

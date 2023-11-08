@@ -1,4 +1,4 @@
-from molotov import scenario, global_setup
+from molotov import global_setup, scenario
 
 
 @global_setup()

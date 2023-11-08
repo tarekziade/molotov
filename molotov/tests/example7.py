@@ -3,9 +3,9 @@
 This Molotov script uses events to display concurrency info
 
 """
-import molotov
 import time
 
+import molotov
 
 concurs = []  # [(timestamp, worker count)]
 

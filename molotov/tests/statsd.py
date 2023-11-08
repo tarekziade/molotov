@@ -1,8 +1,9 @@
-import multiprocess
 import asyncio
-import signal
 import functools
 import os
+import signal
+
+import multiprocess
 
 
 def debug(data):

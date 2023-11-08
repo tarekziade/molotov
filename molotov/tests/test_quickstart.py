@@ -1,9 +1,9 @@
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
 
-from molotov import quickstart, __version__, run
-from molotov.tests.support import set_args, TestLoop, dedicatedloop
+from molotov import __version__, quickstart, run
+from molotov.tests.support import TestLoop, dedicatedloop, set_args
 
 
 class TestQuickStart(TestLoop):

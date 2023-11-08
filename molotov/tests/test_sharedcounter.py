@@ -1,8 +1,9 @@
 import os
 import unittest
-import multiprocess
-from molotov.shared.counter import Counters, Counter
 
+import multiprocess
+
+from molotov.shared.counter import Counter, Counters
 
 # pre-forked variable
 _DATA = Counters("test")
@@ -39,7 +40,7 @@ class TestCounters(unittest.TestCase):
         self.assertRaises(NotImplementedError, _t)
 
         def _c():
-            Counter("ok") != 6.3
+            Counter("ok") != 6.3  # noqa
 
         self.assertRaises(TypeError, _c)
 

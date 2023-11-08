@@ -1,8 +1,9 @@
 """ Molotov-based test.
 """
-import molotov
 import random
 from time import sleep
+
+import molotov
 
 
 @molotov.global_setup()

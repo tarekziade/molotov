@@ -9,15 +9,15 @@ This Molotov script has:
 
 """
 import json
+
 from molotov import (
-    scenario,
-    setup,
+    get_context,
     global_setup,
     global_teardown,
+    scenario,
+    setup,
     teardown,
-    get_context,
 )
-
 
 _API = "http://localhost:8080"
 _HEADERS = {}

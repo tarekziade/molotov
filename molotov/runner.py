@@ -1,19 +1,20 @@
-import signal
 import asyncio
-import os
-import multiprocess
 import functools
+import os
+import signal
+
+import multiprocess
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
-from molotov.stats import get_statsd_client
 from molotov.shared import Counters, Tasks
+from molotov.stats import get_statsd_client
 from molotov.util import (
     cancellable_sleep,
-    stop,
+    event_loop,
     is_stopped,
     set_timer,
-    event_loop,
+    stop,
 )
 from molotov.worker import Worker
 
@@ -95,7 +96,7 @@ class Runner:
             if not args.quiet:
                 self.console.print("Forking %d processes" % args.processes)
             jobs = []
-            for i in range(args.processes):
+            for _i in range(args.processes):
                 p = multiprocess.Process(target=self._process)
                 jobs.append(p)
                 p.start()
@@ -205,9 +206,7 @@ class Runner:
             self.loop.run_until_complete(gathered)
         finally:
             if self.statsd is not None and not self.statsd.disconnected:
-                self.loop.run_until_complete(
-                    self._tasks.ensure_future(self.statsd.close())
-                )
+                self.loop.run_until_complete(self._tasks.ensure_future(self.statsd.close()))
             self.loop.run_until_complete(self._tasks.cancel_all())
             self.loop.close()
 

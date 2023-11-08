@@ -1,13 +1,12 @@
-from time import perf_counter
 import socket
-from types import SimpleNamespace
 from collections import namedtuple
+from time import perf_counter
+from types import SimpleNamespace
 
-from aiohttp.client import ClientSession, ClientRequest, ClientResponse
 from aiohttp import TCPConnector, TraceConfig
+from aiohttp.client import ClientRequest, ClientResponse, ClientSession
 
-from molotov.listeners import StdoutListener, EventSender
-
+from molotov.listeners import EventSender, StdoutListener
 
 _HOST = socket.gethostname()
 
@@ -37,11 +36,7 @@ class SessionTracer(TraceConfig):
         self.verbose = verbose
         self.eventer = EventSender(
             console,
-            [
-                StdoutListener(
-                    verbose=self.verbose, console=self.console, loop=self.loop
-                )
-            ],
+            [StdoutListener(verbose=self.verbose, console=self.console, loop=self.loop)],
         )
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
@@ -49,9 +44,7 @@ class SessionTracer(TraceConfig):
         self.context.statsd = statsd
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
-        return SimpleNamespace(
-            trace_request_ctx=trace_request_ctx, context=self.context
-        )
+        return SimpleNamespace(trace_request_ctx=trace_request_ctx, context=self.context)
 
     def add_listener(self, listener):
         return self.eventer.add_listener(listener)
@@ -103,7 +96,7 @@ def get_session(loop, console, verbose=0, statsd=None, **kw):
         response_class=LoggedClientResponse,
         connector=connector,
         trace_configs=[trace_config],
-        **kw
+        **kw,
     )
 
     return session

@@ -4,8 +4,9 @@ This Molotov script uses events to generate a success/failure output
 
 """
 import json
-import molotov
 import time
+
+import molotov
 
 _T = {}
 

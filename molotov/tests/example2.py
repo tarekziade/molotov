@@ -5,7 +5,6 @@ This Molotov script has 2 scenario
 """
 from molotov import scenario
 
-
 _API = "http://localhost:8080"
 
 

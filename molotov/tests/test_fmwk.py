@@ -1,30 +1,30 @@
+import asyncio
 import os
 import signal
-import asyncio
 
-from molotov.session import get_session
-from molotov.runner import Runner
-from molotov.worker import Worker
-from molotov.util import get_var, set_var, json_request, request, stop_reason
 from molotov.api import (
-    scenario,
-    setup,
-    global_setup,
-    teardown,
-    global_teardown,
-    setup_session,
-    teardown_session,
-    scenario_picker,
     events,
+    global_setup,
+    global_teardown,
+    scenario,
+    scenario_picker,
+    setup,
+    setup_session,
+    teardown,
+    teardown_session,
 )
+from molotov.runner import Runner
+from molotov.session import get_session
 from molotov.tests.support import (
     TestLoop,
     async_test,
-    dedicatedloop,
     catch_sleep,
     coserver,
+    dedicatedloop,
     patch_errors,
 )
+from molotov.util import get_var, json_request, request, set_var, stop_reason
+from molotov.worker import Worker
 
 
 class TestFmwk(TestLoop):

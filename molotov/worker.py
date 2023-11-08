@@ -1,10 +1,10 @@
 import asyncio
 from inspect import isgenerator
 
+from molotov.api import get_fixture, get_scenario, next_scenario, pick_scenario
 from molotov.listeners import EventSender
-from molotov.session import get_session, get_context
-from molotov.api import get_fixture, pick_scenario, get_scenario, next_scenario
-from molotov.util import cancellable_sleep, is_stopped, set_timer, get_timer, stop, now
+from molotov.session import get_context, get_session
+from molotov.util import cancellable_sleep, get_timer, is_stopped, now, set_timer, stop
 
 
 class FixtureError(Exception):
@@ -74,7 +74,7 @@ class Worker:
             options = await self._setup(self.wid, self.args)
         except Exception as e:
             self.console.print_error(e)
-            raise FixtureError(str(e))
+            raise FixtureError(str(e)) from e
 
         if options is None:
             options = {}
@@ -92,7 +92,7 @@ class Worker:
             await self._session_setup(self.wid, session)
         except Exception as e:
             self.console.print_error(e)
-            raise FixtureError(str(e))
+            raise FixtureError(str(e)) from e
 
     async def session_teardown(self, session):
         if self._session_teardown is None:
@@ -133,9 +133,7 @@ class Worker:
 
         self.print("Setting up session")
 
-        async with get_session(
-            self.loop, self.console, verbose, self.statsd, **options
-        ) as session:
+        async with get_session(self.loop, self.console, verbose, self.statsd, **options) as session:
             await asyncio.sleep(0)
             get_context(session).args = self.args
             get_context(session).worker_id = self.wid

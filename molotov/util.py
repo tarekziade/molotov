@@ -1,15 +1,14 @@
-from io import StringIO
-import traceback
-import sys
+import asyncio
 import functools
 import json
 import os
-import asyncio
-import time
+import sys
 import threading
+import time
+import traceback
+from io import StringIO
 
 from aiohttp import ClientSession, __version__
-
 
 _DNS_CACHE = {}
 _STOP = False
@@ -69,8 +68,8 @@ def expand_options(config, scenario, args):
     if not isinstance(config, str):
         try:
             config = json.loads(config.read())
-        except Exception:
-            raise OptionError("Can't parse %r" % config)
+        except Exception as err:
+            raise OptionError("Can't parse %r" % config) from err
     else:
         if not os.path.exists(config):
             raise OptionError("Can't find %r" % config)
@@ -78,8 +77,8 @@ def expand_options(config, scenario, args):
         with open(config) as f:
             try:
                 config = json.loads(f.read())
-            except ValueError:
-                raise OptionError("Can't parse %r" % config)
+            except ValueError as err:
+                raise OptionError("Can't parse %r" % config) from err
 
     if "molotov" not in config:
         raise OptionError("Bad config -- no molotov key")
@@ -161,9 +160,7 @@ def request(endpoint, verb="GET", session_options=None, **options):
 
 def json_request(endpoint, verb="GET", session_options=None, **options):
     """Like :func:`molotov.request` but extracts json from the response."""
-    req = functools.partial(
-        _request, endpoint, verb, session_options, json=True, **options
-    )
+    req = functools.partial(_request, endpoint, verb, session_options, json=True, **options)
     return _run_in_fresh_loop(req)
 
 

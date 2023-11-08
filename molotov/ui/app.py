@@ -1,8 +1,9 @@
 import asyncio
-import sys
-import shutil
 import io
+import shutil
+import sys
 
+from prompt_toolkit import HTML
 from prompt_toolkit.application import Application
 from prompt_toolkit.layout import (
     FormattedTextControl,
@@ -11,16 +12,14 @@ from prompt_toolkit.layout import (
     VSplit,
     Window,
 )
-from prompt_toolkit import HTML
 
 from molotov import __version__
 from molotov.ui.controllers import (
-    TerminalController,
-    SimpleController,
     RunStatus,
+    SimpleController,
+    TerminalController,
     create_key_bindings,
 )
-
 
 TITLE = HTML(
     f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>"

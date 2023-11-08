@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+
 from aiodogstatsd import Client
 
 
