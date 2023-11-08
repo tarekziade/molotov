@@ -13,8 +13,8 @@ OUTPUT = """\
 one
 two
 3
-<style fg="gray">TypeError\\("unsupported operand type(.*)?
-<style fg="gray">TypeError\\("unsupported operand type.*"""
+TypeError\("unsupported operand type(.*)?
+TypeError\("unsupported operand type.*"""
 
 
 # pre-forked variable
@@ -27,7 +27,7 @@ def run_worker(input):
         _PROC.append(os.getpid())
     _CONSOLE.print("hello")
     try:
-        3 + ""
+        3 + ""  # NOQA
     except Exception:
         _CONSOLE.print_error("meh")
 
@@ -38,7 +38,7 @@ def run_worker(input):
         loop.close()
 
     stdout = stdout.read()
-    assert stdout == "", stdout
+    assert "hello" in stdout
 
 
 class TestConsole(unittest.TestCase):

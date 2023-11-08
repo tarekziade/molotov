@@ -11,9 +11,10 @@ all: build
 
 $(PYTHON):
 	$(VIRTUALENV) $(VTENV_OPTS) .
+	$(BIN)/bin pip install poetry
 
 build: $(PYTHON)
-	$(PYTHON) setup.py develop
+	$(BIN)/poetry develop
 	$(BIN)/pip install tox
 
 clean:
@@ -31,3 +32,11 @@ $(BIN)/black:
 black: $(BIN)/black
 	$(BIN)/black setup.py molotov/
 	$(BIN)/flake8  molotov/
+
+
+bin/twine: build
+	pip install twine
+
+release: bin/twine
+	$(PYTHON) -m build --wheel
+

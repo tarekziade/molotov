@@ -55,7 +55,6 @@ class TestRunner(TestLoop):
     @co_catch_output
     @dedicatedloop_noclose
     def test_redirect(self):
-
         with coserver() as port:
 
             @scenario(weight=10)
@@ -443,12 +442,20 @@ class TestRunner(TestLoop):
                 except SystemExit:
                     pass
             stdout, stderr = stdout.read().strip(), stderr.read().strip()
+            try:
+                # stdout, stderr, rc = self._test_molotov()
+                ratio = (
+                    float(counters["FAILED"].value)
+                    / float(counters["OK"].value)
+                    * 100.0
+                )
+                self.assertTrue(ratio >= 4.75, ratio)
+            except AssertionError:
+                print(counters)
+                print(stdout)
+                print(stderr)
 
-            # stdout, stderr, rc = self._test_molotov()
-            ratio = (
-                float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
-            )
-            self.assertTrue(ratio >= 4.75, ratio)
+                raise
 
     @co_catch_output
     @unittest.skipIf(os.name == "nt", "win32")
@@ -531,7 +538,6 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def _test_sizing_multiprocess_interrupted(self):
-
         counters = Counters("OK", "FAILED")
 
         @scenario()
@@ -744,7 +750,6 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def _XXX_test_enable_dns(self, m_resolve):
-
         m_resolve.return_value = ("http://localhost", "http://localhost", "localhost")
 
         with catch_sleep():
@@ -763,7 +768,6 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def xxx_test_disable_dns(self, m_resolve):
-
         with catch_sleep():
 
             @scenario()
@@ -782,14 +786,12 @@ class TestRunner(TestLoop):
     @co_catch_output
     @dedicatedloop
     def test_bug_121(self):
-
         PASSED = [0]
 
         with catch_sleep(), coserver() as port:
 
             @scenario()
             async def scenario_one(session):
-
                 cookies = {
                     "csrftoken": "sometoken",
                     "dtk": "1234",

@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "molotov"
+version = "2.7"
+description = "Spiffy load testing tool."
+homepage = "https://github.com/tarekziade/molotov"
+authors = ["Tarek Ziadé <tarek@ziade.org>"]
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = ">= 3.8, < 4.0"
+
+aiohttp = "^3.8.4"
+aiodogstatsd = "^0.16.0"
+multiprocess = "^0.70.14"
+prompt_toolkit = "^3.0.39"
+humanize = "^4.7.0"
+
+[tool.poetry.dev-dependencies]
+ruff = "^0.0.270"
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+pytest-random-order = "^1.0.4"
+coveralls = "^3.3.1"
+isort = "^5.12.0"
+black = "^23.3.0"
+tox = "^4.6.4"
+uvloop = "^0.17.0"
+
+[tool.poetry.scripts]
+molotov = "molotov.run:main"
+moloslave = "molotov.slave:main"
+molostart = "molotov.quickstart:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
