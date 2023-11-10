@@ -256,7 +256,15 @@ class Worker:
                 return 0
 
         func = scenario["func"]
-        session_kind = signature(func).parameters.get("session_factory", "http")
+        session_kind = signature(func).parameters.get("session_factory")
+        if session_kind is not None and session_kind.default is not None:
+            session_kind = session_kind.default
+        else:
+            session_kind = "http"
+
+        import pdb
+
+        pdb.set_trace()
         session = await self._get_session(session_kind, **options)
         try:
             await self.send_event("scenario_start", scenario=scenario)

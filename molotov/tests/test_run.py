@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import io
 import json
 import os
@@ -17,6 +18,7 @@ from molotov.api import global_setup, scenario
 from molotov.run import main, run
 from molotov.session import get_context
 from molotov.shared.counter import Counters
+from molotov.tests.grpc import service as grpc_service
 from molotov.tests.statsd import run_server, stop_server
 from molotov.tests.support import (
     TestLoop,
@@ -37,6 +39,15 @@ _RES = []
 _RES2 = {}
 
 
+@contextlib.contextmanager
+def grpc_server():
+    server = grpc_service.GRPCServer()
+    try:
+        yield server
+    finally:
+        server.stop()
+
+
 class TestRunner(TestLoop):
     def setUp(self):
         super().setUp()
@@ -54,7 +65,6 @@ class TestRunner(TestLoop):
     @co_catch_output
     @dedicatedloop_noclose
     def test_redirect(self):
-
         with coserver() as port:
 
             @scenario(weight=10)
@@ -530,7 +540,6 @@ class TestRunner(TestLoop):
     @unittest.skipIf(os.name == "nt", "win32")
     @dedicatedloop
     def _test_sizing_multiprocess_interrupted(self):
-
         counters = Counters("OK", "FAILED")
 
         @scenario()
@@ -743,7 +752,6 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def _XXX_test_enable_dns(self, m_resolve):
-
         m_resolve.return_value = ("http://localhost", "http://localhost", "localhost")
 
         with catch_sleep():
@@ -762,7 +770,6 @@ class TestRunner(TestLoop):
 
     @dedicatedloop
     def xxx_test_disable_dns(self, m_resolve):
-
         with catch_sleep():
 
             @scenario()
@@ -781,14 +788,12 @@ class TestRunner(TestLoop):
     @co_catch_output
     @dedicatedloop
     def test_bug_121(self):
-
         PASSED = [0]
 
         with catch_sleep(), coserver() as port:
 
             @scenario()
             async def scenario_one(session):
-
                 cookies = {
                     "csrftoken": "sometoken",
                     "dtk": "1234",
@@ -834,6 +839,15 @@ class TestRunner(TestLoop):
     @dedicatedloop
     def test_local_import(self):
         test = os.path.join(_HERE, "example9.py")
+
+        with coserver():
+            stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
+        self.assertTrue("SUCCESSES: 1" in stdout, stdout)
+
+    @co_catch_output
+    @dedicatedloop
+    def test_grpc_factory(self):
+        test = os.path.join(_HERE, "example10.py")
 
         with coserver():
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)

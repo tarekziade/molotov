@@ -144,9 +144,9 @@ def session_factory(kind):
         def __session(*args, **kw):
             return func(*args, **kw)
 
+        _SESSION_FACTORY[kind] = __session
         return __session
 
-    _SESSION_FACTORY[kind] = _session
     return _session
 
 

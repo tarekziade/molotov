@@ -83,7 +83,8 @@ class SessionTracer(TraceConfig):
 
 def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     if kind != "http":
-        return create_session(kind, loop, console.verbose, statsd, **kw)
+        # XXX need to surface errors when this fails
+        return create_session(kind, loop, console, verbose, statsd, **kw)
 
     trace_config = SessionTracer(loop, console, verbose, statsd)
 
