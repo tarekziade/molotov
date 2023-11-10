@@ -15,6 +15,7 @@ try:
     from molotov.util import request, json_request
     from molotov.util import set_var, get_var
     from molotov.session import get_context
+    from molotov import _grpc  # register GRPC factory
 except ImportError:
     pass  # first import
 

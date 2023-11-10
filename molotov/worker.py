@@ -246,6 +246,9 @@ class Worker:
         When it returns 1, it works. -1 the script failed,
         0 the test is stopping or needs to stop.
         """
+        if options is None:
+            options = {}
+
         if scenario is None:
             scenario = pick_scenario(self.wid, step_id)
         elif isgenerator(scenario):
@@ -256,16 +259,26 @@ class Worker:
                 return 0
 
         func = scenario["func"]
-        session_kind = signature(func).parameters.get("session_factory")
+        sig = signature(func)
+        session_kind = sig.parameters.get("session_factory")
+
         if session_kind is not None and session_kind.default is not None:
             session_kind = session_kind.default
+            for name, param in sig.parameters.items():
+                if name == "session_factory":
+                    continue
+                options[name] = param.default
         else:
             session_kind = "http"
 
-        import pdb
+        try:
+            session = await self._get_session(session_kind, **options)
+        except Exception as exc:
+            await self.send_event("scenario_failure", scenario=scenario, exception=exc)
+            self.print("Session creation failure!")
+            self.console.print_error(exc)
+            return exc
 
-        pdb.set_trace()
-        session = await self._get_session(session_kind, **options)
         try:
             await self.send_event("scenario_start", scenario=scenario)
             await func(session, *scenario["args"], **scenario["kw"])

@@ -134,8 +134,8 @@ def _fixture(name, coroutine=True, multiple=False):
 _SESSION_FACTORY = {}
 
 
-def create_session(kind, loop, console, verbose, statsd, **kw):
-    return _SESSION_FACTORY[kind](loop, console, verbose, statsd, **kw)
+def create_session(kind, loop, console, verbose, statsd, trace_config, **kw):
+    return _SESSION_FACTORY[kind](loop, console, verbose, statsd, trace_config, **kw)
 
 
 def session_factory(kind):

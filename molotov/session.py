@@ -82,11 +82,11 @@ class SessionTracer(TraceConfig):
 
 
 def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
+    trace_config = SessionTracer(loop, console, verbose, statsd)
+
     if kind != "http":
         # XXX need to surface errors when this fails
-        return create_session(kind, loop, console, verbose, statsd, **kw)
-
-    trace_config = SessionTracer(loop, console, verbose, statsd)
+        return create_session(kind, loop, console, verbose, statsd, trace_config, **kw)
 
     connector = kw.pop("connector", None)
     if connector is None:
