@@ -6,6 +6,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -17,13 +18,13 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10helloworld.pro
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'helloworld_pb2', _globals)
-if _descriptor._USE_C_DESCRIPTORS == False:
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "helloworld_pb2", _globals)
+if _descriptor._USE_C_DESCRIPTORS is False:
   DESCRIPTOR._options = None
-  _globals['_HELLOREQUEST']._serialized_start=32
-  _globals['_HELLOREQUEST']._serialized_end=60
-  _globals['_HELLOREPLY']._serialized_start=62
-  _globals['_HELLOREPLY']._serialized_end=91
-  _globals['_GREETER']._serialized_start=93
-  _globals['_GREETER']._serialized_end=164
+  _globals["_HELLOREQUEST"]._serialized_start=32
+  _globals["_HELLOREQUEST"]._serialized_end=60
+  _globals["_HELLOREPLY"]._serialized_start=62
+  _globals["_HELLOREPLY"]._serialized_end=91
+  _globals["_GREETER"]._serialized_start=93
+  _globals["_GREETER"]._serialized_end=164
 # @@protoc_insertion_point(module_scope)

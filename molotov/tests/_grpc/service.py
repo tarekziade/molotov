@@ -1,11 +1,15 @@
+import os
 import subprocess
+import sys
 import time
 from concurrent import futures
-import sys
 
 import grpc
-from molotov.tests._grpc import helloworld_pb2
-from molotov.tests._grpc import helloworld_pb2_grpc
+
+from molotov.tests._grpc import helloworld_pb2, helloworld_pb2_grpc
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PATH = os.path.join(HERE, "service.py")
 
 
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
@@ -26,8 +30,8 @@ def run_server():
 
 class GRPCServer:
     def __init__(self):
-        self.p = subprocess.Popen([sys.executable, "service.py"])
-        timer.sleep(1)
+        self.p = subprocess.Popen([sys.executable, PATH])
+        time.sleep(1)
 
     def stop(self):
         self.p.terminate()

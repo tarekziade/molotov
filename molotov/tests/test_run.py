@@ -18,7 +18,7 @@ from molotov.api import global_setup, scenario
 from molotov.run import main, run
 from molotov.session import get_context
 from molotov.shared.counter import Counters
-from molotov.tests.grpc import service as grpc_service
+from molotov.tests._grpc import service as grpc_service
 from molotov.tests.statsd import run_server, stop_server
 from molotov.tests.support import (
     TestLoop,
@@ -849,6 +849,6 @@ class TestRunner(TestLoop):
     def test_grpc_factory(self):
         test = os.path.join(_HERE, "example10.py")
 
-        with coserver():
+        with grpc_server():
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)

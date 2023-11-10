@@ -53,8 +53,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop)
 
         with catch_sleep(res):
-            async with get_session(loop, console) as session:
-                result = await w.step(0, session)
+            async with get_session(loop, console):
+                result = await w.step(0)
                 self.assertTrue(result, 1)
                 self.assertEqual(len(res), 2)
                 self.assertEqual(res[1], 1.5)
@@ -79,8 +79,8 @@ class TestFmwk(TestLoop):
         w = self.get_worker(console, results, loop=loop)
 
         for i in range(4):
-            async with get_session(loop, console) as session:
-                await w.step(i, session)
+            async with get_session(loop, console):
+                await w.step(i)
 
         self.assertEqual(res, ["1", "2", "2", "1"])
 
@@ -91,13 +91,12 @@ class TestFmwk(TestLoop):
             raise ValueError()
 
         w = self.get_worker(console, results, loop=loop)
-        async with get_session(loop, console) as session:
-            result = await w.step(0, session)
+        async with get_session(loop, console):
+            result = await w.step(0)
             self.assertTrue(result, -1)
 
     @async_test
     async def test_aworker(self, loop, console, results):
-
         res = []
 
         @setup()
@@ -211,7 +210,6 @@ class TestFmwk(TestLoop):
 
     @async_test
     async def test_aworker_noexc(self, loop, console, results):
-
         res = []
 
         @setup()
