@@ -37,7 +37,11 @@ class SessionTracer(TraceConfig):
         self.verbose = verbose
         self.eventer = EventSender(
             console,
-            [StdoutListener(verbose=self.verbose, console=self.console, loop=self.loop)],
+            [
+                StdoutListener(
+                    verbose=self.verbose, console=self.console, loop=self.loop
+                )
+            ],
         )
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
@@ -45,7 +49,9 @@ class SessionTracer(TraceConfig):
         self.context.statsd = statsd
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
-        return SimpleNamespace(trace_request_ctx=trace_request_ctx, context=self.context)
+        return SimpleNamespace(
+            trace_request_ctx=trace_request_ctx, context=self.context
+        )
 
     def add_listener(self, listener):
         return self.eventer.add_listener(listener)
@@ -85,7 +91,6 @@ def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     trace_config = SessionTracer(loop, console, verbose, statsd)
 
     if kind != "http":
-        # XXX need to surface errors when this fails
         return create_session(kind, loop, console, verbose, statsd, trace_config, **kw)
 
     connector = kw.pop("connector", None)
