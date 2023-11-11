@@ -105,19 +105,17 @@ class Worker:
             raise FixtureError(str(e)) from e
 
     async def session_teardown(self):
-        if self._session_teardown is None:
-            return
         for _, session in self._active_sessions.items():
-            try:
-                await self._session_teardown(self.wid, session)
-            except Exception as e:
-                # we can't stop the teardown process
-                self.console.print_error(e)
-            finally:
+            if self._session_teardown is not None:
                 try:
-                    await session.close()
-                except Exception:
-                    pass
+                    await self._session_teardown(self.wid, session)
+                except Exception as e:
+                    # we can't stop the teardown process
+                    self.console.print_error(e)
+            try:
+                await session.close()
+            except Exception:
+                pass
 
     async def _get_session(self, kind, **options):
         if kind in self._active_sessions:
