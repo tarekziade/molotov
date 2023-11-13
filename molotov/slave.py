@@ -128,9 +128,6 @@ def main():
         )
         site.addsitedir(site_pkg)
 
-        # import pkg_resources
-        # pkg_resources.working_set.add_entry(site_pkg)
-
         # environment
         if "env" in config["molotov"]:
             for key, value in config["molotov"]["env"].items():
