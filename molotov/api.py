@@ -139,6 +139,17 @@ def create_session(kind, loop, console, verbose, statsd, trace_config, **kw):
 
 
 def session_factory(kind):
+    """Decorator used to publish a session factory.
+
+    The decorated function should return a session object,
+    given `kind`.
+
+    The default kind is `http` which returns a :class:`aiohttp.ClientSession`.
+    A `grpc` kinf is also provided.
+
+    *The decorated function should not be a coroutine.*
+    """
+
     def _session(func):
         @functools.wraps(func)
         def __session(*args, **kw):
