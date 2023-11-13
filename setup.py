@@ -13,6 +13,7 @@ install_requires = [
     "multiprocess",
     "humanize",
     "prompt_toolkit",
+    "grpcio",
 ]
 
 description = ""

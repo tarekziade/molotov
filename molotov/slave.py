@@ -7,7 +7,6 @@ import sys
 import tempfile
 from subprocess import check_call
 
-import pkg_resources
 
 from molotov import __version__
 from molotov.run import _parser
@@ -75,9 +74,13 @@ def main():
         "--virtualenv", type=str, default="virtualenv", help="Virtualenv executable."
     )
 
-    parser.add_argument("--python", type=str, default=sys.executable, help="Python executable.")
+    parser.add_argument(
+        "--python", type=str, default=sys.executable, help="Python executable."
+    )
 
-    parser.add_argument("--directory", type=str, default=None, help="Directory to run into.")
+    parser.add_argument(
+        "--directory", type=str, default=None, help="Directory to run into."
+    )
 
     parser.add_argument(
         "--config",
@@ -120,9 +123,10 @@ def main():
 
         # load deps into sys.path
         pyver = "%d.%d" % (sys.version_info.major, sys.version_info.minor)
-        site_pkg = os.path.join(args.directory, "venv", "lib", "python" + pyver, "site-packages")
+        site_pkg = os.path.join(
+            args.directory, "venv", "lib", "python" + pyver, "site-packages"
+        )
         site.addsitedir(site_pkg)
-        pkg_resources.working_set.add_entry(site_pkg)
 
         # environment
         if "env" in config["molotov"]:

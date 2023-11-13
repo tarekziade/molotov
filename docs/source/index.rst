@@ -60,6 +60,22 @@ The footer will display a count of all successful and failed scenario
 runs, along with the current number of active workers (across all processes)
 and processes.
 
+GRPC support
+============
+
+Since version 2.7, Molotov supports gRPC load testing.
+
+To run against a gRPC server, you can use the **session_kind** option
+from the `scenario` decorator.
+
+When the scenario is picked, a gRPC client will be created and used to
+execute the scenario. Each worker gets one session that will be reused
+for every scenario run. Molotov uses the standard `grpcio` client.
+
+Here's a full example :
+
+.. literalinclude:: ../../molotov/tests/example10.py
+
 
 
 Next steps

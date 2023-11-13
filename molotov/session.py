@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from aiohttp import TCPConnector, TraceConfig
 from aiohttp.client import ClientRequest, ClientResponse, ClientSession
 
+from molotov.api import create_session
 from molotov.listeners import EventSender, StdoutListener
 
 _HOST = socket.gethostname()
@@ -80,8 +81,11 @@ class SessionTracer(TraceConfig):
         )
 
 
-def get_session(loop, console, verbose=0, statsd=None, **kw):
+def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     trace_config = SessionTracer(loop, console, verbose, statsd)
+
+    if kind != "http":
+        return create_session(kind, loop, console, verbose, statsd, trace_config, **kw)
 
     connector = kw.pop("connector", None)
     if connector is None:
