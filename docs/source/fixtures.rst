@@ -13,6 +13,7 @@ provide your own scenario picker function, by decorating it with the
 
 .. autofunction:: molotov.scenario_picker
 
+
 Molotov also provides optional decorators to deal with test fixtures.
 
 The lifecycle of a test is shown in the diagram below, and
@@ -37,3 +38,10 @@ test fixtures can be used to run functions at various stages.
 Here's a full example, in order of calls:
 
 .. literalinclude:: ../../molotov/tests/example4.py
+
+
+You can also implement your own session factory, using the `session_factory` decorator:
+
+.. autofunction:: molotov.session_factory
+
+

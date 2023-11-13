@@ -37,6 +37,11 @@ def scenario(weight=1, delay=0.0, name=None):
       function __name___ attribute.
 
     The decorated function receives an :class:`aiohttp.ClientSession` instance.
+
+    If the decorated function provides a `scenario_kind` option with a
+    default value, that value is used to pick a session factory. By default
+    the kind is `http` and the factory returns a :class:`aiohttp.ClientSession`,
+    but you can also pass `grpc` to get a :class:`grpc.aio.Channel` object.
     """
 
     def _scenario(func, *args, **kw):
@@ -145,9 +150,38 @@ def session_factory(kind):
     given `kind`.
 
     The default kind is `http` which returns a :class:`aiohttp.ClientSession`.
-    A `grpc` kinf is also provided.
+    A `grpc` kind is also provided.
 
     *The decorated function should not be a coroutine.*
+
+    Example of factory (gRPC):
+
+    .. code-block:: python
+
+        from grpc import aio
+        from molotov.api import session_factory
+
+        @session_factory("grpc")
+        def grpc_session(loop, console, verbose, statsd, trace_config, **kw):
+            url = kw["grpc_url"]
+            channel = aio.insecure_channel(url)
+            channel._trace_configs = [trace_config]
+            return channel
+
+    Used in a test:
+
+    .. code-block:: python
+
+        from molotov import scenario
+        from molotov.tests._grpc import helloworld_pb2, helloworld_pb2_grpc
+
+        @scenario(weight=40)
+        async def grpc_scenario(
+            session, session_factory="grpc", grpc_url="ipv4:///127.0.0.1:50051"):
+            stub = helloworld_pb2_grpc.GreeterStub(session)
+            response = await stub.SayHello(helloworld_pb2.HelloRequest(name="Alice"))
+            assert response.message == "Hello, Alice!", response.message
+
     """
 
     def _session(func):
