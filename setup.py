@@ -14,7 +14,6 @@ install_requires = [
     "humanize",
     "prompt_toolkit",
     "grpcio",
-    "setuptools",
 ]
 
 description = ""
