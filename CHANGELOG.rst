@@ -1,8 +1,14 @@
 CHANGELOG
 =========
 
-2.7.
-XXXX
+2.7 - 2023-11-13
+----------------
+
+- Added the session factory
+- Added gRPC support
+- Updated dependencies to the latest versions
+- Moved to Ruff (#157)
+
 
 2.6 - 2022-10-21
 ----------------
