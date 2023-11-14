@@ -5,7 +5,7 @@ INSTALL = $(BIN)/pip install --no-deps
 BUILD_DIRS = bin build include lib lib64 man share
 VIRTUALENV = virtualenv
 
-.PHONY: all test build clean docs
+.PHONY: all test build clean docs ruff release pyright lint
 
 all: build
 
@@ -32,3 +32,19 @@ ruff: $(BIN)/ruff
 	$(BIN)/ruff check setup.py molotov/
 	$(BIN)/ruff format setup.py molotov/*.py
 
+$(BIN)/twine: $(PYTHON)
+	$(BIN)/pip install twine
+	$(BIN)/pip install wheel
+
+release: $(BIN)/twine
+	rm -rf dist/
+	$(BIN)/python setup.py sdist bdist_wheel
+	$(BIN)/twine upload dist/*
+
+$(BIN)/pyright: $(PYTHON)
+	$(BIN)/pip install pyright
+
+pyright: $(BIN)/pyright
+
+lint: ruff
+	pyright

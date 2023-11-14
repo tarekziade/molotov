@@ -454,9 +454,7 @@ class TestRunner(TestLoop):
             stdout, stderr = stdout.read().strip(), stderr.read().strip()
 
             # stdout, stderr, rc = self._test_molotov()
-            ratio = (
-                float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
-            )
+            ratio = float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
             self.assertTrue(ratio >= 4.75, ratio)
 
     @co_catch_output
@@ -807,9 +805,7 @@ class TestRunner(TestLoop):
                 }
                 data = json.dumps({"1": "xxx"})
 
-                with aiohttp.MultipartWriter(
-                    "form-data", boundary=boundary
-                ) as mpwriter:
+                with aiohttp.MultipartWriter("form-data", boundary=boundary) as mpwriter:
                     mpwriter.append(
                         data,
                         {

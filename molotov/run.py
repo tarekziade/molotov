@@ -172,7 +172,7 @@ def main(args=None):
             sys.exit(0)  # pragma: no cover
 
         try:
-            import uvloop
+            import uvloop  # type: ignore
         except ImportError:
             print("You need to install uvloop when using --uvloop")
             sys.exit(0)
@@ -228,6 +228,10 @@ def run(args, stream=None):
                 direct_print(stream, "Loading extension %r" % extension)
             if os.path.exists(extension):
                 spec = spec_from_file_location("extension", extension)
+                if spec is None:
+                    direct_print(stream, "Cannot import %r" % extension)
+                    sys.exit(1)
+
                 module = module_from_spec(spec)
                 spec.loader.exec_module(module)
             else:
@@ -241,6 +245,9 @@ def run(args, stream=None):
     if os.path.exists(args.scenario):
         sys.path.insert(0, os.path.dirname(args.scenario))
         spec = spec_from_file_location("loadtest", args.scenario)
+        if spec is None:
+            direct_print(stream, "Cannot import %r" % args.scenario)
+            sys.exit(1)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
     else:
@@ -251,8 +258,8 @@ def run(args, stream=None):
             direct_print(stream, "Try `molotov molotov.dummy`")
             direct_print(stream, "*** Bye ***")
             sys.exit(1)
-
-        sys.path.insert(0, os.path.dirname(module.__file__))
+        if module.__file__ is not None:
+            sys.path.insert(0, os.path.dirname(module.__file__))
 
     if len(get_scenarios()) == 0:
         direct_print(stream, "You need at least one scenario. No scenario was found.")

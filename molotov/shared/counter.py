@@ -5,7 +5,7 @@ class Counter:
     """A multi-process compatible counter."""
 
     def __init__(self, name):
-        self._val = multiprocess.Value("i", 0)
+        self._val = multiprocess.Value("i", 0)  # type: ignore
         self._name = name
 
     def __eq__(self, other):

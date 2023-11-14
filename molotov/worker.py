@@ -132,8 +132,11 @@ class Worker:
                 **options,
             )
 
-            get_context(session).args = self.args
-            get_context(session).worker_id = self.wid
+            context = get_context(session)
+            if context is not None:
+                context.args = self.args  # type: ignore
+                context.worker_id = self.wid  # type: ignore
+
             try:
                 await self.session_setup(session)
             except FixtureError as e:
@@ -142,7 +145,9 @@ class Worker:
                 return
             self._active_sessions[kind] = session
 
-        get_context(session).step = self.count
+        context = get_context(session)
+        if context is not None:
+            context.step = self.count  # type: ignore
         return session
 
     async def _run(self):
@@ -255,6 +260,13 @@ class Worker:
             except StopIteration:
                 self._exhausted = True
                 return 0
+
+        if scenario is None:
+            msg = "Could not pick a scenario"
+            exc = ValueError(msg)
+            self.print(msg)
+            self.console.print_error(exc)
+            return exc
 
         func = scenario["func"]
         sig = signature(func)

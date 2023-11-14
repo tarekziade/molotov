@@ -1,0 +1,10 @@
+{
+  "include": [
+    "molotov",
+    "setup.py"
+  ],
+  "exclude": [
+    "molotov/tests"
+  ],
+  "reportOptionalMemberAccess": false
+}

@@ -8,7 +8,7 @@ if sys.version_info < (3, 8):
 from molotov import __version__  # NOQA
 
 install_requires = [
-    "aiohttp",
+    "aiohttp>=3.9.0b1",
     "aiodogstatsd",
     "multiprocess",
     "humanize",
