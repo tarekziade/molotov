@@ -4,7 +4,8 @@ import signal
 from datetime import datetime
 
 import humanize
-import multiprocess
+from multiprocess import Manager  # type: ignore
+from multiprocess import Queue as MQueue  # type: ignore
 from prompt_toolkit import HTML
 from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
@@ -64,11 +65,16 @@ class TerminalController(BaseController):
         super().__init__(max_lines, add_style=True)
         self.single_process = single_process
         if not single_process:
-            self.manager = multiprocess.Manager()
+            self.manager = Manager()
             self.data = self.manager.list()
         else:
             self.data = list()
         self._closed = False
+
+    def dump(self):
+        for line in self.data:
+            yield line
+        self.data.clear()
 
     def close(self):
         self._closed = True
@@ -90,17 +96,15 @@ class TerminalController(BaseController):
 
         def format_items():
             lines = "".join(items).split("\n")
-            items[:] = [to_formatted_text(HTML(line)) for line in lines]
+            items[:] = [to_formatted_text(HTML(line)) for line in lines]  # type: ignore
 
-        def get_line(i: int):
+        def get_line(i):
             return items[i]
 
         if self._closed:
             items.append("data stream closed!")
             format_items()
-            return UIContent(
-                get_line=get_line, line_count=len(items), show_cursor=False
-            )
+            return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
 
         for line in self.data:
             items.append(line)
@@ -115,7 +119,7 @@ class SimpleController(BaseController):
         if single_process:
             self.data = queue.Queue()
         else:
-            self.data = multiprocess.Queue()
+            self.data = MQueue()
 
     def close(self):
         pass

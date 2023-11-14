@@ -3,7 +3,7 @@ import functools
 import os
 import signal
 
-import multiprocess
+from multiprocess import Process  # type: ignore
 
 from molotov.api import get_fixture
 from molotov.listeners import EventSender
@@ -97,7 +97,7 @@ class Runner:
                 self.console.print("Forking %d processes" % args.processes)
             jobs = []
             for _i in range(args.processes):
-                p = multiprocess.Process(target=self._process)
+                p = Process(target=self._process)
                 jobs.append(p)
                 p.start()
                 self._results["PROCESS"] += 1

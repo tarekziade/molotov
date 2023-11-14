@@ -1,5 +1,4 @@
 import socket
-from collections import namedtuple
 from time import perf_counter
 from types import SimpleNamespace
 
@@ -12,26 +11,21 @@ from molotov.listeners import EventSender, StdoutListener
 _HOST = socket.gethostname()
 
 
-class LoggedClientRequest(ClientRequest):
-    """Printable Request."""
-
-    tracer = None
-
-    async def send(self, *args, **kw):
-        if self.tracer:
-            await self.tracer.send_event("sending_request", request=self)
-        response = await super().send(*args, **kw)
-        response.request = self
-        return response
-
-
 class LoggedClientResponse(ClientResponse):
     request = None
 
 
+class Context:
+    def __init__(self, statsd=None, args=None, worker_id=None, step=None):
+        self.statsd = statsd
+        self.args = args
+        self.worker_id = worker_id
+        self.step = step
+
+
 class SessionTracer(TraceConfig):
     def __init__(self, loop, console, verbose, statsd):
-        super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)
+        super().__init__(trace_config_ctx_factory=self._trace_config_ctx_factory)  # type: ignore
         self.loop = loop
         self.console = console
         self.verbose = verbose
@@ -41,8 +35,7 @@ class SessionTracer(TraceConfig):
         )
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
-        self.context = namedtuple("context", ["statsd"])
-        self.context.statsd = statsd
+        self.context = Context(statsd=statsd)
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
         return SimpleNamespace(trace_request_ctx=trace_request_ctx, context=self.context)
@@ -81,6 +74,21 @@ class SessionTracer(TraceConfig):
         )
 
 
+class LoggedClientRequest(ClientRequest):
+    """Printable Request."""
+
+    tracer: SessionTracer
+    verbose: int = 0
+    response_class = LoggedClientResponse
+
+    async def send(self, *args, **kw):
+        if self.tracer:
+            await self.tracer.send_event("sending_request", request=self)
+        response = await super().send(*args, **kw)
+        response.request = self  # type: ignore
+        return response
+
+
 def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     trace_config = SessionTracer(loop, console, verbose, statsd)
 
@@ -89,7 +97,7 @@ def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
 
     connector = kw.pop("connector", None)
     if connector is None:
-        connector = TCPConnector(limit=None, ttl_dns_cache=None)
+        connector = TCPConnector(limit=None, ttl_dns_cache=None)  # type: ignore
 
     request_class = LoggedClientRequest
     request_class.verbose = verbose

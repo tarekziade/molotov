@@ -334,9 +334,7 @@ class TestFmwk(TestLoop):
 
     @patch_errors
     @async_test
-    async def test_session_shutdown_exception(
-        self, console_print, loop, console, results
-    ):
+    async def test_session_shutdown_exception(self, console_print, loop, console, results):
         @teardown_session()
         async def _teardown_session(wid, session):
             raise Exception("bleh")

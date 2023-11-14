@@ -21,9 +21,7 @@ from molotov.ui.controllers import (
     create_key_bindings,
 )
 
-TITLE = HTML(
-    f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>"
-)
+TITLE = HTML(f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>")
 
 
 class MolotovApp:

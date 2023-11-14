@@ -53,9 +53,7 @@ class TestUtil(unittest.TestCase):
         ]
 
         for data, scenario in bad_data:
-            self.assertRaises(
-                OptionError, expand_options, self._get_config(data), scenario, args
-            )
+            self.assertRaises(OptionError, expand_options, self._get_config(data), scenario, args)
 
     def test_setget_var(self):
         me = object()

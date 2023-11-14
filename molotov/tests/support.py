@@ -171,9 +171,7 @@ def Response(method="GET", status=200, body=b"***"):
 
         def feed_data(self, data):
             if body == b"":
-                err = AttributeError(
-                    "'EmptyStreamReader' object has no " "attribute 'unread_data'"
-                )
+                err = AttributeError("'EmptyStreamReader' object has no " "attribute 'unread_data'")
                 raise err
             pass
 
