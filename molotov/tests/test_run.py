@@ -851,6 +851,8 @@ class TestRunner(TestLoop):
 
         with grpc_server():
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
+
+        self.assertTrue("Call done" in stdout, stdout)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)
 
     @co_catch_output

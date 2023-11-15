@@ -7,14 +7,13 @@ from molotov.api import session_factory
 def grpc_session(loop, console, verbose, statsd, trace_config, **kw):
     url = kw["grpc_url"]
     channel = aio.insecure_channel(url)
-
     channel._trace_configs = [trace_config]  # type: ignore
-    channel.console = console
 
-    def print(self, data):
-        if self.console is None:
+    def _print(data):
+        if console is None:
             print(data)
         else:
-            self.console.print(data)
+            console.print(data)
 
+    channel.print = _print  # type: ignore
     return channel
