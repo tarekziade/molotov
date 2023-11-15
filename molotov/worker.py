@@ -184,6 +184,7 @@ class Worker:
                 self.print(f"Ran {self.count} scenarios")
             step_start = now()
             result = await self.step(self.count, scenario=single, options=options)
+
             if result == 1:
                 self.results["OK"] += 1
                 self.results["MINUTE_OK"] += 1

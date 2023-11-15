@@ -454,7 +454,9 @@ class TestRunner(TestLoop):
             stdout, stderr = stdout.read().strip(), stderr.read().strip()
 
             # stdout, stderr, rc = self._test_molotov()
-            ratio = float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
+            ratio = (
+                float(counters["FAILED"].value) / float(counters["OK"].value) * 100.0
+            )
             self.assertTrue(ratio >= 4.75, ratio)
 
     @co_catch_output
@@ -805,7 +807,9 @@ class TestRunner(TestLoop):
                 }
                 data = json.dumps({"1": "xxx"})
 
-                with aiohttp.MultipartWriter("form-data", boundary=boundary) as mpwriter:
+                with aiohttp.MultipartWriter(
+                    "form-data", boundary=boundary
+                ) as mpwriter:
                     mpwriter.append(
                         data,
                         {
@@ -848,3 +852,21 @@ class TestRunner(TestLoop):
         with grpc_server():
             stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
         self.assertTrue("SUCCESSES: 1" in stdout, stdout)
+
+    @co_catch_output
+    @dedicatedloop
+    def test_print_ui(self):
+        test = os.path.join(_HERE, "example11.py")
+
+        with coserver():
+            stdout, stderr, rc = self._test_molotov("--max-runs", "1", test)
+        self.assertTrue("Hello" in stdout, stdout)
+
+    @co_catch_output
+    @dedicatedloop
+    def test_print_console(self):
+        test = os.path.join(_HERE, "example11.py")
+
+        with coserver():
+            stdout, stderr, rc = self._test_molotov("--max-runs", "1", "-c", test)
+        self.assertTrue("Hello" in stdout, stdout)
