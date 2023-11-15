@@ -20,8 +20,11 @@ from molotov.ui.controllers import (
     TerminalController,
     create_key_bindings,
 )
+from molotov.util import cancellable_sleep
 
-TITLE = HTML(f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>")
+TITLE = HTML(
+    f"<b>Molotov v{__version__}</b> ~ Happy Breaking 🥛🔨 ~ <i>Ctrl+C to abort</i>"
+)
 
 
 class MolotovApp:
@@ -61,19 +64,22 @@ class MolotovApp:
         self.refresh_interval = refresh_interval
         self._running = False
 
+    def _dump_term(self):
+        for line in self.terminal.dump():
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    def _dump_errors(self):
+        for line in self.errors.dump():
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
     async def refresh_console(self):
         while self._running:
-            for line in self.terminal.dump():
-                sys.stdout.write(line)
-                sys.stdout.flush()
-
+            self._dump_term()
             await asyncio.sleep(0)
-
-            for line in self.errors.dump():
-                sys.stdout.write(line)
-                sys.stdout.flush()
-
-            await asyncio.sleep(self.refresh_interval)
+            self._dump_errors()
+            await cancellable_sleep(self.refresh_interval)
 
     async def start(self):
         self._running = True
@@ -126,7 +132,11 @@ class MolotovApp:
 
     async def stop(self):
         self._running = False
-        await asyncio.sleep(0)
+        cancellable_sleep.cancel_all()
+
+        # dump any remaining data
+        self._dump_term()
+        self._dump_errors()
 
         if not self.simple_console:
             try:

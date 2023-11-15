@@ -103,6 +103,16 @@ def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     request_class.verbose = verbose
     request_class.response_class = LoggedClientResponse
     request_class.tracer = trace_config
+
+    # patching the class to avoid aiohttp warning
+    def _print(self, data):
+        if self.console is None:
+            print(data)
+        else:
+            self.console.print(data)
+
+    ClientSession.print = _print  # type: ignore
+
     session = ClientSession(
         request_class=request_class,
         response_class=LoggedClientResponse,
@@ -110,6 +120,7 @@ def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
         trace_configs=[trace_config],
         **kw,
     )
+    session.console = console
 
     return session
 
