@@ -31,14 +31,20 @@ class SessionTracer(TraceConfig):
         self.verbose = verbose
         self.eventer = EventSender(
             console,
-            [StdoutListener(verbose=self.verbose, console=self.console, loop=self.loop)],
+            [
+                StdoutListener(
+                    verbose=self.verbose, console=self.console, loop=self.loop
+                )
+            ],
         )
         self.on_request_start.append(self._request_start)
         self.on_request_end.append(self._request_end)
         self.context = Context(statsd=statsd)
 
     def _trace_config_ctx_factory(self, trace_request_ctx):
-        return SimpleNamespace(trace_request_ctx=trace_request_ctx, context=self.context)
+        return SimpleNamespace(
+            trace_request_ctx=trace_request_ctx, context=self.context
+        )
 
     def add_listener(self, listener):
         return self.eventer.add_listener(listener)
@@ -89,6 +95,18 @@ class LoggedClientRequest(ClientRequest):
         return response
 
 
+class CustomClientSession(ClientSession):
+    def __init__(self, *args, **kw):
+        self.console = kw.pop("console", None)
+        super().__init__(*args, **kw)
+
+    def print(self, data):
+        if self.console is None:
+            print(data)
+        else:
+            self.console.print(data)
+
+
 def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     trace_config = SessionTracer(loop, console, verbose, statsd)
 
@@ -103,11 +121,13 @@ def get_session(loop, console, verbose=0, statsd=None, kind="http", **kw):
     request_class.verbose = verbose
     request_class.response_class = LoggedClientResponse
     request_class.tracer = trace_config
-    session = ClientSession(
+
+    session = CustomClientSession(
         request_class=request_class,
         response_class=LoggedClientResponse,
         connector=connector,
         trace_configs=[trace_config],
+        console=console,
         **kw,
     )
 
