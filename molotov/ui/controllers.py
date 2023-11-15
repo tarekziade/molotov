@@ -71,10 +71,13 @@ class TerminalController(BaseController):
             self.data = list()
         self._closed = False
 
-    def dump(self):
-        for line in self.data:
+    def dump(self, max_lines=25):
+        for line in self.data[:max_lines]:
             yield line
-        self.data.clear()
+        if len(self.data) <= max_lines:
+            self.data.clear()
+        else:
+            self.data[:] = self.data[max_lines:]
 
     def close(self):
         self._closed = True
@@ -104,7 +107,9 @@ class TerminalController(BaseController):
         if self._closed:
             items.append("data stream closed!")
             format_items()
-            return UIContent(get_line=get_line, line_count=len(items), show_cursor=False)
+            return UIContent(
+                get_line=get_line, line_count=len(items), show_cursor=False
+            )
 
         for line in self.data:
             items.append(line)
@@ -127,9 +132,11 @@ class SimpleController(BaseController):
     def write(self, data):
         self.data.put(data)
 
-    def dump(self):
-        while not self.data.empty():
+    def dump(self, max_lines=25):
+        collected = 0
+        while not self.data.empty() and collected < max_lines:
             yield self.data.get()
+            collected += 1
 
 
 class RunStatus(BaseController):

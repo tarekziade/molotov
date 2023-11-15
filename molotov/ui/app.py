@@ -64,13 +64,13 @@ class MolotovApp:
         self.refresh_interval = refresh_interval
         self._running = False
 
-    def _dump_term(self):
-        for line in self.terminal.dump():
+    def _dump_term(self, max_lines=25):
+        for line in self.terminal.dump(max_lines):
             sys.stdout.write(line)
             sys.stdout.flush()
 
-    def _dump_errors(self):
-        for line in self.errors.dump():
+    def _dump_errors(self, max_lines=25):
+        for line in self.errors.dump(max_lines):
             sys.stdout.write(line)
             sys.stdout.flush()
 
