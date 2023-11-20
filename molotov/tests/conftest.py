@@ -66,4 +66,4 @@ def check_file_descriptors(request):
                 msg += f"Leaked file descriptor: {fd} ({file_type})\n"
             msg += "****** LEAK ******\n"
 
-            warnings.warn(msg, ResourceWarning)
+            warnings.warn(msg, ResourceWarning, stacklevel=1)
