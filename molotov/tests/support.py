@@ -36,16 +36,12 @@ else:
     _TIMEOUT = 0.2
 
 
-def event_loop(no_create=False):
+def event_loop():
     if sys.version_info.minor >= 10:
         try:
             return asyncio.get_running_loop()
         except RuntimeError:
-            if no_create:
-                return None
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            return loop
+            return None
     return asyncio.get_event_loop()
 
 
@@ -137,9 +133,8 @@ def coserver():
     try:
         yield port
     finally:
-        os.kill(process.pid, signal.SIGTERM)
-        process.join(timeout=1.0)
         process.terminate()
+        process.join(timeout=1.0)
 
 
 def _respkw():
@@ -242,7 +237,7 @@ class TestLoop(unittest.TestCase):
 def async_test(func):
     @functools.wraps(func)
     def _async_test(*args, **kw):
-        oldloop = event_loop(no_create=True)
+        oldloop = event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_debug(True)
@@ -268,7 +263,8 @@ def async_test(func):
         finally:
             loop.stop()
             loop.close()
-            asyncio.set_event_loop(oldloop)
+            if oldloop is not None:
+                asyncio.set_event_loop(oldloop)
 
         return fut.result()
 
@@ -287,7 +283,8 @@ def dedicatedloop(func):
             if not loop.is_closed():
                 loop.stop()
                 loop.close()
-            asyncio.set_event_loop(old_loop)
+            if old_loop is not None:
+                asyncio.set_event_loop(old_loop)
 
     return _loop
 
@@ -305,7 +302,8 @@ def dedicatedloop_noclose(func):
             return func(*args, **kw)
         finally:
             loop._close()
-            asyncio.set_event_loop(old_loop)
+            if old_loop is not None:
+                asyncio.set_event_loop(old_loop)
 
     return _loop
 

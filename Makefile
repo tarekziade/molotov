@@ -47,4 +47,4 @@ $(BIN)/pyright: $(PYTHON)
 pyright: $(BIN)/pyright
 
 lint: ruff
-	pyright
+	$(BIN)/pyright

@@ -2,6 +2,7 @@ import asyncio
 import io
 import shutil
 import sys
+import termios
 
 from prompt_toolkit import HTML
 from prompt_toolkit.application import Application
@@ -63,6 +64,7 @@ class MolotovApp:
         self.key_bindings = create_key_bindings()
         self.refresh_interval = refresh_interval
         self._running = False
+        self._term_settings = None
 
     def _dump_term(self, max_lines=25):
         for line in self.terminal.dump(max_lines):
@@ -124,6 +126,11 @@ class MolotovApp:
             erase_when_done=True,
         )
 
+        try:
+            self._term_settings = termios.tcgetattr(sys.stdin)
+        except Exception:
+            pass  # could be under pytest
+
         def _handle_exception(*args, **kw):
             pass
 
@@ -143,7 +150,8 @@ class MolotovApp:
                 self.app.exit()
             except Exception:
                 pass
-
+            if self._term_settings is not None:
+                termios.tcsetattr(sys.stdin, termios.TCSANOW, self._term_settings)
             # shows back the cursor
             sys.stdout.write("\033[?25h")
             sys.stdout.flush()

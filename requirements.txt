@@ -4,3 +4,4 @@ multiprocess==0.70.15
 prompt_toolkit==3.0.39
 humanize==4.8.0
 grpcio==1.59.2
+protobuf==4.25.1
