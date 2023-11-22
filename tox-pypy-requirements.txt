@@ -1,6 +1,2 @@
-pytest
-pytest-cov
-pytest-random-order
+-r tox-py38-requirements.txt
 pytest-retry
-coveralls
-protobuf
