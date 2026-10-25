@@ -1,0 +1,217 @@
+# Reproduces .github/workflows/ci.yml and the [gh-actions] mapping in tox.ini.
+# Seven independent Kubernetes Jobs; no GitHub Actions runner or matrix syntax.
+name: Molotov CI
+'on':
+- push
+- pull_request
+jobs:
+  python38:
+    image: docker.io/library/python@sha256:7aa279fb41dad2962d3c915aa6f6615134baa412ab5aafa9d4384dcaaa0af15d
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions
+    - name: 'Run tox: py38'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e py38
+  python39:
+    image: docker.io/library/python@sha256:d6ca7d9522a172c424721d3509ee12079f7864a742b6adf1eeb66b6c405307ee
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions
+    - name: 'Run tox: py39'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e py39
+  python310:
+    image: docker.io/library/python@sha256:1e6c6bf3c26f586f312cb8da3de3dd8d56c1950eb5dfd59e68630e60df0e3550
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions 'pyright[nodejs]'
+    - name: 'Run tox: py310,lint,docs'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e py310,lint,docs
+  python311:
+    image: docker.io/library/python@sha256:ad408f059cd6328a76e52a1e5ce3f1cf4fb4297e8eb62a4d89661f3f4a9b07ab
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions 'pyright[nodejs]'
+    - name: 'Run tox: py311,lint,docs'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e py311,lint,docs
+  python312:
+    image: docker.io/library/python@sha256:065c242211a32384e228ac6d7d45be2a349cdd06b18cbbf222a5ac4a351fe0ff
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions 'pyright[nodejs]'
+    - name: 'Run tox: py312,lint,docs'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e py312,lint,docs
+  pypy39:
+    image: docker.io/library/pypy@sha256:47763ad80f7b0db07dadb927ff07cb0143956ca5dfff503bece96c2aae849279
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions
+    - name: 'Run tox: pypy3'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e pypy3
+  pypy310:
+    image: docker.io/library/pypy@sha256:611a3aa1956bf9a6bcb5b3b6b8083b9eae03bab494eeda8e369c84ad034005e3
+    timeout: 30m
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    env:
+      HOME: /tmp
+      PIP_NO_CACHE_DIR: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+    - name: Prepare Python
+      run: |
+        sleep 20
+        python --version
+        python -m venv /workspace/.ci
+    - name: Install tox
+      run: |
+        . /workspace/.ci/bin/activate
+        python -m pip install tox tox-gh-actions
+    - name: 'Run tox: pypy3'
+      run: |
+        . /workspace/.ci/bin/activate
+        export NO_PROXY=localhost,127.0.0.1,::1
+        export no_proxy="$NO_PROXY"
+        tox -e pypy3
