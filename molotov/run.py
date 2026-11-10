@@ -164,7 +164,7 @@ def main(args=None):
             expand_options(args.config, args.scenario, args)
         except OptionError as e:
             print(str(e))
-            sys.exit(0)
+            sys.exit(1)
 
     if args.uvloop:
         if PYPY:
