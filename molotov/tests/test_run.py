@@ -168,6 +168,12 @@ class TestRunner(TestLoop):
         self.assertTrue(wanted in stdout)
 
     @dedicatedloop
+    def test_config_error_exits_nonzero(self):
+        stdout, stderr, rc = self._test_molotov("--config", _CONFIG, "DONTEXIST")
+        self.assertTrue("Can't find 'DONTEXIST' in the config" in stdout)
+        self.assertEqual(rc, 1)
+
+    @dedicatedloop
     def test_config_verbose_quiet(self):
         stdout, stderr, rc = self._test_molotov("-qv", "--config", _CONFIG)
         wanted = "You can't"
